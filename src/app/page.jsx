@@ -16,7 +16,9 @@ export const metadata = {
 };
 
 export default function HomePage() {
-  <Suspense fallback={<div>Loading movies...</div>}>
-    <MoviesListClient />
-  </Suspense>;
+  return (
+    <Suspense fallback={<div>Loading movies...</div>}>
+      <MoviesListClient />
+    </Suspense>
+  );
 }
