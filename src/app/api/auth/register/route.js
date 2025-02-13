@@ -25,6 +25,7 @@ export async function middleware(req) {
     });
   });
 }
+
 const registerSchema = z.object({
   username: z
     .string()

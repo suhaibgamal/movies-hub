@@ -1,4 +1,4 @@
-// app/api/watchList/route.js
+// app/api/watchlist/route.js
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/authOptions";
@@ -70,7 +70,7 @@ export async function POST(req) {
       );
     }
   } catch (error) {
-    console.error("POST /api/watchList Error:", error?.message || error);
+    console.error("POST /api/watchlist Error:", error?.message || error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -117,7 +117,7 @@ export async function DELETE(req) {
       );
     }
   } catch (error) {
-    console.error("DELETE /api/watchList Error:", error);
+    console.error("DELETE /api/watchlist Error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -152,7 +152,7 @@ export async function GET(req) {
     });
     return NextResponse.json({ watchlist });
   } catch (error) {
-    console.error("GET /api/watchList Error:", error);
+    console.error("GET /api/watchlist Error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

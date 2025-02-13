@@ -1,4 +1,4 @@
-// app/api/auth/authOptions.js
+// app/api/auth/AuthOptions.js
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import { PrismaClient } from "@prisma/client";
