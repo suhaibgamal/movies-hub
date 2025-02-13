@@ -4,7 +4,7 @@ import LoginClient from "@/app/login/LoginClient";
 export const metadata = {
   title: "Movies Hub - Login",
   description: "Login to your Movies Hub account.",
-  alternates: { canonical: "https://yourdomain.com/login" },
+  alternates: { canonical: "https://movies-hub-explore.vercel.app/login" },
 };
 
 export default function LoginPage() {

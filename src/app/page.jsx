@@ -8,11 +8,11 @@ export const metadata = {
   openGraph: {
     title: "Movies Hub",
     description: "Discover and search movies on Movies Hub.",
-    url: "https://yourdomain.com/",
+    url: "https://movies-hub-explore.vercel.app/",
     images: [{ url: "/favicon.ico" }],
   },
   twitter: { card: "summary_large_image" },
-  alternate: { canonical: "https://yourdomain.com/" },
+  alternate: { canonical: "https://movies-hub-explore.vercel.app/" },
 };
 
 export default function HomePage() {

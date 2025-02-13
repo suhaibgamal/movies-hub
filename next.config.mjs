@@ -7,10 +7,9 @@ const nextConfig = {
         hostname: "image.tmdb.org",
       },
       {
-        protocol: "https", // or 'http'
-        hostname: "lh3.googleusercontent.com", // Replace with your domain(s)
+        protocol: "https",
+        hostname: "lh3.googleusercontent.com",
       },
-      // Add more patterns as needed
     ],
   },
 };

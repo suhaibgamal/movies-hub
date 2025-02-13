@@ -83,13 +83,17 @@ export async function generateMetadata({ params }) {
         ],
       },
       twitter: { card: "summary_large_image" },
-      alternates: { canonical: `https://yourdomain.com/movie/${id}` },
+      alternates: {
+        canonical: `https://movies-hub-explore.vercel.app/movie/${id}`,
+      },
     };
   } catch (error) {
     return {
       title: "Movie Not Found - Movies Hub",
       description: "Movie details not available",
-      alternates: { canonical: `https://yourdomain.com/movie/${id}` },
+      alternates: {
+        canonical: `https://movies-hub-explore.vercel.app/movie/${id}`,
+      },
     };
   }
 }
