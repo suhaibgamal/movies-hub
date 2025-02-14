@@ -52,11 +52,6 @@ export default function WatchNowButton({ watchLink, imdb_id, movieTitle }) {
     setShowModal(false);
   };
 
-  const buttonText =
-    watchLink && watchLink.includes("vidsrc")
-      ? "Watch Now on VidSrc"
-      : "Find Streaming on Google";
-
   return (
     <>
       <a
@@ -66,7 +61,7 @@ export default function WatchNowButton({ watchLink, imdb_id, movieTitle }) {
         aria-label="Watch movie"
       >
         <FiFilm className="h-6 w-6" />
-        <span className="font-semibold">{buttonText}</span>
+        <span className="font-semibold">Watch Now on VidSrc</span>
       </a>
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75">

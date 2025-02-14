@@ -1,4 +1,3 @@
-// app/movie/[id]/page.jsx
 import { getServerSession } from "next-auth/next";
 import { redirect } from "next/navigation";
 import Image from "next/image";
@@ -24,7 +23,7 @@ export async function generateStaticParams() {
 export const revalidate = 3600;
 
 export async function generateMetadata({ params }) {
-  const { id } = await params;
+  const { id } = params;
   try {
     const movie = await getCachedMovieData(id);
     return {
@@ -44,7 +43,7 @@ export async function generateMetadata({ params }) {
 }
 
 export default async function MoviePage({ params }) {
-  const { id } = await params;
+  const { id } = params;
   const session = await getServerSession(authOptions);
   if (!session)
     redirect(`/login?callbackUrl=${encodeURIComponent(`/movie/${id}`)}`);
@@ -52,6 +51,7 @@ export default async function MoviePage({ params }) {
     return (
       <p className="text-center text-lg font-semibold">Movie not found.</p>
     );
+
   try {
     const [movie, trailerData, creditsData] = await Promise.all([
       getCachedMovieData(id),
@@ -106,8 +106,8 @@ export default async function MoviePage({ params }) {
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                 />
               </div>
-              <div className="flex-1 p-6 lg:p-8 relative">
-                <header className="mb-6 relative">
+              <div className="flex-1 p-6 lg:p-8 relative flex flex-col">
+                <header className="mb-6">
                   <h1 className="mb-2 text-3xl font-bold text-card-foreground sm:text-4xl lg:text-5xl">
                     {movie.title}
                   </h1>
@@ -119,12 +119,12 @@ export default async function MoviePage({ params }) {
                     Director:{" "}
                     <span className="text-muted-foreground">{director}</span>
                   </p>
-                  <div className="absolute top-0 right-0">
+                  <div className="mt-4 lg:mt-0 lg:absolute lg:top-4 lg:right-4">
                     <WatchNowButton movie={movie} small={false} />
                   </div>
                 </header>
                 <section className="mb-8">
-                  <h2 className="mb-4 text-xl font-semibold text-card-foreground">
+                  <h2 className="mb-4 text-2xl font-semibold text-card-foreground">
                     Overview
                   </h2>
                   <p className="text-muted-foreground leading-relaxed">
