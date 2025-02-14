@@ -1,13 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { FaFacebookF, FaTwitter, FaLinkedinIn } from "react-icons/fa";
+import { FaFacebookF, FaTwitter, FaWhatsapp } from "react-icons/fa";
 
 export default function InteractiveFeatures({
   trailerUrl,
   trailerKey,
   watchLink,
-  creditsData,
   movie,
 }) {
   const [isTrailerModalOpen, setTrailerModalOpen] = useState(false);
@@ -15,16 +14,13 @@ export default function InteractiveFeatures({
   const openTrailerModal = () => setTrailerModalOpen(true);
   const closeTrailerModal = () => setTrailerModalOpen(false);
 
-  const cast = creditsData.cast || [];
-  const crew = creditsData.crew || [];
-
   return (
-    <div className="mt-10 space-y-10">
+    <div className="mt-8 space-y-8">
       {/* Trailer Section */}
       <div className="text-center">
         <button
           onClick={openTrailerModal}
-          className="inline-flex items-center justify-center gap-3 rounded-lg bg-blue-600 px-6 py-3 text-lg font-medium text-white shadow hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all"
+          className="inline-flex items-center justify-center gap-2 rounded-full bg-blue-600 px-6 py-3 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all"
           aria-label="Watch Trailer"
           disabled={!trailerKey}
         >
@@ -34,40 +30,6 @@ export default function InteractiveFeatures({
           <TrailerModal trailerKey={trailerKey} onClose={closeTrailerModal} />
         )}
       </div>
-
-      {/* Cast Carousel */}
-      {cast.length > 0 && (
-        <div>
-          <h2 className="mb-4 text-2xl font-semibold text-card-foreground">
-            Cast
-          </h2>
-          <CastCrewCarousel
-            items={cast.map((member) => ({
-              id: member.id,
-              name: member.name,
-              role: member.character,
-              profile_path: member.profile_path,
-            }))}
-          />
-        </div>
-      )}
-
-      {/* Crew Carousel */}
-      {crew.length > 0 && (
-        <div>
-          <h2 className="mb-4 text-2xl font-semibold text-card-foreground">
-            Crew
-          </h2>
-          <CastCrewCarousel
-            items={crew.map((member) => ({
-              id: member.id,
-              name: member.name,
-              role: member.job,
-              profile_path: member.profile_path,
-            }))}
-          />
-        </div>
-      )}
 
       {/* Social Sharing */}
       <div className="text-center">
@@ -81,10 +43,10 @@ export default function InteractiveFeatures({
             )}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center justify-center w-12 h-12 rounded-full bg-blue-600 text-white hover:scale-110 transition-transform"
+            className="flex items-center justify-center w-12 h-12 rounded-full bg-blue-600 text-white hover:bg-blue-700 hover:scale-110 transition-all"
             aria-label="Share on Facebook"
           >
-            <FaFacebookF />
+            <FaFacebookF className="text-lg" />
           </a>
           <a
             href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(
@@ -94,23 +56,36 @@ export default function InteractiveFeatures({
             )}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center justify-center w-12 h-12 rounded-full bg-blue-400 text-white hover:scale-110 transition-transform"
+            className="flex items-center justify-center w-12 h-12 rounded-full bg-blue-400 text-white hover:bg-blue-500 hover:scale-110 transition-all"
             aria-label="Share on Twitter"
           >
-            <FaTwitter />
+            <FaTwitter className="text-lg" />
           </a>
           <a
-            href={`https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(
-              `https://movies.suhaeb.com/movie/${movie.id}`
-            )}&title=${encodeURIComponent(
-              `Check out ${movie.title} on Movies Hub!`
-            )}`}
+            href={
+              movie && movie.title && movie.id
+                ? `https://wa.me/?text=${encodeURIComponent(
+                    `Check out ${movie.title} on Movies Hub! https://movies.suhaeb.com/movie/${movie.id}`
+                  )}`
+                : ""
+            }
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center justify-center w-12 h-12 rounded-full bg-blue-700 text-white hover:scale-110 transition-transform"
-            aria-label="Share on LinkedIn"
+            className="flex items-center justify-center w-12 h-12 rounded-full bg-green-600 text-white hover:bg-green-700 hover:scale-110 transition-all"
+            aria-label="Share on WhatsApp"
           >
-            <FaLinkedinIn />
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              className="w-6 h-6"
+            >
+              <path
+                fillRule="evenodd"
+                d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75 5.385 0 9.75 4.365 9.75 9.75 0 4.867-3.414 8.942-7.875 9.542V21h-2.125v-2.092c-1.058-.29-2.052-.71-2.972-1.257l-.01-.01C4.561 18.282 2.25 15.828 2.25 12zm6.354 1.47a.75.75 0 01-.96-.032l-.015-.019-.004-.004C5.69 11.94 5 10.752 5 9.5c0-1.654 1.346-3 3-3s3 1.346 3 3c0 .524-.169 1.029-.467 1.47a.75.75 0 11-.96.032l.015.019.004.004C9.31 10.06 10 11.248 10 12.5c0 1.654-1.346 3-3 3z"
+                clipRule="evenodd"
+              />
+            </svg>
           </a>
         </div>
       </div>
@@ -121,67 +96,27 @@ export default function InteractiveFeatures({
 function TrailerModal({ trailerKey, onClose }) {
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80 animate-fadeIn"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm"
       role="dialog"
       aria-modal="true"
-      aria-label="Trailer Modal"
     >
-      <div className="relative w-full max-w-3xl p-4">
+      <div className="relative w-full max-w-4xl mx-4">
         <button
           onClick={onClose}
-          className="absolute top-2 right-2 text-white text-3xl font-bold hover:text-gray-300 focus:outline-none"
-          aria-label="Close Trailer Modal"
+          className="absolute -top-8 right-0 text-white hover:text-gray-200 transition-colors"
+          aria-label="Close trailer"
         >
-          &times;
+          <span className="text-4xl">&times;</span>
         </button>
-        <div className="relative overflow-hidden rounded-lg aspect-video">
+        <div className="aspect-video bg-black rounded-xl overflow-hidden shadow-2xl">
           <iframe
             src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1`}
-            title="Trailer Video"
-            className="absolute top-0 left-0 w-full h-full"
-            frameBorder="0"
+            className="w-full h-full"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen
-          ></iframe>
+            title="YouTube video player"
+          />
         </div>
-      </div>
-    </div>
-  );
-}
-
-function CastCrewCarousel({ items }) {
-  return (
-    <div className="relative">
-      <div className="flex space-x-4 overflow-x-auto pb-4">
-        {items.map((item) => (
-          <div
-            key={item.id}
-            className="flex-shrink-0 w-32 sm:w-36 md:w-40 bg-card rounded-lg p-3 transition-transform hover:scale-105"
-          >
-            <img
-              src={
-                item.profile_path
-                  ? `https://image.tmdb.org/t/p/w185${item.profile_path}`
-                  : "/images/default.webp"
-              }
-              alt={`${item.name}'s profile`}
-              className="w-full h-40 object-cover rounded-md mb-2"
-              loading="lazy"
-            />
-            <h3
-              className="text-sm font-bold text-card-foreground truncate"
-              title={item.name}
-            >
-              {item.name}
-            </h3>
-            <p
-              className="text-xs text-muted-foreground truncate"
-              title={item.role}
-            >
-              {item.role}
-            </p>
-          </div>
-        ))}
       </div>
     </div>
   );

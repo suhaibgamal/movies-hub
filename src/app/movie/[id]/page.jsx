@@ -11,6 +11,7 @@ import {
 import WatchNowButton from "@/app/components/WatchNowButton";
 import SkeletonLoader from "@/app/components/SkeletonLoader";
 import InteractiveFeatures from "@/app/components/InteractiveFeatures";
+import WatchlistButton from "@/app/components/WatchlistButton";
 
 export async function generateStaticParams() {
   const res = await fetch(
@@ -34,7 +35,6 @@ export async function generateMetadata({ params }) {
       },
     };
   } catch (error) {
-    console.error("Metadata generation error:", error);
     return {
       title: "Movie Not Found - Movies Hub",
       description: "Movie details not available",
@@ -53,21 +53,10 @@ export default async function MoviePage({ params }) {
     );
 
   try {
-    const [movie, trailerData, creditsData] = await Promise.all([
+    const [movie, trailerData] = await Promise.all([
       getCachedMovieData(id),
       getCachedTrailerData(id),
-      getCachedCredits(id),
     ]);
-
-    const heroName =
-      creditsData.cast && creditsData.cast.length > 0
-        ? creditsData.cast[0].name
-        : "N/A";
-    const director =
-      creditsData.crew && creditsData.crew.length > 0
-        ? creditsData.crew.find((person) => person.job === "Director")?.name ||
-          "N/A"
-        : "N/A";
 
     const trailerKey = trailerData.results.find(
       (v) => v.type === "Trailer" && v.site === "YouTube"
@@ -81,19 +70,22 @@ export default async function MoviePage({ params }) {
           movie.title + " watch full movie"
         )}`;
 
+    const releaseYear = movie.release_date
+      ? new Date(movie.release_date).getFullYear()
+      : "N/A";
+    const rating = movie.vote_average ? movie.vote_average.toFixed(1) : "N/A";
+
     return (
-      <div className="min-h-screen bg-background py-12 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen bg-background py-8 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <Suspense fallback={<SkeletonLoader />}>
-            <article className="flex flex-col rounded-xl bg-card shadow-2xl overflow-hidden lg:flex-row transition-all duration-300">
+            <article className="flex flex-col rounded-xl bg-card shadow-2xl overflow-hidden lg:flex-row">
               {/* Poster Section */}
-              <div className="relative lg:w-1/2 flex-shrink-0">
+              <div className="relative lg:w-1/3 xl:w-1/2 flex-shrink-0">
                 <Image
                   src={
-                    movie.poster_path || movie.backdrop_path
-                      ? `https://image.tmdb.org/t/p/w780${
-                          movie.poster_path || movie.backdrop_path
-                        }`
+                    movie.poster_path
+                      ? `https://image.tmdb.org/t/p/w780${movie.poster_path}`
                       : "/images/default.webp"
                   }
                   alt={`${movie.title} poster`}
@@ -107,68 +99,48 @@ export default async function MoviePage({ params }) {
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 50vw"
                 />
               </div>
+
               {/* Content Section */}
-              <div className="flex-1 p-6 lg:p-8 lg:w-1/2 flex flex-col">
+              <div className="flex-1 p-6 lg:p-8 flex flex-col">
                 <header className="mb-6 relative">
-                  <h1 className="mb-2 text-3xl font-bold text-card-foreground sm:text-4xl lg:text-5xl">
-                    {movie.title}
-                  </h1>
-                  <div className="flex flex-wrap gap-4 mb-4">
-                    <p className="text-xl font-medium text-card-foreground">
-                      Hero Name:{" "}
-                      <span className="text-muted-foreground">{heroName}</span>
-                    </p>
-                    <p className="text-xl font-medium text-card-foreground">
-                      Director:{" "}
-                      <span className="text-muted-foreground">{director}</span>
-                    </p>
+                  <div className="flex justify-between items-start mb-4">
+                    <h1 className="text-3xl font-bold text-card-foreground sm:text-4xl lg:text-5xl pr-4">
+                      {movie.title}
+                    </h1>
+                    <WatchNowButton movie={movie} className="hidden lg:flex" />
                   </div>
-                  {/* New section for Rating, Year, and WatchList */}
-                  <div className="flex flex-wrap items-center gap-4 mb-4">
-                    <span className="text-lg font-medium text-card-foreground">
-                      Rating:{" "}
-                      <span className="text-muted-foreground">
-                        {movie.vote_average
-                          ? movie.vote_average.toFixed(1)
-                          : "N/A"}
+
+                  <div className="flex flex-wrap items-center gap-4 mb-6">
+                    <div className="flex items-center gap-2 bg-muted px-3 py-1 rounded-full">
+                      <span className="text-sm font-semibold text-card-foreground">
+                        ⭐ {rating}
                       </span>
+                    </div>
+                    <span className="text-muted-foreground font-medium">
+                      {releaseYear}
                     </span>
-                    <span className="text-lg font-medium text-card-foreground">
-                      Year:{" "}
-                      <span className="text-muted-foreground">
-                        {movie.release_date
-                          ? new Date(movie.release_date).getFullYear()
-                          : "N/A"}
-                      </span>
-                    </span>
-                    <button className="inline-flex items-center gap-2 rounded-md border border-blue-600 px-4 py-2 text-blue-600 hover:bg-blue-600 hover:text-white transition-colors">
-                      Add to WatchList
-                    </button>
-                  </div>
-                  {/* Watch Now Button repositioned for large screens */}
-                  <div className="hidden lg:block absolute top-4 right-4">
-                    <WatchNowButton movie={movie} small={false} />
+                    <WatchlistButton movie={movie} />
                   </div>
                 </header>
+
                 <section className="mb-8">
                   <h2 className="mb-4 text-2xl font-semibold text-card-foreground">
                     Overview
                   </h2>
-                  <p className="text-muted-foreground leading-relaxed break-words">
+                  <p className="text-muted-foreground leading-relaxed">
                     {movie.overview || "No overview available..."}
                   </p>
                 </section>
-                {/* Secondary Watch Now Button for mobile */}
-                <div className="mb-8 lg:hidden">
+
+                <div className="lg:hidden mb-8">
                   <WatchNowButton movie={movie} />
                 </div>
-                {/* Interactive Features Section */}
-                <div className="pt-6 border-t border-muted-foreground">
+
+                <div className="pt-6 border-t border-muted">
                   <InteractiveFeatures
                     trailerUrl={trailerUrl}
                     trailerKey={trailerKey}
                     watchLink={watchLink}
-                    creditsData={creditsData}
                     movie={movie}
                   />
                 </div>
