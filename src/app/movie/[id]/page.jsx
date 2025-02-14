@@ -86,7 +86,8 @@ export default async function MoviePage({ params }) {
         <div className="max-w-7xl mx-auto">
           <Suspense fallback={<SkeletonLoader />}>
             <article className="flex flex-col rounded-xl bg-card shadow-2xl overflow-hidden lg:flex-row transition-all duration-300">
-              <div className="relative lg:w-1/3 xl:w-1/4">
+              {/* Poster Section */}
+              <div className="relative lg:w-1/3 xl:w-1/4 flex-shrink-0 min-w-[300px]">
                 <Image
                   src={
                     movie.poster_path || movie.backdrop_path
@@ -106,8 +107,9 @@ export default async function MoviePage({ params }) {
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                 />
               </div>
+              {/* Content Section */}
               <div className="flex-1 p-6 lg:p-8 relative flex flex-col">
-                <header className="mb-6">
+                <header className="mb-6 relative">
                   <h1 className="mb-2 text-3xl font-bold text-card-foreground sm:text-4xl lg:text-5xl">
                     {movie.title}
                   </h1>
@@ -119,7 +121,8 @@ export default async function MoviePage({ params }) {
                     Director:{" "}
                     <span className="text-muted-foreground">{director}</span>
                   </p>
-                  <div className="mt-4 lg:mt-0 lg:absolute lg:top-4 lg:right-4">
+                  {/* Watch Now Button repositioned for large screens */}
+                  <div className="hidden lg:block absolute top-4 right-4">
                     <WatchNowButton movie={movie} small={false} />
                   </div>
                 </header>
@@ -131,20 +134,20 @@ export default async function MoviePage({ params }) {
                     {movie.overview || "No overview available..."}
                   </p>
                 </section>
-                <div className="mt-auto">
-                  <WatchNowButton
+                {/* Secondary Watch Now Button for mobile */}
+                <div className="mb-8 lg:hidden">
+                  <WatchNowButton movie={movie} />
+                </div>
+                {/* Interactive Features Section */}
+                <div className="pt-6 border-t border-muted-foreground">
+                  <InteractiveFeatures
+                    trailerUrl={trailerUrl}
+                    trailerKey={trailerKey}
                     watchLink={watchLink}
-                    imdb_id={movie.imdb_id}
-                    movieTitle={movie.title}
+                    creditsData={creditsData}
+                    movie={movie}
                   />
                 </div>
-                <InteractiveFeatures
-                  trailerUrl={trailerUrl}
-                  trailerKey={trailerKey}
-                  watchLink={watchLink}
-                  creditsData={creditsData}
-                  movie={movie}
-                />
               </div>
             </article>
           </Suspense>

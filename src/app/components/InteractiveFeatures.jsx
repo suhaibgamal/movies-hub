@@ -134,10 +134,8 @@ function TrailerModal({ trailerKey, onClose }) {
         >
           &times;
         </button>
-        <div
-          className="relative overflow-hidden rounded-lg"
-          style={{ paddingTop: "56.25%" }}
-        >
+        {/* Use Tailwind's aspect-video class for a responsive embed */}
+        <div className="relative overflow-hidden rounded-lg aspect-video">
           <iframe
             src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1`}
             title="Trailer Video"
