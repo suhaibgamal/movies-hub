@@ -1,4 +1,3 @@
-// app/watchList/WatchlistClient.jsx
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
@@ -99,6 +98,13 @@ export default function WatchlistClient() {
                 small={true}
                 deletable={true}
                 onDelete={handleDelete}
+                ratingColor={
+                  item.movieData.vote_average > 0
+                    ? item.movieData.vote_average >= 7
+                      ? "text-green-500"
+                      : "text-yellow-500"
+                    : "text-gray-500"
+                }
               />
             ))}
           </div>

@@ -155,6 +155,14 @@ export default async function MoviePage({ params }) {
                   <h1 className="mb-4 text-3xl font-bold text-card-foreground sm:text-4xl lg:text-5xl">
                     {movie.title}
                   </h1>
+                  {movie.tagline && (
+                    <p className="mb-4 text-xl font-medium text-card-foreground">
+                      Hero Name:{" "}
+                      <span className="text-muted-foreground">
+                        {movie.tagline}
+                      </span>
+                    </p>
+                  )}
                   <div className="absolute top-0 right-0">
                     <WatchlistButton movie={movie} small={false} />
                   </div>
