@@ -12,11 +12,7 @@ import {
 } from "@/lib/tmdb";
 import WatchNowButton from "@/app/components/WatchNowButton";
 import SkeletonLoader from "@/app/components/SkeletonLoader";
-
-const InteractiveFeatures = dynamic(
-  () => import("@/app/components/InteractiveFeatures"),
-  { ssr: false }
-);
+import InteractiveFeatures from "@/app/components/InteractiveFeatures";
 
 export async function generateStaticParams() {
   const res = await fetch(
