@@ -52,9 +52,10 @@ export default function WatchNowButton({ watchLink, imdb_id, movieTitle }) {
     setShowModal(false);
   };
 
-  const buttonText = watchLink.includes("vidsrc")
-    ? "Watch Now on VidSrc"
-    : "Find Streaming on Google";
+  const buttonText =
+    watchLink && watchLink.includes("vidsrc")
+      ? "Watch Now on VidSrc"
+      : "Find Streaming on Google";
 
   return (
     <>
