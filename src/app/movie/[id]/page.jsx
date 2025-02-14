@@ -24,17 +24,18 @@ export async function generateStaticParams() {
 export const revalidate = 3600;
 
 export async function generateMetadata({ params }) {
-  const { id } = params;
+  const { id } = await params;
   try {
     const movie = await getCachedMovieData(id);
     return {
       title: `${movie.title} - Movies Hub`,
       description: movie.overview || "Movie details",
       alternates: {
-        canonical: `https://movies-hub-explore.vercel.app/movie/${id}`,
+        canonical: `https://movies.suhaeb.com/movie/${id}`,
       },
     };
   } catch (error) {
+    console.error("Metadata generation error:", error);
     return {
       title: "Movie Not Found - Movies Hub",
       description: "Movie details not available",
@@ -43,12 +44,14 @@ export async function generateMetadata({ params }) {
 }
 
 export default async function MoviePage({ params }) {
-  const { id } = params;
+  const { id } = await params;
   const session = await getServerSession(authOptions);
   if (!session)
     redirect(`/login?callbackUrl=${encodeURIComponent(`/movie/${id}`)}`);
-  if (!id || !/^\d+$/.test(id)) redirect("/not-found");
-
+  if (!id || !/^\d+$/.test(id))
+    return (
+      <p className="text-center text-lg font-semibold">Movie not found.</p>
+    );
   try {
     const [movie, trailerData, creditsData] = await Promise.all([
       getCachedMovieData(id),

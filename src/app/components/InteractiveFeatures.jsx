@@ -75,7 +75,7 @@ export default function InteractiveFeatures({
         <div className="flex space-x-4">
           <a
             href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
-              `https://movies-hub-explore.vercel.app/movie/${movie.id}`
+              `https://movies.suhaeb.com/movie/${movie.id}`
             )}`}
             target="_blank"
             rel="noopener noreferrer"
@@ -86,7 +86,7 @@ export default function InteractiveFeatures({
           </a>
           <a
             href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(
-              `https://movies-hub-explore.vercel.app/movie/${movie.id}`
+              `https://movies.suhaeb.com/movie/${movie.id}`
             )}&text=${encodeURIComponent(
               `Check out ${movie.title} on Movies Hub!`
             )}`}
@@ -99,7 +99,7 @@ export default function InteractiveFeatures({
           </a>
           <a
             href={`https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(
-              `https://movies-hub-explore.vercel.app/movie/${movie.id}`
+              `https://movies.suhaeb.com/movie/${movie.id}`
             )}&title=${encodeURIComponent(
               `Check out ${movie.title} on Movies Hub!`
             )}`}

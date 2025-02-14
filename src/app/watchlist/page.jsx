@@ -4,7 +4,7 @@ import WatchlistClient from "@/app/watchlist/WatchlistClient";
 export const metadata = {
   title: "Movies Hub - My Watchlist",
   description: "View and manage your movie watchlist on Movies Hub.",
-  alternates: { canonical: "https://movies-hub-explore.vercel.app/watchlist" },
+  alternates: { canonical: "https://movies.suhaeb.com/watchlist" },
 };
 
 export default function WatchlistPage() {

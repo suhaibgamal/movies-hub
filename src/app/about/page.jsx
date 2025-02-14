@@ -4,7 +4,7 @@ export const metadata = {
   title: "Movies Hub - About",
   description:
     "Learn about Movies Hub, your resource for movie reviews, trailers, and more.",
-  alternates: { canonical: "https://movies-hub-explore.vercel.app/about" },
+  alternates: { canonical: "https://movies.suhaeb.com/about" },
 };
 
 const AboutPage = () => {
