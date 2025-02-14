@@ -31,11 +31,11 @@ export default function InteractiveFeatures({ trailerKey, cast, movie }) {
             Top Cast
           </h2>
           <div className="relative pb-4">
-            <div className="flex gap-4 overflow-x-auto scrollbar-thin scrollbar-thumb-muted-foreground scrollbar-track-card hover:scrollbar-thumb-muted">
+            <div className="flex gap-4 overflow-x-auto scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-card/20 hover:scrollbar-thumb-muted-foreground/50">
               {cast.map((member) => (
                 <div
                   key={member.id}
-                  className="flex-shrink-0 w-28 bg-card rounded-lg p-2 shadow-sm border border-muted"
+                  className="flex-shrink-0 w-28 bg-card rounded-lg p-2 shadow-lg hover:shadow-xl transition-shadow border border-muted/20"
                 >
                   <div className="relative aspect-square w-full mb-2">
                     <img
@@ -52,7 +52,7 @@ export default function InteractiveFeatures({ trailerKey, cast, movie }) {
                   <h3 className="text-sm font-medium text-card-foreground truncate">
                     {member.name}
                   </h3>
-                  <p className="text-xs text-muted-foreground truncate">
+                  <p className="text-xs text-muted-foreground/80 truncate">
                     {member.character}
                   </p>
                 </div>
@@ -92,7 +92,9 @@ export default function InteractiveFeatures({ trailerKey, cast, movie }) {
           </a>
           <a
             href={`https://wa.me/?text=${encodeURIComponent(
-              `Check out ${movie.title} on Movies Hub! https://movies.suhaeb.com/movie/${movie.id}`
+              `Check out ${
+                movie.title
+              } on Movies Hub! ${`https://movies.suhaeb.com/movie/${movie.id}`}`
             )}`}
             target="_blank"
             rel="noopener noreferrer"
