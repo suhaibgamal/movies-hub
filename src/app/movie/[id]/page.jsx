@@ -78,9 +78,9 @@ export default async function MoviePage({ params }) {
       <div className="min-h-screen bg-background py-6 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <Suspense fallback={<SkeletonLoader />}>
-            <article className="flex flex-col rounded-xl bg-card shadow-xl lg:flex-row">
+            <article className="flex flex-col rounded-xl bg-card shadow-xl lg:flex-row min-w-0">
               {/* Poster Section */}
-              <div className="relative lg:w-1/3 xl:w-1/2 flex-shrink-0">
+              <div className="min-w-0 lg:w-1/3 xl:w-1/2 flex-shrink-0">
                 <Image
                   src={
                     movie.poster_path
@@ -100,18 +100,17 @@ export default async function MoviePage({ params }) {
               </div>
 
               {/* Content Section */}
-              <div className="flex-1 p-4 lg:p-6 flex flex-col relative">
-                {/* Watchlist Button positioned next to title */}
+              <div className="min-w-0 flex-1 p-4 lg:p-6 flex flex-col relative">
                 <div className="absolute top-4 right-4 z-10">
                   <WatchlistButton movie={movie} />
                 </div>
 
                 <header className="mb-4 pr-12">
-                  <h1 className="text-2xl font-bold text-card-foreground sm:text-3xl lg:text-4xl">
+                  <h1 className="text-2xl font-bold text-card-foreground sm:text-3xl lg:text-4xl break-words">
                     {movie.title}
                   </h1>
 
-                  <div className="flex items-center gap-3 mt-3">
+                  <div className="flex items-center gap-3 mt-3 flex-wrap">
                     <span
                       className={`${ratingColor} px-2 py-1 rounded-full text-xs font-bold text-white`}
                     >
@@ -132,7 +131,7 @@ export default async function MoviePage({ params }) {
                   </p>
                 </section>
 
-                <div className="pt-4 border-t border-muted/30">
+                <div className="pt-4 border-t border-muted/30 min-w-0">
                   <InteractiveFeatures
                     trailerKey={trailerKey}
                     cast={cast}

@@ -8,9 +8,9 @@ export default function InteractiveFeatures({ trailerKey, cast, movie }) {
   const [isTrailerModalOpen, setTrailerModalOpen] = useState(false);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 min-w-0">
       {/* Action Buttons */}
-      <div className="flex flex-col sm:flex-row gap-3 items-center justify-center">
+      <div className="flex flex-col sm:flex-row gap-3 items-center justify-center max-w-3xl mx-auto w-full">
         <button
           onClick={() => setTrailerModalOpen(true)}
           className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-full bg-blue-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-blue-700 transition-colors cursor-pointer"
@@ -26,12 +26,12 @@ export default function InteractiveFeatures({ trailerKey, cast, movie }) {
 
       {/* Cast Section */}
       {cast.length > 0 && (
-        <div>
-          <h2 className="mb-3 text-xl font-semibold text-card-foreground">
+        <div className="min-w-0">
+          <h2 className="mb-3 text-xl font-semibold text-card-foreground px-2">
             Top Cast
           </h2>
-          <div className="relative pb-4">
-            <div className="flex gap-4 overflow-x-auto scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-card/20 hover:scrollbar-thumb-muted-foreground/50">
+          <div className="min-w-0 pb-4">
+            <div className="flex gap-4 overflow-x-auto scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-card/20 hover:scrollbar-thumb-muted-foreground/50 px-2 pb-2">
               {cast.map((member) => (
                 <div
                   key={member.id}
