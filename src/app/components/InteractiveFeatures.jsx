@@ -134,7 +134,6 @@ function TrailerModal({ trailerKey, onClose }) {
         >
           &times;
         </button>
-        {/* Use Tailwind's aspect-video class for a responsive embed */}
         <div className="relative overflow-hidden rounded-lg aspect-video">
           <iframe
             src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1`}
@@ -153,7 +152,7 @@ function TrailerModal({ trailerKey, onClose }) {
 function CastCrewCarousel({ items }) {
   return (
     <div className="relative">
-      <div className="flex space-x-4 overflow-x-auto pb-4 scrollbar-hide">
+      <div className="flex space-x-4 overflow-x-auto pb-4">
         {items.map((item) => (
           <div
             key={item.id}

@@ -87,7 +87,7 @@ export default async function MoviePage({ params }) {
           <Suspense fallback={<SkeletonLoader />}>
             <article className="flex flex-col rounded-xl bg-card shadow-2xl overflow-hidden lg:flex-row transition-all duration-300">
               {/* Poster Section */}
-              <div className="relative lg:w-1/3 xl:w-1/4 flex-shrink-0 min-w-[300px]">
+              <div className="relative lg:w-1/2 flex-shrink-0">
                 <Image
                   src={
                     movie.poster_path || movie.backdrop_path
@@ -104,23 +104,47 @@ export default async function MoviePage({ params }) {
                   blurDataURL="/images/default-blur.webp"
                   quality={75}
                   priority
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 50vw"
                 />
               </div>
               {/* Content Section */}
-              <div className="flex-1 p-6 lg:p-8 relative flex flex-col">
+              <div className="flex-1 p-6 lg:p-8 lg:w-1/2 flex flex-col">
                 <header className="mb-6 relative">
                   <h1 className="mb-2 text-3xl font-bold text-card-foreground sm:text-4xl lg:text-5xl">
                     {movie.title}
                   </h1>
-                  <p className="mb-2 text-xl font-medium text-card-foreground">
-                    Hero Name:{" "}
-                    <span className="text-muted-foreground">{heroName}</span>
-                  </p>
-                  <p className="mb-4 text-xl font-medium text-card-foreground">
-                    Director:{" "}
-                    <span className="text-muted-foreground">{director}</span>
-                  </p>
+                  <div className="flex flex-wrap gap-4 mb-4">
+                    <p className="text-xl font-medium text-card-foreground">
+                      Hero Name:{" "}
+                      <span className="text-muted-foreground">{heroName}</span>
+                    </p>
+                    <p className="text-xl font-medium text-card-foreground">
+                      Director:{" "}
+                      <span className="text-muted-foreground">{director}</span>
+                    </p>
+                  </div>
+                  {/* New section for Rating, Year, and WatchList */}
+                  <div className="flex flex-wrap items-center gap-4 mb-4">
+                    <span className="text-lg font-medium text-card-foreground">
+                      Rating:{" "}
+                      <span className="text-muted-foreground">
+                        {movie.vote_average
+                          ? movie.vote_average.toFixed(1)
+                          : "N/A"}
+                      </span>
+                    </span>
+                    <span className="text-lg font-medium text-card-foreground">
+                      Year:{" "}
+                      <span className="text-muted-foreground">
+                        {movie.release_date
+                          ? new Date(movie.release_date).getFullYear()
+                          : "N/A"}
+                      </span>
+                    </span>
+                    <button className="inline-flex items-center gap-2 rounded-md border border-blue-600 px-4 py-2 text-blue-600 hover:bg-blue-600 hover:text-white transition-colors">
+                      Add to WatchList
+                    </button>
+                  </div>
                   {/* Watch Now Button repositioned for large screens */}
                   <div className="hidden lg:block absolute top-4 right-4">
                     <WatchNowButton movie={movie} small={false} />
@@ -130,7 +154,7 @@ export default async function MoviePage({ params }) {
                   <h2 className="mb-4 text-2xl font-semibold text-card-foreground">
                     Overview
                   </h2>
-                  <p className="text-muted-foreground leading-relaxed">
+                  <p className="text-muted-foreground leading-relaxed break-words">
                     {movie.overview || "No overview available..."}
                   </p>
                 </section>
