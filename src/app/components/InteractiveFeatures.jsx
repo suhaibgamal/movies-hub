@@ -2,51 +2,81 @@
 
 import { useState } from "react";
 import { FaFacebookF, FaTwitter, FaWhatsapp } from "react-icons/fa";
+import WatchNowButton from "@/app/components/WatchNowButton";
 
-export default function InteractiveFeatures({
-  trailerUrl,
-  trailerKey,
-  watchLink,
-  movie,
-}) {
+export default function InteractiveFeatures({ trailerKey, cast, movie }) {
   const [isTrailerModalOpen, setTrailerModalOpen] = useState(false);
 
-  const openTrailerModal = () => setTrailerModalOpen(true);
-  const closeTrailerModal = () => setTrailerModalOpen(false);
-
   return (
-    <div className="mt-8 space-y-8">
-      {/* Trailer Section */}
-      <div className="text-center">
+    <div className="space-y-6">
+      {/* Action Buttons */}
+      <div className="flex flex-col sm:flex-row gap-3 items-center justify-center">
         <button
-          onClick={openTrailerModal}
-          className="inline-flex items-center justify-center gap-2 rounded-full bg-blue-600 px-6 py-3 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all"
-          aria-label="Watch Trailer"
+          onClick={() => setTrailerModalOpen(true)}
+          className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-full bg-blue-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-blue-700 transition-colors cursor-pointer"
           disabled={!trailerKey}
         >
           {trailerKey ? "Watch Trailer" : "Trailer Not Available"}
         </button>
-        {isTrailerModalOpen && trailerKey && (
-          <TrailerModal trailerKey={trailerKey} onClose={closeTrailerModal} />
-        )}
+        <WatchNowButton
+          movie={movie}
+          className="w-full sm:w-auto bg-gray-700 hover:bg-gray-600 px-5 py-2.5 rounded-full text-sm"
+        />
       </div>
 
+      {/* Cast Section */}
+      {cast.length > 0 && (
+        <div>
+          <h2 className="mb-3 text-xl font-semibold text-card-foreground">
+            Top Cast
+          </h2>
+          <div className="relative pb-4">
+            <div className="flex gap-4 overflow-x-auto scrollbar-thin scrollbar-thumb-muted-foreground scrollbar-track-card hover:scrollbar-thumb-muted">
+              {cast.map((member) => (
+                <div
+                  key={member.id}
+                  className="flex-shrink-0 w-28 bg-card rounded-lg p-2 shadow-sm border border-muted"
+                >
+                  <div className="relative aspect-square w-full mb-2">
+                    <img
+                      src={
+                        member.profile_path
+                          ? `https://image.tmdb.org/t/p/w185${member.profile_path}`
+                          : "/images/default.webp"
+                      }
+                      alt={member.name}
+                      className="w-full h-full object-cover rounded-md"
+                      loading="lazy"
+                    />
+                  </div>
+                  <h3 className="text-sm font-medium text-card-foreground truncate">
+                    {member.name}
+                  </h3>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {member.character}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Social Sharing */}
-      <div className="text-center">
-        <h2 className="mb-4 text-2xl font-semibold text-card-foreground">
+      <div className="text-center pt-4">
+        <h2 className="mb-3 text-xl font-semibold text-card-foreground">
           Share This Movie
         </h2>
-        <div className="flex justify-center space-x-4">
+        <div className="flex justify-center gap-3">
           <a
             href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
               `https://movies.suhaeb.com/movie/${movie.id}`
             )}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center justify-center w-12 h-12 rounded-full bg-blue-600 text-white hover:bg-blue-700 hover:scale-110 transition-all"
-            aria-label="Share on Facebook"
+            className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-600 text-white hover:bg-blue-700 hover:scale-110 transition-all"
           >
-            <FaFacebookF className="text-lg" />
+            <FaFacebookF className="text-sm" />
           </a>
           <a
             href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(
@@ -56,68 +86,44 @@ export default function InteractiveFeatures({
             )}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center justify-center w-12 h-12 rounded-full bg-blue-400 text-white hover:bg-blue-500 hover:scale-110 transition-all"
-            aria-label="Share on Twitter"
+            className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-400 text-white hover:bg-blue-500 hover:scale-110 transition-all"
           >
-            <FaTwitter className="text-lg" />
+            <FaTwitter className="text-sm" />
           </a>
           <a
-            href={
-              movie && movie.title && movie.id
-                ? `https://wa.me/?text=${encodeURIComponent(
-                    `Check out ${movie.title} on Movies Hub! https://movies.suhaeb.com/movie/${movie.id}`
-                  )}`
-                : ""
-            }
+            href={`https://wa.me/?text=${encodeURIComponent(
+              `Check out ${movie.title} on Movies Hub! https://movies.suhaeb.com/movie/${movie.id}`
+            )}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center justify-center w-12 h-12 rounded-full bg-green-600 text-white hover:bg-green-700 hover:scale-110 transition-all"
-            aria-label="Share on WhatsApp"
+            className="flex items-center justify-center w-10 h-10 rounded-full bg-green-600 text-white hover:bg-green-700 hover:scale-110 transition-all"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-              className="w-6 h-6"
-            >
-              <path
-                fillRule="evenodd"
-                d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75 5.385 0 9.75 4.365 9.75 9.75 0 4.867-3.414 8.942-7.875 9.542V21h-2.125v-2.092c-1.058-.29-2.052-.71-2.972-1.257l-.01-.01C4.561 18.282 2.25 15.828 2.25 12zm6.354 1.47a.75.75 0 01-.96-.032l-.015-.019-.004-.004C5.69 11.94 5 10.752 5 9.5c0-1.654 1.346-3 3-3s3 1.346 3 3c0 .524-.169 1.029-.467 1.47a.75.75 0 11-.96.032l.015.019.004.004C9.31 10.06 10 11.248 10 12.5c0 1.654-1.346 3-3 3z"
-                clipRule="evenodd"
-              />
-            </svg>
+            <FaWhatsapp className="text-sm" />
           </a>
         </div>
       </div>
-    </div>
-  );
-}
 
-function TrailerModal({ trailerKey, onClose }) {
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm"
-      role="dialog"
-      aria-modal="true"
-    >
-      <div className="relative w-full max-w-4xl mx-4">
-        <button
-          onClick={onClose}
-          className="absolute -top-8 right-0 text-white hover:text-gray-200 transition-colors"
-          aria-label="Close trailer"
-        >
-          <span className="text-4xl">&times;</span>
-        </button>
-        <div className="aspect-video bg-black rounded-xl overflow-hidden shadow-2xl">
-          <iframe
-            src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1`}
-            className="w-full h-full"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-            title="YouTube video player"
-          />
+      {/* Trailer Modal */}
+      {isTrailerModalOpen && trailerKey && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm">
+          <div className="relative w-full max-w-4xl mx-4">
+            <button
+              onClick={() => setTrailerModalOpen(false)}
+              className="absolute -top-8 right-0 text-white hover:text-gray-200 text-3xl"
+            >
+              &times;
+            </button>
+            <div className="aspect-video bg-black rounded-xl overflow-hidden shadow-2xl">
+              <iframe
+                src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1`}
+                className="w-full h-full"
+                allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            </div>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

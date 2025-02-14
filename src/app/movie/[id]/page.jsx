@@ -53,35 +53,37 @@ export default async function MoviePage({ params }) {
     );
 
   try {
-    const [movie, trailerData] = await Promise.all([
+    const [movie, trailerData, creditsData] = await Promise.all([
       getCachedMovieData(id),
       getCachedTrailerData(id),
+      getCachedCredits(id),
     ]);
 
     const trailerKey = trailerData.results.find(
       (v) => v.type === "Trailer" && v.site === "YouTube"
     )?.key;
-    const trailerUrl = trailerKey
-      ? `https://www.youtube.com/embed/${trailerKey}`
-      : "";
-    const watchLink = movie.imdb_id
-      ? `https://vidsrc.xyz/embed/movie/${movie.imdb_id}`
-      : `https://www.google.com/search?q=${encodeURIComponent(
-          movie.title + " watch full movie"
-        )}`;
-
+    const cast = creditsData.cast?.slice(0, 10) || [];
     const releaseYear = movie.release_date
       ? new Date(movie.release_date).getFullYear()
       : "N/A";
     const rating = movie.vote_average ? movie.vote_average.toFixed(1) : "N/A";
+    const ratingColor =
+      rating >= 7
+        ? "bg-blue-600"
+        : rating >= 5
+        ? "bg-purple-600"
+        : "bg-red-600";
 
     return (
-      <div className="min-h-screen bg-background py-8 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen bg-background py-6 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <Suspense fallback={<SkeletonLoader />}>
-            <article className="flex flex-col rounded-xl bg-card shadow-2xl overflow-hidden lg:flex-row">
+            <article className="flex flex-col rounded-xl bg-card shadow-xl overflow-hidden lg:flex-row">
               {/* Poster Section */}
               <div className="relative lg:w-1/3 xl:w-1/2 flex-shrink-0">
+                <div className="absolute top-2 right-2 z-10">
+                  <WatchlistButton movie={movie} />
+                </div>
                 <Image
                   src={
                     movie.poster_path
@@ -101,46 +103,37 @@ export default async function MoviePage({ params }) {
               </div>
 
               {/* Content Section */}
-              <div className="flex-1 p-6 lg:p-8 flex flex-col">
-                <header className="mb-6 relative">
-                  <div className="flex justify-between items-start mb-4">
-                    <h1 className="text-3xl font-bold text-card-foreground sm:text-4xl lg:text-5xl pr-4">
-                      {movie.title}
-                    </h1>
-                    <WatchNowButton movie={movie} className="hidden lg:flex" />
-                  </div>
+              <div className="flex-1 p-4 lg:p-6 flex flex-col">
+                <header className="mb-4">
+                  <h1 className="text-2xl font-bold text-card-foreground sm:text-3xl lg:text-4xl pr-4">
+                    {movie.title}
+                  </h1>
 
-                  <div className="flex flex-wrap items-center gap-4 mb-6">
-                    <div className="flex items-center gap-2 bg-muted px-3 py-1 rounded-full">
-                      <span className="text-sm font-semibold text-card-foreground">
-                        ⭐ {rating}
-                      </span>
-                    </div>
-                    <span className="text-muted-foreground font-medium">
+                  <div className="flex items-center gap-3 mt-3">
+                    <span
+                      className={`${ratingColor} px-2 py-1 rounded-full text-xs font-bold text-white`}
+                    >
+                      ⭐ {rating}
+                    </span>
+                    <span className="text-sm text-muted-foreground font-medium bg-muted px-2 py-1 rounded-full">
                       {releaseYear}
                     </span>
-                    <WatchlistButton movie={movie} />
                   </div>
                 </header>
 
-                <section className="mb-8">
-                  <h2 className="mb-4 text-2xl font-semibold text-card-foreground">
+                <section className="mb-6">
+                  <h2 className="mb-2 text-xl font-semibold text-card-foreground">
                     Overview
                   </h2>
-                  <p className="text-muted-foreground leading-relaxed">
+                  <p className="text-muted-foreground text-sm leading-relaxed">
                     {movie.overview || "No overview available..."}
                   </p>
                 </section>
 
-                <div className="lg:hidden mb-8">
-                  <WatchNowButton movie={movie} />
-                </div>
-
-                <div className="pt-6 border-t border-muted">
+                <div className="pt-4 border-t border-muted">
                   <InteractiveFeatures
-                    trailerUrl={trailerUrl}
                     trailerKey={trailerKey}
-                    watchLink={watchLink}
+                    cast={cast}
                     movie={movie}
                   />
                 </div>
