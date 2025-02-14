@@ -3,7 +3,6 @@ import { getServerSession } from "next-auth/next";
 import { redirect } from "next/navigation";
 import Image from "next/image";
 import { Suspense } from "react";
-import dynamic from "next/dynamic";
 import { authOptions } from "@/app/api/auth/authOptions";
 import {
   getCachedMovieData,
