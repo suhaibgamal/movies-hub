@@ -6,7 +6,7 @@ import Footer from "./components/Footer";
 import AuthProvider from "./api/auth/AuthProvider";
 import ProgressBar from "./components/ProgressBar";
 import { MoviesListProvider } from "@/app/context/MoviesListContext";
-import { Analytics } from "@vercel/analytics/next";
+import { Analytics } from "@vercel/analytics/react";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
