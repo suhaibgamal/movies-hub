@@ -82,6 +82,7 @@ export default async function MoviePage({ params }) {
               {/* Poster Section */}
               <div className="min-w-0 lg:w-1/3 xl:w-1/2 flex-shrink-0">
                 <Image
+                  unoptimized
                   src={
                     movie.poster_path
                       ? `https://image.tmdb.org/t/p/w780${movie.poster_path}`

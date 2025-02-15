@@ -81,6 +81,7 @@ const AboutPage = () => {
           className="block"
         >
           <Image
+            unoptimized
             src="/images/tmdb_logo.svg"
             alt="TMDb Logo"
             width={100}

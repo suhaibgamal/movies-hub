@@ -91,6 +91,7 @@ function Header() {
             <>
               <div className="flex items-center gap-2 pr-4">
                 <Image
+                  unoptimized
                   src={session.user.image || "/images/user_profile.png"}
                   alt={session.user.name || "User"}
                   className="w-8 h-8 rounded-full"
