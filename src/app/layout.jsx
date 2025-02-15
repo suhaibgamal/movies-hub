@@ -46,6 +46,7 @@ export default function RootLayout({ children }) {
           <Header />
           <main className="flex-grow">
             <MoviesListProvider>{children}</MoviesListProvider>
+            <Analytics />
           </main>
           <Footer />
         </AuthProvider>
