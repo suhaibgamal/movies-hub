@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { FaFacebookF, FaTwitter, FaWhatsapp } from "react-icons/fa";
 import WatchNowButton from "@/app/components/WatchNowButton";
+import Image from "next/image";
 
 export default function InteractiveFeatures({ trailerKey, cast, movie }) {
   const [isTrailerModalOpen, setTrailerModalOpen] = useState(false);
