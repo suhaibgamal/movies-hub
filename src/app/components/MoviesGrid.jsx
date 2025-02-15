@@ -1,3 +1,4 @@
+// MovieGrid.jsx
 "use client";
 
 import MovieCard from "@/app/components/MovieCard";
@@ -26,16 +27,19 @@ const GENRES = {
 };
 
 function MoviesGrid({ movies, watchlist = [], onWatchlistChange }) {
+  const aboveTheFoldCount = 6;
+
   return (
     <section className="py-8 px-4 bg-background" aria-label="Movies grid">
       {movies?.length > 0 ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-          {movies.map((movie) => (
+          {movies.map((movie, index) => (
             <article key={movie.id} className="relative group">
               <MovieCard
                 movie={movie}
                 genres={GENRES}
                 href={`/movie/${movie.id}`}
+                isAbove={index < aboveTheFoldCount}
                 initialWatchlisted={watchlist.some(
                   (item) => item.movieId === movie.id
                 )}

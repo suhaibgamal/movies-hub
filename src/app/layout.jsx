@@ -1,9 +1,11 @@
+// layout.jsx
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 import AuthProvider from "./api/auth/AuthProvider";
 import ProgressBar from "./components/ProgressBar";
+import { MoviesListProvider } from "@/app/context/MoviesListContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -25,11 +27,16 @@ export const metadata = {
   },
 };
 
-import { MoviesListProvider } from "@/app/context/MoviesListContext";
-
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
+      <head>
+        {/* Preconnect and DNS-prefetch hints for faster external connections */}
+        <link rel="preconnect" href="https://api.themoviedb.org" />
+        <link rel="dns-prefetch" href="https://api.themoviedb.org" />
+        <link rel="preconnect" href="https://image.tmdb.org" />
+        <link rel="dns-prefetch" href="https://image.tmdb.org" />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased flex flex-col min-h-screen`}
       >

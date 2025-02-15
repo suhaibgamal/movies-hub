@@ -62,6 +62,7 @@ export default function WatchlistClient() {
       prev.filter((item) => item.movieId !== movieId)
     );
   }, []);
+  const aboveTheFoldCount = 6;
 
   if (status === "loading")
     return (
@@ -88,7 +89,7 @@ export default function WatchlistClient() {
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-            {watchlistItems.map((item) => (
+            {watchlistItems.map((item, index) => (
               <MovieCard
                 key={item.id}
                 movie={{ ...item.movieData, id: item.movieId }}
@@ -98,6 +99,7 @@ export default function WatchlistClient() {
                 small={true}
                 deletable={true}
                 onDelete={handleDelete}
+                isAbove={index < aboveTheFoldCount}
               />
             ))}
           </div>

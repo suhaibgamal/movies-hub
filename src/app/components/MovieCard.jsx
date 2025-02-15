@@ -15,6 +15,7 @@ function MovieCard({
   deletable = false,
   onWatchlistChange,
   onDelete,
+  isAbove = false, // new prop to mark if the card is above the fold
 }) {
   const ratingClass = useMemo(() => {
     const rating = Number(movie.vote_average) || 0;
@@ -56,14 +57,15 @@ function MovieCard({
     <Link href={href} className={containerClass} prefetch>
       <div className={imageContainerClass}>
         <Image
-          unoptimized
           src={imageUrl}
           alt={`${movie.title} poster`}
           fill
           quality={70}
-          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          // Updated sizes attribute based on your grid layout:
+          sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, (max-width: 1280px) 20vw, 16vw"
           className="object-contain transition-opacity duration-200 opacity-100"
           loading="lazy"
+          priority={isAbove} // Use the new prop instead of movie.isAbove
         />
       </div>
       <div className={paddingClass}>

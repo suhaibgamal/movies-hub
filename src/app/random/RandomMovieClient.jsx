@@ -136,6 +136,7 @@ export default function RandomMovieClient() {
               genres={GENRES}
               small={true}
               initialWatchlisted={watchlist.includes(randomMovie.id)}
+              isAbove={true}
             />
           </div>
         ) : (
