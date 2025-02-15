@@ -7,6 +7,7 @@ import AuthProvider from "./api/auth/AuthProvider";
 import ProgressBar from "./components/ProgressBar";
 import { MoviesListProvider } from "@/app/context/MoviesListContext";
 import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -50,6 +51,7 @@ export default function RootLayout({ children }) {
           <Footer />
         </AuthProvider>
         <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
