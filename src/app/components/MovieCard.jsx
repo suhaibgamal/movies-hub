@@ -66,6 +66,8 @@ function MovieCard({
           className="object-contain transition-opacity duration-200 opacity-100"
           loading="lazy"
           priority={isAbove} // Use the new prop instead of movie.isAbove
+          placeholder="blur"
+          blurDataURL="/default-blur.webp"
         />
       </div>
       <div className={paddingClass}>
