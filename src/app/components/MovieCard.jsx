@@ -56,6 +56,7 @@ function MovieCard({
     <Link href={href} className={containerClass} prefetch>
       <div className={imageContainerClass}>
         <Image
+          unoptimized
           src={imageUrl}
           alt={`${movie.title} poster`}
           fill
