@@ -77,7 +77,7 @@ export default function WatchNowButton({ movie, className }) {
 
             <p className="text-muted-foreground mb-4">
               We do not control third-party content. You are about to be
-              redirected to an external website. Proceed at your own risk.
+              redirected to an external website. Please proceed with caution.
             </p>
 
             {error && (
