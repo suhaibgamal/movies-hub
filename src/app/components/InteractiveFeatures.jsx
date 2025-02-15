@@ -38,7 +38,7 @@ export default function InteractiveFeatures({ trailerKey, cast, movie }) {
                   className="flex-shrink-0 w-28 bg-card rounded-lg p-2 shadow-lg hover:shadow-xl transition-shadow border border-muted/20"
                 >
                   <div className="relative aspect-square w-full mb-2">
-                    <img
+                    <Image
                       src={
                         member.profile_path
                           ? `https://image.tmdb.org/t/p/w185${member.profile_path}`
@@ -47,6 +47,8 @@ export default function InteractiveFeatures({ trailerKey, cast, movie }) {
                       alt={member.name}
                       className="w-full h-full object-cover rounded-md"
                       loading="lazy"
+                      unoptimized
+                      layout="fill"
                     />
                   </div>
                   <h3 className="text-sm font-medium text-card-foreground truncate">
