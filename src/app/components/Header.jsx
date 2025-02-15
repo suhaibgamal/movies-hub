@@ -77,6 +77,7 @@ function Header() {
             <button
               onClick={toggleMenu}
               className="text-card-foreground hover:text-muted-foreground"
+              aria-label="Toggle Menu"
             >
               {isOpen ? <FaTimes size={24} /> : <FaBars size={24} />}
             </button>
@@ -105,7 +106,10 @@ function Header() {
               </div>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <button className="text-card-foreground hover:text-muted-foreground">
+                  <button
+                    className="text-card-foreground hover:text-muted-foreground"
+                    aria-label="Sign Out"
+                  >
                     Sign Out
                   </button>
                 </AlertDialogTrigger>

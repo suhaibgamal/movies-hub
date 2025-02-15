@@ -80,6 +80,7 @@ export default function LoginClient() {
                 ? "cursor-not-allowed opacity-50"
                 : "cursor-pointer"
             }`}
+            aria-label="Login with Credentials"
           >
             Login with Credentials
           </button>
@@ -88,6 +89,7 @@ export default function LoginClient() {
           <button
             onClick={handleGoogleLogin}
             className="px-6 py-2 md:px-8 md:py-3 lg:px-12 lg:py-4 text-white bg-gradient-to-r from-red-500 to-pink-500 rounded-lg focus:ring-4 focus:ring-red-500 focus:outline-none transition-all hover:from-red-400 hover:to-pink-400"
+            aria-label="Login wiht Google"
           >
             Login with Google
           </button>

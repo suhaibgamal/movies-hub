@@ -148,6 +148,7 @@ export default function RegisterClient() {
                 ? "cursor-not-allowed opacity-50"
                 : "cursor-pointer"
             }`}
+            aria-label={loading ? "Registering..." : "Register"}
           >
             {loading ? "Registering..." : "Register"}
           </button>

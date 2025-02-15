@@ -120,6 +120,7 @@ export default function RandomMovieClient() {
             onClick={handleFilter}
             disabled={loading}
             className="w-full px-4 py-4 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg font-bold text-white hover:from-blue-500 hover:to-purple-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+            aria-label={loading ? "Loading..." : "Get Random Movie"}
           >
             {loading ? "Loading..." : "Get Random Movie"}
           </button>

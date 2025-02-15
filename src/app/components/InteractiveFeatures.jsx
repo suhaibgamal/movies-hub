@@ -16,6 +16,7 @@ export default function InteractiveFeatures({ trailerKey, cast, movie }) {
           onClick={() => setTrailerModalOpen(true)}
           className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-full bg-blue-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-blue-700 transition-colors cursor-pointer"
           disabled={!trailerKey}
+          aria-label={trailerKey ? "Watch Trailer" : "Trailer Not Available"}
         >
           {trailerKey ? "Watch Trailer" : "Trailer Not Available"}
         </button>
@@ -115,6 +116,7 @@ export default function InteractiveFeatures({ trailerKey, cast, movie }) {
             <button
               onClick={() => setTrailerModalOpen(false)}
               className="absolute -top-8 right-0 text-white hover:text-gray-200 text-3xl"
+              aria-label="Cencel"
             >
               &times;
             </button>

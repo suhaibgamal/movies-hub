@@ -90,12 +90,14 @@ export default function WatchNowButton({ movie, className }) {
               <button
                 onClick={handleCancel}
                 className="px-4 py-2 text-card-foreground bg-muted hover:bg-muted/80 rounded-lg transition-colors"
+                aria-label="Cencel"
               >
                 Cancel
               </button>
               <button
                 onClick={handleProceed}
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                aria-label="Porceed"
               >
                 Proceed
               </button>
