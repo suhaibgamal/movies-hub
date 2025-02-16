@@ -98,7 +98,28 @@ const BLOCKLIST = [
   "x-rated",
   "smut",
   "sexploitation",
+  "boobs",
+  "ass",
+  "breasts",
+  "cleavage",
+  "jerk",
+  "dick",
+  "cock",
+  "pussy",
+  "tits",
+  "sexy",
+  "kink",
+  "orgasm",
+  "cunnilingus",
+  "fellatio",
+  "penis",
+  "vagina",
+  "clitoris",
+  "sperm",
+  "ejaculation",
+  "fuck",
 ];
+
 
 export default function MoviesListClient() {
   const router = useRouter();
