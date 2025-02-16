@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useMoviesListContext } from "@/app/context/MoviesListContext";
 import MoviesGrid from "@/app/components/MoviesGrid";
 
+// Genre definitions
 const GENRES = {
   28: "Action",
   12: "Adventure",
@@ -27,6 +28,7 @@ const GENRES = {
   37: "Western",
 };
 
+// Rating options
 const RATING_OPTIONS = {
   All: { min: 0, max: 10 },
   Good: { min: 7, max: 10 },
@@ -34,6 +36,7 @@ const RATING_OPTIONS = {
   Bad: { min: 0, max: 5 },
 };
 
+// Year groups for filtering
 const YEAR_GROUPS = [
   { value: "All", label: "All Years" },
   {
@@ -62,6 +65,41 @@ const YEAR_GROUPS = [
   },
 ];
 
+// Blocklist of keywords for unsuitable content
+// These keywords will be matched (case-insensitive) against the movie title and overview.
+const BLOCKLIST = [
+  "porn",
+  "adult",
+  "xxx",
+  "explicit",
+  "sex",
+  "erotic",
+  "incest",
+  "nude",
+  "nudity",
+  "naked",
+  "erotica",
+  "hentai",
+  "bdsm",
+  "fetish",
+  "hardcore",
+  "masturbation",
+  "orgy",
+  "swinger",
+  "stripper",
+  "stripping",
+  "dildo",
+  "vibrator",
+  "anal",
+  "cum",
+  "masturbate",
+  "pornographic",
+  "obscene",
+  "x-rated",
+  "smut",
+  "sexploitation",
+];
+
 export default function MoviesListClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -86,7 +124,7 @@ export default function MoviesListClient() {
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
   const [showScrollButton, setShowScrollButton] = useState(false);
 
-  // Update the debounced search term and query params
+  // Update debounced search term and URL query params
   useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedSearchTerm(searchTerm);
@@ -156,10 +194,12 @@ export default function MoviesListClient() {
         const params = new URLSearchParams({
           api_key: process.env.NEXT_PUBLIC_TMDB_KEY,
           page: pageNumber,
+          // Explicitly exclude adult content from the API response
+          include_adult: "false",
           ...(searchQuery && { query: searchQuery }),
         });
         if (!searchQuery) {
-          // Exclude romance movies (genre id 10749) from the API response
+          // Exclude romance movies (genre id 10749)
           params.append("without_genres", "10749");
           if (selectedGenre !== "All")
             params.append("with_genres", selectedGenre);
@@ -212,7 +252,7 @@ export default function MoviesListClient() {
     movies.length,
   ]);
 
-  // Handle infinite scroll
+  // Infinite scroll handling
   useEffect(() => {
     const handleScroll = () => {
       const nearBottom =
@@ -241,16 +281,28 @@ export default function MoviesListClient() {
     }
   }, [page, debouncedSearchTerm, fetchMovies]);
 
-  // Filter out any romance movies (genre id 10749) and then apply other filters
+  // Client-side filtering:
+  // 1. Remove adult movies and romance movies.
+  // 2. Remove any movie whose title or overview includes blocklisted keywords.
+  // 3. Then apply additional filters (genre, rating, year) and sort by popularity.
   const filteredMovies = useMemo(() => {
-    // First, remove any movies with the romance genre (10749)
-    let nonRomanceMovies = movies.filter(
-      (movie) => !movie.genre_ids?.includes(10749)
+    // Remove movies flagged as adult and any romance movies (genre id 10749)
+    let safeMovies = movies.filter(
+      (movie) => movie.adult !== true && !movie.genre_ids?.includes(10749)
     );
 
-    // Next, if a search term exists, apply the additional filtering criteria
+    // Filter out movies with blocklisted keywords in the title or overview.
+    safeMovies = safeMovies.filter((movie) => {
+      const title = movie.title?.toLowerCase() || "";
+      const overview = movie.overview?.toLowerCase() || "";
+      return !BLOCKLIST.some(
+        (keyword) => title.includes(keyword) || overview.includes(keyword)
+      );
+    });
+
+    // Apply additional filtering (if a search term is provided)
     if (debouncedSearchTerm) {
-      nonRomanceMovies = nonRomanceMovies.filter((movie) => {
+      safeMovies = safeMovies.filter((movie) => {
         const genreMatch =
           selectedGenre === "All" ||
           (movie.genre_ids && movie.genre_ids.includes(Number(selectedGenre)));
@@ -270,8 +322,7 @@ export default function MoviesListClient() {
       });
     }
 
-    // Finally, sort the movies by popularity (descending)
-    return nonRomanceMovies.sort((a, b) => b.popularity - a.popularity);
+    return safeMovies.sort((a, b) => b.popularity - a.popularity);
   }, [
     movies,
     debouncedSearchTerm,
@@ -303,17 +354,20 @@ export default function MoviesListClient() {
             className="w-full px-6 py-3 rounded-xl border bg-card text-card-foreground focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
           />
           <div className="flex flex-col sm:flex-row gap-4">
+            {/* Genre dropdown (excluding Romance) */}
             <select
               value={selectedGenre}
               onChange={handleGenreChange}
               className="w-full sm:w-auto px-6 py-3 rounded-xl border bg-card text-card-foreground focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
             >
               <option value="All">All Genres</option>
-              {Object.entries(GENRES).map(([id, name]) => (
-                <option key={id} value={id}>
-                  {name}
-                </option>
-              ))}
+              {Object.entries(GENRES)
+                .filter(([id]) => id !== "10749") // Remove romance option from the select
+                .map(([id, name]) => (
+                  <option key={id} value={id}>
+                    {name}
+                  </option>
+                ))}
             </select>
             <select
               value={selectedRating}
