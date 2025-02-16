@@ -86,6 +86,7 @@ export default function MoviesListClient() {
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
   const [showScrollButton, setShowScrollButton] = useState(false);
 
+  // Update the debounced search term and query params
   useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedSearchTerm(searchTerm);
@@ -96,6 +97,7 @@ export default function MoviesListClient() {
     return () => clearTimeout(handler);
   }, [searchTerm, router, searchParams]);
 
+  // Update filter selections from query params
   useEffect(() => {
     setSelectedGenre(searchParams.get("genre") || "All");
     setSelectedRating(searchParams.get("rating") || "All");
@@ -143,6 +145,7 @@ export default function MoviesListClient() {
     updateQueryParam("year", value);
   };
 
+  // Fetch movies from TMDB API
   const fetchMovies = useCallback(
     async (pageNumber, searchQuery) => {
       try {
@@ -156,6 +159,8 @@ export default function MoviesListClient() {
           ...(searchQuery && { query: searchQuery }),
         });
         if (!searchQuery) {
+          // Exclude romance movies (genre id 10749) from the API response
+          params.append("without_genres", "10749");
           if (selectedGenre !== "All")
             params.append("with_genres", selectedGenre);
           if (selectedRating !== "All") {
@@ -189,6 +194,7 @@ export default function MoviesListClient() {
     [selectedGenre, selectedRating, selectedYear]
   );
 
+  // Initial fetch
   useEffect(() => {
     if (movies.length === 0) {
       (async () => {
@@ -206,6 +212,7 @@ export default function MoviesListClient() {
     movies.length,
   ]);
 
+  // Handle infinite scroll
   useEffect(() => {
     const handleScroll = () => {
       const nearBottom =
@@ -218,6 +225,7 @@ export default function MoviesListClient() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, [loading]);
 
+  // Fetch next page when page number increases
   useEffect(() => {
     if (page > 1) {
       (async () => {
@@ -233,10 +241,16 @@ export default function MoviesListClient() {
     }
   }, [page, debouncedSearchTerm, fetchMovies]);
 
+  // Filter out any romance movies (genre id 10749) and then apply other filters
   const filteredMovies = useMemo(() => {
-    if (!debouncedSearchTerm) return movies;
-    return movies
-      .filter((movie) => {
+    // First, remove any movies with the romance genre (10749)
+    let nonRomanceMovies = movies.filter(
+      (movie) => !movie.genre_ids?.includes(10749)
+    );
+
+    // Next, if a search term exists, apply the additional filtering criteria
+    if (debouncedSearchTerm) {
+      nonRomanceMovies = nonRomanceMovies.filter((movie) => {
         const genreMatch =
           selectedGenre === "All" ||
           (movie.genre_ids && movie.genre_ids.includes(Number(selectedGenre)));
@@ -253,8 +267,11 @@ export default function MoviesListClient() {
             movie.release_date <= yearGroup.to;
         }
         return genreMatch && ratingMatch && yearMatch;
-      })
-      .sort((a, b) => b.popularity - a.popularity);
+      });
+    }
+
+    // Finally, sort the movies by popularity (descending)
+    return nonRomanceMovies.sort((a, b) => b.popularity - a.popularity);
   }, [
     movies,
     debouncedSearchTerm,
