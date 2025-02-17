@@ -35,7 +35,7 @@ function MoviesGrid({ movies, watchlist = [], onWatchlistChange }) {
     if (typeof window !== "undefined") {
       // For mobile screens (less than 640px width), use 4 items; otherwise, use 6.
       if (window.innerWidth < 640) {
-        setAboveTheFoldCount(4);
+        setAboveTheFoldCount(2);
       } else {
         setAboveTheFoldCount(6);
       }
