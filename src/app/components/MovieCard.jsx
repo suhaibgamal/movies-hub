@@ -64,7 +64,6 @@ function MovieCard({
           // Updated sizes attribute based on your grid layout:
           sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, (max-width: 1280px) 20vw, 16vw"
           className="object-contain transition-opacity duration-200 opacity-100"
-          loading="lazy"
           priority={isAbove} // Use the new prop instead of movie.isAbove
           placeholder="blur"
           blurDataURL="/default-blur.webp"
