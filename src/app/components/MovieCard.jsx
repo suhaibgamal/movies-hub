@@ -1,7 +1,7 @@
 // app/components/MovieCard.jsx
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import WatchlistButton from "@/app/components/WatchlistButton";
@@ -15,8 +15,18 @@ function MovieCard({
   deletable = false,
   onWatchlistChange,
   onDelete,
-  isAbove = false, // new prop to mark if the card is above the fold
+  isAbove = false, // Marks if the card is above the fold
 }) {
+  // Determine image quality based on viewport width.
+  const [imgQuality, setImgQuality] = useState(70);
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.innerWidth < 640) {
+      setImgQuality(50); // Lower quality for mobile
+    } else {
+      setImgQuality(70);
+    }
+  }, []);
+
   const ratingClass = useMemo(() => {
     const rating = Number(movie.vote_average) || 0;
     if (rating >= 7) return "bg-blue-600";
@@ -60,11 +70,11 @@ function MovieCard({
           src={imageUrl}
           alt={`${movie.title} poster`}
           fill
-          quality={70}
-          // Updated sizes attribute based on your grid layout:
+          quality={imgQuality}
           sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, (max-width: 1280px) 20vw, 16vw"
           className="object-contain transition-opacity duration-200 opacity-100"
-          priority={isAbove} // Use the new prop instead of movie.isAbove
+          // Do not force lazy loading; let priority prop decide.
+          priority={isAbove}
           placeholder="blur"
           blurDataURL="/default-blur.webp"
         />

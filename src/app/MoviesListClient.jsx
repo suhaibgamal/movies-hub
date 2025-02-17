@@ -1,3 +1,4 @@
+// app/components/MoviesListClient.jsx
 "use client";
 
 import { useEffect, useState, useCallback, useMemo } from "react";
@@ -66,7 +67,6 @@ const YEAR_GROUPS = [
 ];
 
 // Blocklist of keywords for unsuitable content
-// These keywords will be matched (case-insensitive) against the movie title and overview.
 const BLOCKLIST = [
   "porn",
   "adult",
@@ -119,7 +119,6 @@ const BLOCKLIST = [
   "ejaculation",
   "fuck",
 ];
-
 
 export default function MoviesListClient() {
   const router = useRouter();
@@ -215,12 +214,10 @@ export default function MoviesListClient() {
         const params = new URLSearchParams({
           api_key: process.env.NEXT_PUBLIC_TMDB_KEY,
           page: pageNumber,
-          // Explicitly exclude adult content from the API response
           include_adult: "false",
           ...(searchQuery && { query: searchQuery }),
         });
         if (!searchQuery) {
-          // Exclude romance movies (genre id 10749)
           params.append("without_genres", "10749");
           if (selectedGenre !== "All")
             params.append("with_genres", selectedGenre);
@@ -303,54 +300,37 @@ export default function MoviesListClient() {
   }, [page, debouncedSearchTerm, fetchMovies]);
 
   // Client-side filtering:
-  // 1. Remove adult movies and romance movies.
-  // 2. Remove any movie whose title or overview includes blocklisted keywords.
-  // 3. Then apply additional filters (genre, rating, year) and sort by popularity.
-  const filteredMovies = useMemo(() => {
-    // Remove movies flagged as adult and any romance movies (genre id 10749)
-    let safeMovies = movies.filter(
-      (movie) => movie.adult !== true && !movie.genre_ids?.includes(10749)
+  let safeMovies = movies.filter(
+    (movie) => movie.adult !== true && !movie.genre_ids?.includes(10749)
+  );
+  safeMovies = safeMovies.filter((movie) => {
+    const title = movie.title?.toLowerCase() || "";
+    const overview = movie.overview?.toLowerCase() || "";
+    return !BLOCKLIST.some(
+      (keyword) => title.includes(keyword) || overview.includes(keyword)
     );
-
-    // Filter out movies with blocklisted keywords in the title or overview.
+  });
+  if (debouncedSearchTerm) {
     safeMovies = safeMovies.filter((movie) => {
-      const title = movie.title?.toLowerCase() || "";
-      const overview = movie.overview?.toLowerCase() || "";
-      return !BLOCKLIST.some(
-        (keyword) => title.includes(keyword) || overview.includes(keyword)
-      );
+      const genreMatch =
+        selectedGenre === "All" ||
+        (movie.genre_ids && movie.genre_ids.includes(Number(selectedGenre)));
+      const ratingRange = RATING_OPTIONS[selectedRating];
+      const ratingMatch =
+        movie.vote_average >= ratingRange.min &&
+        movie.vote_average <= ratingRange.max;
+      let yearMatch = true;
+      if (selectedYear !== "All" && movie.release_date) {
+        const yearGroup = YEAR_GROUPS.find((g) => g.value === selectedYear);
+        yearMatch =
+          yearGroup &&
+          movie.release_date >= yearGroup.from &&
+          movie.release_date <= yearGroup.to;
+      }
+      return genreMatch && ratingMatch && yearMatch;
     });
-
-    // Apply additional filtering (if a search term is provided)
-    if (debouncedSearchTerm) {
-      safeMovies = safeMovies.filter((movie) => {
-        const genreMatch =
-          selectedGenre === "All" ||
-          (movie.genre_ids && movie.genre_ids.includes(Number(selectedGenre)));
-        const ratingRange = RATING_OPTIONS[selectedRating];
-        const ratingMatch =
-          movie.vote_average >= ratingRange.min &&
-          movie.vote_average <= ratingRange.max;
-        let yearMatch = true;
-        if (selectedYear !== "All" && movie.release_date) {
-          const yearGroup = YEAR_GROUPS.find((g) => g.value === selectedYear);
-          yearMatch =
-            yearGroup &&
-            movie.release_date >= yearGroup.from &&
-            movie.release_date <= yearGroup.to;
-        }
-        return genreMatch && ratingMatch && yearMatch;
-      });
-    }
-
-    return safeMovies.sort((a, b) => b.popularity - a.popularity);
-  }, [
-    movies,
-    debouncedSearchTerm,
-    selectedGenre,
-    selectedRating,
-    selectedYear,
-  ]);
+  }
+  const filteredMovies = safeMovies.sort((a, b) => b.popularity - a.popularity);
 
   if (error) {
     return (
@@ -375,7 +355,6 @@ export default function MoviesListClient() {
             className="w-full px-6 py-3 rounded-xl border bg-card text-card-foreground focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
           />
           <div className="flex flex-col sm:flex-row gap-4">
-            {/* Genre dropdown (excluding Romance) */}
             <select
               value={selectedGenre}
               onChange={handleGenreChange}
@@ -383,7 +362,7 @@ export default function MoviesListClient() {
             >
               <option value="All">All Genres</option>
               {Object.entries(GENRES)
-                .filter(([id]) => id !== "10749") // Remove romance option from the select
+                .filter(([id]) => id !== "10749")
                 .map(([id, name]) => (
                   <option key={id} value={id}>
                     {name}

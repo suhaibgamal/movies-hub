@@ -1,6 +1,7 @@
-// MovieGrid.jsx
+// app/components/MoviesGrid.jsx
 "use client";
 
+import { useState, useEffect } from "react";
 import MovieCard from "@/app/components/MovieCard";
 import PropTypes from "prop-types";
 
@@ -27,7 +28,19 @@ const GENRES = {
 };
 
 function MoviesGrid({ movies, watchlist = [], onWatchlistChange }) {
-  const aboveTheFoldCount = 6;
+  // Dynamically determine the number of items above the fold
+  const [aboveTheFoldCount, setAboveTheFoldCount] = useState(6);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      // For mobile screens (less than 640px width), use 4 items; otherwise, use 6.
+      if (window.innerWidth < 640) {
+        setAboveTheFoldCount(4);
+      } else {
+        setAboveTheFoldCount(6);
+      }
+    }
+  }, []);
 
   return (
     <section className="py-8 px-4 bg-background" aria-label="Movies grid">
