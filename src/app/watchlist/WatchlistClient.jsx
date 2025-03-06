@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import MovieCard from "@/app/components/MovieCard";
 import { useSession } from "next-auth/react";
 import { useWatchlistActions } from "@/app/store/watchlistStore";
+import SkeletonLoader from "../components/SkeletonLoader";
 
 const GENRES = {
   28: "Action",
@@ -32,6 +33,7 @@ export default function WatchlistClient() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [watchlistItems, setWatchlistItems] = useState([]);
+  const [loading, setLoading] = useState(true);
   const { syncWatchlist } = useWatchlistActions();
 
   useEffect(() => {
@@ -52,6 +54,8 @@ export default function WatchlistClient() {
         syncWatchlist(movieIds);
       } catch (error) {
         console.error("Fetch Error:", error);
+      } finally {
+        setLoading(false);
       }
     };
     fetchWatchlist();
@@ -78,7 +82,13 @@ export default function WatchlistClient() {
         <h1 className="text-3xl font-bold mb-8 text-foreground">
           My WatchList
         </h1>
-        {watchlistItems.length === 0 ? (
+        {loading ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            {Array.from({ length: aboveTheFoldCount }).map((_, index) => (
+              <SkeletonLoader key={index} />
+            ))}
+          </div>
+        ) : watchlistItems.length === 0 ? (
           <div className="text-center space-y-4">
             <h2 className="text-3xl font-bold text-foreground">
               Your watchlist is empty!
