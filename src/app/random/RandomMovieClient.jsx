@@ -4,6 +4,7 @@
 import { useState, useEffect } from "react";
 import MovieCard from "@/app/components/MovieCard";
 import { useWatchlist, useWatchlistActions } from "@/app/store/watchlistStore";
+import SkeletonLoader from "../components/SkeletonLoader";
 
 const GENRES = {
   28: "Action",
@@ -53,16 +54,21 @@ const fetchMovies = async (genre = "") => {
 };
 
 export default function RandomMovieClient() {
+  // Existing state variables
   const [movies, setMovies] = useState([]);
   const [genre, setGenre] = useState("");
   const [randomMovie, setRandomMovie] = useState(null);
   const [loading, setLoading] = useState(true);
+  // New state for caching movies and tracking already appeared movies per genre
+  const [movieCache, setMovieCache] = useState({});
+  const [watchedMovies, setWatchedMovies] = useState({});
 
   // Use the global watchlist store.
   const watchlist = useWatchlist();
   const { syncWatchlist } = useWatchlistActions();
 
   useEffect(() => {
+    // For initial load, fetch a default list (all genres)
     getNewMovies();
     fetchWatchlist();
   }, []);
@@ -95,14 +101,45 @@ export default function RandomMovieClient() {
 
   const handleFilter = async () => {
     setLoading(true);
-    let filteredMovies = [];
-    // Keep fetching until we have at least one movie
-    while (filteredMovies.length === 0) {
-      filteredMovies = await fetchMovies(genre);
+
+    // Get current cache and watched list for the selected genre (or empty array if not set)
+    let currentCache = movieCache[genre] || [];
+    let currentWatched = watchedMovies[genre] || [];
+
+    // If no movies have been cached for this genre or if all movies have been shown,
+    // then fetch new movies and reset the watched list for this genre.
+    if (
+      currentCache.length === 0 ||
+      currentCache.length === currentWatched.length
+    ) {
+      const fetchedMovies = await fetchMovies(genre);
+      currentCache = fetchedMovies;
+      currentWatched = [];
+      setMovieCache((prev) => ({ ...prev, [genre]: fetchedMovies }));
+      setWatchedMovies((prev) => ({ ...prev, [genre]: [] }));
     }
-    setRandomMovie(
-      filteredMovies[Math.floor(Math.random() * filteredMovies.length)]
+
+    // Filter the cached movies to only include those not yet shown.
+    const availableMovies = currentCache.filter(
+      (movie) => !currentWatched.includes(movie.id)
     );
+
+    if (availableMovies.length === 0) {
+      // This should not happen because we re-fetched if all movies were watched.
+      setLoading(false);
+      setRandomMovie(null);
+      return;
+    }
+
+    // Pick a random movie from the available ones.
+    const chosenMovie =
+      availableMovies[Math.floor(Math.random() * availableMovies.length)];
+
+    // Add the chosen movie to the watched list for this genre.
+    const updatedWatched = [...currentWatched, chosenMovie.id];
+    setWatchedMovies((prev) => ({ ...prev, [genre]: updatedWatched }));
+
+    setRandomMovie(chosenMovie);
     setLoading(false);
   };
 
@@ -154,18 +191,6 @@ export default function RandomMovieClient() {
             No movie found. Try again!
           </p>
         )}
-      </div>
-    </div>
-  );
-}
-
-function SkeletonLoader() {
-  return (
-    <div className="w-64 bg-muted dark:bg-muted-dark rounded-lg overflow-hidden animate-pulse">
-      <div className="w-full aspect-[2/3] bg-muted dark:bg-muted-dark"></div>
-      <div className="p-2">
-        <div className="h-4 bg-muted dark:bg-muted-dark rounded w-3/4 mb-2"></div>
-        <div className="h-3 bg-muted dark:bg-muted-dark rounded w-1/2"></div>
       </div>
     </div>
   );
