@@ -4,7 +4,6 @@
 import { useState, useEffect } from "react";
 import MovieCard from "@/app/components/MovieCard";
 import { useWatchlist, useWatchlistActions } from "@/app/store/watchlistStore";
-import SkeletonLoader from "../components/SkeletonLoader";
 
 const GENRES = {
   28: "Action",
@@ -30,17 +29,17 @@ const GENRES = {
 const fetchMovies = async (genre = "") => {
   try {
     const baseUrl = "https://api.themoviedb.org/3/discover/movie";
-    // Use discover endpoint with a default sort order for consistency
+    // Build the URL with a default sort order for consistency.
     let url = `${baseUrl}?api_key=${process.env.NEXT_PUBLIC_TMDB_KEY}&sort_by=popularity.desc`;
     if (genre) {
       url += `&with_genres=${genre}`;
     }
-    // Fetch page 1 to determine the total number of pages
+    // Fetch page 1 to determine the total number of pages.
     const res = await fetch(url + "&page=1");
     if (!res.ok) throw new Error("Failed to fetch movies");
     const data = await res.json();
     const totalPages = Math.min(data.total_pages, 500);
-    // Pick a random page between 1 and totalPages
+    // Pick a random page between 1 and totalPages.
     const randomPage = Math.floor(Math.random() * totalPages) + 1;
     const finalUrl = url + `&page=${randomPage}`;
     const res2 = await fetch(finalUrl);
@@ -54,31 +53,31 @@ const fetchMovies = async (genre = "") => {
 };
 
 export default function RandomMovieClient() {
-  // Existing state variables
-  const [movies, setMovies] = useState([]);
+  // Global list of fetched movies (regardless of genre)
+  const [globalMovies, setGlobalMovies] = useState([]);
+  // Global list of movie IDs that have already appeared
+  const [watchedMovies, setWatchedMovies] = useState([]);
   const [genre, setGenre] = useState("");
   const [randomMovie, setRandomMovie] = useState(null);
   const [loading, setLoading] = useState(true);
-  // New state for caching movies and tracking already appeared movies per genre
-  const [movieCache, setMovieCache] = useState({});
-  const [watchedMovies, setWatchedMovies] = useState({});
+  // State to ensure the loading skeleton stays until the poster fully loads.
+  const [posterLoaded, setPosterLoaded] = useState(false);
 
   // Use the global watchlist store.
   const watchlist = useWatchlist();
   const { syncWatchlist } = useWatchlistActions();
 
   useEffect(() => {
-    // For initial load, fetch a default list (all genres)
-    getNewMovies();
+    // On initial load, fetch a default list (for all genres)
+    const fetchInitialMovies = async () => {
+      setLoading(true);
+      const moviesData = await fetchMovies();
+      setGlobalMovies(moviesData);
+      setLoading(false);
+    };
+    fetchInitialMovies();
     fetchWatchlist();
   }, []);
-
-  const getNewMovies = async () => {
-    setLoading(true);
-    const moviesData = await fetchMovies();
-    setMovies(moviesData);
-    setLoading(false);
-  };
 
   const fetchWatchlist = async () => {
     try {
@@ -101,45 +100,49 @@ export default function RandomMovieClient() {
 
   const handleFilter = async () => {
     setLoading(true);
-
-    // Get current cache and watched list for the selected genre (or empty array if not set)
-    let currentCache = movieCache[genre] || [];
-    let currentWatched = watchedMovies[genre] || [];
-
-    // If no movies have been cached for this genre or if all movies have been shown,
-    // then fetch new movies and reset the watched list for this genre.
-    if (
-      currentCache.length === 0 ||
-      currentCache.length === currentWatched.length
-    ) {
-      const fetchedMovies = await fetchMovies(genre);
-      currentCache = fetchedMovies;
-      currentWatched = [];
-      setMovieCache((prev) => ({ ...prev, [genre]: fetchedMovies }));
-      setWatchedMovies((prev) => ({ ...prev, [genre]: [] }));
-    }
-
-    // Filter the cached movies to only include those not yet shown.
-    const availableMovies = currentCache.filter(
-      (movie) => !currentWatched.includes(movie.id)
+    // Start with the current global cache.
+    let currentMovies = [...globalMovies];
+    // Filter for movies that match the selected genre (if any) and haven't been shown yet.
+    let availableMovies = currentMovies.filter(
+      (movie) =>
+        (genre ? movie.genre_ids.includes(Number(genre)) : true) &&
+        !watchedMovies.includes(movie.id)
     );
 
+    // If there are no unwatched movies in the cache for this genre,
+    // fetch new movies with the selected genre filter and append them.
     if (availableMovies.length === 0) {
-      // This should not happen because we re-fetched if all movies were watched.
+      const fetchedMovies = await fetchMovies(genre);
+      // Deduplicate: add only movies not already in the global cache.
+      const newMovies = fetchedMovies.filter(
+        (movie) => !currentMovies.some((m) => m.id === movie.id)
+      );
+      currentMovies = [...currentMovies, ...newMovies];
+      setGlobalMovies(currentMovies);
+      // Re-filter after adding new movies.
+      availableMovies = currentMovies.filter(
+        (movie) =>
+          (genre ? movie.genre_ids.includes(Number(genre)) : true) &&
+          !watchedMovies.includes(movie.id)
+      );
+    }
+
+    // If still no available movies, then show error.
+    if (availableMovies.length === 0) {
       setLoading(false);
       setRandomMovie(null);
       return;
     }
 
-    // Pick a random movie from the available ones.
+    // Choose a random movie from the available ones.
     const chosenMovie =
       availableMovies[Math.floor(Math.random() * availableMovies.length)];
 
-    // Add the chosen movie to the watched list for this genre.
-    const updatedWatched = [...currentWatched, chosenMovie.id];
-    setWatchedMovies((prev) => ({ ...prev, [genre]: updatedWatched }));
-
+    // Mark this movie as watched.
+    setWatchedMovies((prev) => [...prev, chosenMovie.id]);
     setRandomMovie(chosenMovie);
+    // Reset posterLoaded so that the skeleton remains until the image loads.
+    setPosterLoaded(false);
     setLoading(false);
   };
 
@@ -173,7 +176,7 @@ export default function RandomMovieClient() {
         </div>
       </div>
       <div className="flex-1 flex justify-center items-center p-2">
-        {loading ? (
+        {loading || (randomMovie && !posterLoaded) ? (
           <SkeletonLoader />
         ) : randomMovie ? (
           <div className="w-64">
@@ -184,6 +187,7 @@ export default function RandomMovieClient() {
               small={true}
               initialWatchlisted={watchlist.includes(randomMovie.id)}
               isAbove={true}
+              onImageLoad={() => setPosterLoaded(true)}
             />
           </div>
         ) : (
@@ -191,6 +195,26 @@ export default function RandomMovieClient() {
             No movie found. Try again!
           </p>
         )}
+      </div>
+    </div>
+  );
+}
+
+// Custom SkeletonLoader using the provided design.
+function SkeletonLoader() {
+  return (
+    <div className="animate-pulse rounded-xl bg-card p-4">
+      <div className="flex flex-col lg:flex-row">
+        <div className="aspect-[2/3] w-full bg-muted lg:w-1/3" />
+        <div className="flex-1 p-8 space-y-4">
+          <div className="h-8 w-3/4 rounded bg-muted shimmer" />
+          <div className="h-6 w-1/2 rounded bg-muted shimmer" />
+          <div className="space-y-2">
+            <div className="h-4 rounded bg-muted shimmer" />
+            <div className="h-4 w-5/6 rounded bg-muted shimmer" />
+            <div className="h-4 w-2/3 rounded bg-muted shimmer" />
+          </div>
+        </div>
       </div>
     </div>
   );
