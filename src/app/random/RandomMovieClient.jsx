@@ -180,7 +180,7 @@ export default function RandomMovieClient() {
       </div>
       <div className="flex-1 flex justify-center items-center p-2">
         {loading || (randomMovie && !posterLoaded) ? (
-          // On large screens, use a wider container (w-64 on small, w-80 on large)
+          // Use the same responsive container for the skeleton as the MovieCard.
           <div className="w-64 lg:w-80">
             <SkeletonLoader />
           </div>
@@ -206,12 +206,13 @@ export default function RandomMovieClient() {
   );
 }
 
-// Custom SkeletonLoader using the provided design.
+// Custom SkeletonLoader using the provided design with updated sizing for large screens.
 function SkeletonLoader() {
   return (
     <div className="animate-pulse rounded-xl bg-card p-4">
       <div className="flex flex-col lg:flex-row">
-        <div className="aspect-[2/3] w-full bg-muted lg:w-1/3" />
+        {/* On large screens, use lg:w-1/2 to match the current MovieCard's poster width */}
+        <div className="aspect-[2/3] w-full bg-muted lg:w-1/2" />
         <div className="flex-1 p-8 space-y-4">
           <div className="h-8 w-3/4 rounded bg-muted shimmer" />
           <div className="h-6 w-1/2 rounded bg-muted shimmer" />
