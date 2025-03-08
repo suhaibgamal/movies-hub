@@ -29,17 +29,15 @@ const GENRES = {
 const fetchMovies = async (genre = "") => {
   try {
     const baseUrl = "https://api.themoviedb.org/3/discover/movie";
-    // Build the URL with a default sort order for consistency.
     let url = `${baseUrl}?api_key=${process.env.NEXT_PUBLIC_TMDB_KEY}&sort_by=popularity.desc`;
     if (genre) {
       url += `&with_genres=${genre}`;
     }
-    // Fetch page 1 to determine the total number of pages.
+    // Fetch page 1 to get total pages.
     const res = await fetch(url + "&page=1");
     if (!res.ok) throw new Error("Failed to fetch movies");
     const data = await res.json();
     const totalPages = Math.min(data.total_pages, 500);
-    // Pick a random page between 1 and totalPages.
     const randomPage = Math.floor(Math.random() * totalPages) + 1;
     const finalUrl = url + `&page=${randomPage}`;
     const res2 = await fetch(finalUrl);
@@ -53,22 +51,22 @@ const fetchMovies = async (genre = "") => {
 };
 
 export default function RandomMovieClient() {
-  // Global list of fetched movies (regardless of genre)
+  // Global cache of movies (all genres)
   const [globalMovies, setGlobalMovies] = useState([]);
-  // Global list of movie IDs that have already appeared
+  // Global list of movie IDs that have been shown
   const [watchedMovies, setWatchedMovies] = useState([]);
   const [genre, setGenre] = useState("");
   const [randomMovie, setRandomMovie] = useState(null);
   const [loading, setLoading] = useState(true);
-  // State to ensure the loading skeleton stays until the poster fully loads.
+  // Track when the movie poster has finished loading.
   const [posterLoaded, setPosterLoaded] = useState(false);
 
-  // Use the global watchlist store.
+  // Global watchlist store.
   const watchlist = useWatchlist();
   const { syncWatchlist } = useWatchlistActions();
 
   useEffect(() => {
-    // On initial load, fetch a default list (for all genres)
+    // Fetch an initial list of movies (all genres) on mount.
     const fetchInitialMovies = async () => {
       setLoading(true);
       const moviesData = await fetchMovies();
@@ -78,6 +76,16 @@ export default function RandomMovieClient() {
     fetchInitialMovies();
     fetchWatchlist();
   }, []);
+
+  // Preload the poster image for the selected movie.
+  useEffect(() => {
+    if (randomMovie && randomMovie.poster_path) {
+      const img = new Image();
+      img.src = `https://image.tmdb.org/t/p/w500${randomMovie.poster_path}`;
+      img.onload = () => setPosterLoaded(true);
+      img.onerror = () => setPosterLoaded(true);
+    }
+  }, [randomMovie]);
 
   const fetchWatchlist = async () => {
     try {
@@ -100,26 +108,24 @@ export default function RandomMovieClient() {
 
   const handleFilter = async () => {
     setLoading(true);
-    // Start with the current global cache.
+    // Use the current global movie cache.
     let currentMovies = [...globalMovies];
-    // Filter for movies that match the selected genre (if any) and haven't been shown yet.
+    // Filter movies that match the selected genre (if any) and haven't been shown.
     let availableMovies = currentMovies.filter(
       (movie) =>
         (genre ? movie.genre_ids.includes(Number(genre)) : true) &&
         !watchedMovies.includes(movie.id)
     );
 
-    // If there are no unwatched movies in the cache for this genre,
-    // fetch new movies with the selected genre filter and append them.
+    // If no unwatched movies are available, fetch new movies with the selected genre.
     if (availableMovies.length === 0) {
       const fetchedMovies = await fetchMovies(genre);
-      // Deduplicate: add only movies not already in the global cache.
       const newMovies = fetchedMovies.filter(
         (movie) => !currentMovies.some((m) => m.id === movie.id)
       );
       currentMovies = [...currentMovies, ...newMovies];
       setGlobalMovies(currentMovies);
-      // Re-filter after adding new movies.
+      // Re-check available movies.
       availableMovies = currentMovies.filter(
         (movie) =>
           (genre ? movie.genre_ids.includes(Number(genre)) : true) &&
@@ -127,21 +133,19 @@ export default function RandomMovieClient() {
       );
     }
 
-    // If still no available movies, then show error.
     if (availableMovies.length === 0) {
       setLoading(false);
       setRandomMovie(null);
       return;
     }
 
-    // Choose a random movie from the available ones.
+    // Pick a random unwatched movie.
     const chosenMovie =
       availableMovies[Math.floor(Math.random() * availableMovies.length)];
 
-    // Mark this movie as watched.
     setWatchedMovies((prev) => [...prev, chosenMovie.id]);
     setRandomMovie(chosenMovie);
-    // Reset posterLoaded so that the skeleton remains until the image loads.
+    // Reset posterLoaded so that the skeleton remains until the image is preloaded.
     setPosterLoaded(false);
     setLoading(false);
   };
@@ -177,7 +181,10 @@ export default function RandomMovieClient() {
       </div>
       <div className="flex-1 flex justify-center items-center p-2">
         {loading || (randomMovie && !posterLoaded) ? (
-          <SkeletonLoader />
+          // Wrap the skeleton in the same fixed width as the movie card.
+          <div className="w-64">
+            <SkeletonLoader />
+          </div>
         ) : randomMovie ? (
           <div className="w-64">
             <MovieCard
@@ -187,6 +194,7 @@ export default function RandomMovieClient() {
               small={true}
               initialWatchlisted={watchlist.includes(randomMovie.id)}
               isAbove={true}
+              // (Optional) You can still pass onImageLoad if MovieCard supports it.
               onImageLoad={() => setPosterLoaded(true)}
             />
           </div>
@@ -200,10 +208,10 @@ export default function RandomMovieClient() {
   );
 }
 
-// Custom SkeletonLoader using the provided design.
+// Custom SkeletonLoader matching the provided design and size.
 function SkeletonLoader() {
   return (
-    <div className="animate-pulse rounded-xl bg-card p-4">
+    <div className="w-full animate-pulse rounded-xl bg-card p-4">
       <div className="flex flex-col lg:flex-row">
         <div className="aspect-[2/3] w-full bg-muted lg:w-1/3" />
         <div className="flex-1 p-8 space-y-4">
