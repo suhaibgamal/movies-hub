@@ -26,14 +26,26 @@ const GENRES = {
   37: "Western",
 };
 
-const fetchMovies = async (page = Math.floor(Math.random() * 10) + 1) => {
+const fetchMovies = async (genre = "") => {
   try {
-    const res = await fetch(
-      `https://api.themoviedb.org/3/movie/popular?api_key=${process.env.NEXT_PUBLIC_TMDB_KEY}&page=${page}`
-    );
+    const baseUrl = "https://api.themoviedb.org/3/discover/movie";
+    // Use discover endpoint with a default sort order for consistency
+    let url = `${baseUrl}?api_key=${process.env.NEXT_PUBLIC_TMDB_KEY}&sort_by=popularity.desc`;
+    if (genre) {
+      url += `&with_genres=${genre}`;
+    }
+    // Fetch page 1 to determine the total number of pages
+    const res = await fetch(url + "&page=1");
     if (!res.ok) throw new Error("Failed to fetch movies");
     const data = await res.json();
-    return data.results.length > 0 ? data.results : fetchMovies(page + 1);
+    const totalPages = Math.min(data.total_pages, 500);
+    // Pick a random page between 1 and totalPages
+    const randomPage = Math.floor(Math.random() * totalPages) + 1;
+    const finalUrl = url + `&page=${randomPage}`;
+    const res2 = await fetch(finalUrl);
+    if (!res2.ok) throw new Error("Failed to fetch movies");
+    const data2 = await res2.json();
+    return data2.results || [];
   } catch (error) {
     console.error(error);
     return [];
@@ -84,11 +96,9 @@ export default function RandomMovieClient() {
   const handleFilter = async () => {
     setLoading(true);
     let filteredMovies = [];
+    // Keep fetching until we have at least one movie
     while (filteredMovies.length === 0) {
-      const newMovies = await fetchMovies();
-      filteredMovies = newMovies.filter((movie) =>
-        genre ? movie.genre_ids.includes(parseInt(genre)) : true
-      );
+      filteredMovies = await fetchMovies(genre);
     }
     setRandomMovie(
       filteredMovies[Math.floor(Math.random() * filteredMovies.length)]
@@ -151,14 +161,11 @@ export default function RandomMovieClient() {
 
 function SkeletonLoader() {
   return (
-    <div className="w-64 bg-muted rounded-lg overflow-hidden animate-pulse">
-      <div
-        className="w-full"
-        style={{ aspectRatio: "2/3", backgroundColor: "hsl(var(--muted))" }}
-      ></div>
+    <div className="w-64 bg-muted dark:bg-muted-dark rounded-lg overflow-hidden animate-pulse">
+      <div className="w-full aspect-[2/3] bg-muted dark:bg-muted-dark"></div>
       <div className="p-2">
-        <div className="h-4 bg-muted rounded w-3/4 mb-2"></div>
-        <div className="h-3 bg-muted rounded w-1/2"></div>
+        <div className="h-4 bg-muted dark:bg-muted-dark rounded w-3/4 mb-2"></div>
+        <div className="h-3 bg-muted dark:bg-muted-dark rounded w-1/2"></div>
       </div>
     </div>
   );
