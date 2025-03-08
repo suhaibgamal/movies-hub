@@ -33,7 +33,6 @@ const fetchMovies = async (genre = "") => {
     if (genre) {
       url += `&with_genres=${genre}`;
     }
-    // Fetch page 1 to get total pages.
     const res = await fetch(url + "&page=1");
     if (!res.ok) throw new Error("Failed to fetch movies");
     const data = await res.json();
@@ -181,12 +180,12 @@ export default function RandomMovieClient() {
       </div>
       <div className="flex-1 flex justify-center items-center p-2">
         {loading || (randomMovie && !posterLoaded) ? (
-          // Wrap the skeleton in the same fixed width as the movie card.
-          <div className="w-64">
+          // On large screens, use a wider container (w-64 on small, w-80 on large)
+          <div className="w-64 lg:w-80">
             <SkeletonLoader />
           </div>
         ) : randomMovie ? (
-          <div className="w-64">
+          <div className="w-64 lg:w-80">
             <MovieCard
               movie={randomMovie}
               href={`/movie/${randomMovie.id}`}
@@ -194,7 +193,6 @@ export default function RandomMovieClient() {
               small={true}
               initialWatchlisted={watchlist.includes(randomMovie.id)}
               isAbove={true}
-              // (Optional) You can still pass onImageLoad if MovieCard supports it.
               onImageLoad={() => setPosterLoaded(true)}
             />
           </div>
@@ -208,10 +206,10 @@ export default function RandomMovieClient() {
   );
 }
 
-// Custom SkeletonLoader matching the provided design and size.
+// Custom SkeletonLoader using the provided design.
 function SkeletonLoader() {
   return (
-    <div className="w-full animate-pulse rounded-xl bg-card p-4">
+    <div className="animate-pulse rounded-xl bg-card p-4">
       <div className="flex flex-col lg:flex-row">
         <div className="aspect-[2/3] w-full bg-muted lg:w-1/3" />
         <div className="flex-1 p-8 space-y-4">
