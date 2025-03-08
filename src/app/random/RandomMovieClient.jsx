@@ -29,15 +29,19 @@ const GENRES = {
 const fetchMovies = async (genre = "") => {
   try {
     const baseUrl = "https://api.themoviedb.org/3/discover/movie";
-    let url = `${baseUrl}?api_key=${process.env.NEXT_PUBLIC_TMDB_KEY}&sort_by=popularity.desc`;
+    // Filter for popular, high-rated, and recent movies.
+    let url = `${baseUrl}?api_key=${process.env.NEXT_PUBLIC_TMDB_KEY}&sort_by=popularity.desc&vote_average.gte=7&primary_release_date.gte=2000-01-01`;
     if (genre) {
       url += `&with_genres=${genre}`;
     }
+    // Fetch page 1 to determine total pages.
     const res = await fetch(url + "&page=1");
     if (!res.ok) throw new Error("Failed to fetch movies");
     const data = await res.json();
-    const totalPages = Math.min(data.total_pages, 500);
-    const randomPage = Math.floor(Math.random() * totalPages) + 1;
+    // Limit to the first 100 pages.
+    const availablePages = Math.min(data.total_pages, 100);
+    // Pick a random page from 1 to availablePages.
+    const randomPage = Math.floor(Math.random() * availablePages) + 1;
     const finalUrl = url + `&page=${randomPage}`;
     const res2 = await fetch(finalUrl);
     if (!res2.ok) throw new Error("Failed to fetch movies");
@@ -180,7 +184,6 @@ export default function RandomMovieClient() {
       </div>
       <div className="flex-1 flex justify-center items-center p-2">
         {loading || (randomMovie && !posterLoaded) ? (
-          // Use the same responsive container for the skeleton as the MovieCard.
           <div className="w-64 lg:w-80">
             <SkeletonLoader />
           </div>
@@ -206,12 +209,11 @@ export default function RandomMovieClient() {
   );
 }
 
-// Custom SkeletonLoader using the provided design with updated sizing for large screens.
+// Custom SkeletonLoader using the provided design with updated sizing.
 function SkeletonLoader() {
   return (
     <div className="animate-pulse rounded-xl bg-card p-4">
       <div className="flex flex-col lg:flex-row">
-        {/* On large screens, use lg:w-1/2 to match the current MovieCard's poster width */}
         <div className="aspect-[2/3] w-full bg-muted lg:w-1/2" />
         <div className="flex-1 p-8 space-y-4">
           <div className="h-8 w-3/4 rounded bg-muted shimmer" />
