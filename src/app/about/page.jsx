@@ -50,8 +50,8 @@ const AboutPage = () => {
           GitHub
         </a>
         . For any inquiries, you can email me at{" "}
-        <a href="mailto:sohibgamal28@gmail.com" className="text-blue-500">
-          sohibgamal28@gmail.com
+        <a href="mailto:contact@suhaeb.com" className="text-blue-500">
+          contact@suhaeb.com
         </a>
         .
       </p>
