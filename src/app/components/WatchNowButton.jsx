@@ -9,7 +9,7 @@ export default function WatchNowButton({ className, movieFound }) {
 
   const handleClick = (e) => {
     e.preventDefault();
-    movieFound ? setShowModal(true) : null;
+    movieFound ? setShowModal(true) : handleProceed();
   };
 
   const handleProceed = () => {
