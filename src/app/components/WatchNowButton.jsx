@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { FiFilm } from "react-icons/fi";
 
-export default function WatchNowButton({ className, movieFound }) {
+export default function WatchNowButton({ className, movieFound, id }) {
   const [showModal, setShowModal] = useState(false);
   const [error, setError] = useState(null);
 
@@ -11,7 +11,7 @@ export default function WatchNowButton({ className, movieFound }) {
     e.preventDefault();
     movieFound ? setShowModal(true) : handleProceed();
   };
-
+  const watchLink = `https://vidsrc.xyz/embed/movie/${id}`;
   const handleProceed = () => {
     window.open(watchLink, "_blank");
     setShowModal(false);

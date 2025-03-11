@@ -28,6 +28,7 @@ export default function InteractiveFeatures({
         <WatchNowButton
           className="w-full sm:w-auto bg-gray-700 hover:bg-gray-600 px-5 py-2.5 rounded-full text-sm"
           movieFound={movieFound}
+          id={movie.id}
         />
       </div>
 
