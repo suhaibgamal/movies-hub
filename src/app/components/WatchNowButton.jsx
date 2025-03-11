@@ -34,7 +34,9 @@ export default function WatchNowButton({ className, movieFound, id }) {
         disabled={!movieFound}
       >
         <FiFilm className="h-4 w-4" />
-        <span>{movieFound ? "Watch Now" : "Movie Not Available"}</span>
+        <span className="text-card-foreground">
+          {movieFound ? "Watch Now" : "Movie Not Available"}
+        </span>
       </button>
 
       {showModal && (
