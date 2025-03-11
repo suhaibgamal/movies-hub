@@ -19,7 +19,7 @@ export default function InteractiveFeatures({
       <div className="flex flex-col sm:flex-row gap-3 items-center justify-center max-w-3xl mx-auto w-full">
         <button
           onClick={() => setTrailerModalOpen(true)}
-          className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-full bg-blue-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-blue-700 transition-colors cursor-pointer"
+          className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-full bg-blue-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
           disabled={!trailerKey}
           aria-label={trailerKey ? "Watch Trailer" : "Trailer Not Available"}
         >
