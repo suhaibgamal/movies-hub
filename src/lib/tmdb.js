@@ -42,3 +42,18 @@ export const getCachedCredits = unstable_cache(
   ["credits-data"],
   { revalidate: 3600 }
 );
+
+export const checkLinkStability = unstable_cache(
+  async (id) => {
+    const watchLink = `https://vidsrc.xyz/embed/movie/${id}`;
+    try {
+      const response = await fetch(watchLink, { method: "HEAD", mode: "cors" });
+      return response.ok;
+    } catch (error) {
+      console.error("Error checking link stability:", error);
+      return false;
+    }
+  },
+  ["link-stability"],
+  { revalidate: 2592000 } // revalidate approximately once every 30 days
+);

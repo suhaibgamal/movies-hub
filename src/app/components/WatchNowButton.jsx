@@ -3,35 +3,13 @@
 import { useState } from "react";
 import { FiFilm } from "react-icons/fi";
 
-export default function WatchNowButton({ movie, className }) {
+export default function WatchNowButton({ className, movieFound }) {
   const [showModal, setShowModal] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const watchLink = movie.imdb_id
-    ? `https://vidsrc.xyz/embed/movie/${movie.imdb_id}`
-    : `https://www.google.com/search?q=${encodeURIComponent(
-        movie.title + " watch full movie"
-      )}`;
-
-  const checkLinkStability = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await fetch(watchLink, { method: "HEAD", mode: "cors" });
-      return response.ok;
-    } catch (err) {
-      setError("Link unavailable - redirecting to Google search...");
-      return false;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleClick = async (e) => {
+  const handleClick = (e) => {
     e.preventDefault();
-    const isValid = await checkLinkStability();
-    isValid ? setShowModal(true) : handleProceed();
+    movieFound ? setShowModal(true) : handleCancel();
   };
 
   const handleProceed = () => {
@@ -53,10 +31,10 @@ export default function WatchNowButton({ movie, className }) {
           "bg-gray-700 hover:bg-gray-600 px-5 py-2.5 rounded-full text-sm"
         }`}
         aria-label="Watch movie"
-        disabled={loading}
+        disabled={!movieFound}
       >
         <FiFilm className="h-4 w-4" />
-        <span>{loading ? "Checking..." : "Watch Now"}</span>
+        <span>{movieFound ? "Watch Now" : "Movie Not Available"}</span>
       </button>
 
       {showModal && (

@@ -5,7 +5,12 @@ import { FaFacebookF, FaTwitter, FaWhatsapp } from "react-icons/fa";
 import WatchNowButton from "@/app/components/WatchNowButton";
 import Image from "next/image";
 
-export default function InteractiveFeatures({ trailerKey, cast, movie }) {
+export default function InteractiveFeatures({
+  trailerKey,
+  cast,
+  movieFound,
+  movie,
+}) {
   const [isTrailerModalOpen, setTrailerModalOpen] = useState(false);
 
   return (
@@ -21,8 +26,8 @@ export default function InteractiveFeatures({ trailerKey, cast, movie }) {
           {trailerKey ? "Watch Trailer" : "Trailer Not Available"}
         </button>
         <WatchNowButton
-          movie={movie}
           className="w-full sm:w-auto bg-gray-700 hover:bg-gray-600 px-5 py-2.5 rounded-full text-sm"
+          movieFound={movieFound}
         />
       </div>
 

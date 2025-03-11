@@ -7,6 +7,7 @@ import {
   getCachedMovieData,
   getCachedTrailerData,
   getCachedCredits,
+  checkLinkStability,
 } from "@/lib/tmdb";
 import SkeletonLoader from "@/app/components/SkeletonLoader";
 import InteractiveFeatures from "@/app/components/InteractiveFeatures";
@@ -52,12 +53,12 @@ export default async function MoviePage({ params }) {
     );
 
   try {
-    const [movie, trailerData, creditsData] = await Promise.all([
+    const [movie, trailerData, creditsData, isFound] = await Promise.all([
       getCachedMovieData(id),
       getCachedTrailerData(id),
       getCachedCredits(id),
+      checkLinkStability(id),
     ]);
-
     const trailerKey = trailerData.results.find(
       (v) => v.type === "Trailer" && v.site === "YouTube"
     )?.key;
@@ -135,6 +136,7 @@ export default async function MoviePage({ params }) {
                   <InteractiveFeatures
                     trailerKey={trailerKey}
                     cast={cast}
+                    movieFound={isFound}
                     movie={movie}
                   />
                 </div>
