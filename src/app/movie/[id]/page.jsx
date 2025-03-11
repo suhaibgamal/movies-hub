@@ -8,7 +8,6 @@ import {
   getCachedTrailerData,
   getCachedCredits,
 } from "@/lib/tmdb";
-import WatchNowButton from "@/app/components/WatchNowButton";
 import SkeletonLoader from "@/app/components/SkeletonLoader";
 import InteractiveFeatures from "@/app/components/InteractiveFeatures";
 import WatchlistButton from "@/app/components/WatchlistButton";
