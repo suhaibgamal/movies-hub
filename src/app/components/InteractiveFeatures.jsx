@@ -12,6 +12,17 @@ export default function InteractiveFeatures({
   movie,
 }) {
   const [isTrailerModalOpen, setTrailerModalOpen] = useState(false);
+  const openSharePopup = (url) => {
+    const width = 600;
+    const height = 400;
+    const left = window.innerWidth / 2 - width / 2;
+    const top = window.innerHeight / 2 - height / 2;
+    window.open(
+      url,
+      "ShareWindow",
+      `width=${width},height=${height},top=${top},left=${left},resizable=yes,scrollbars=yes`
+    );
+  };
 
   return (
     <div className="space-y-6 min-w-0">
@@ -71,7 +82,6 @@ export default function InteractiveFeatures({
           </div>
         </div>
       )}
-
       {/* Social Sharing */}
       <div className="text-center pt-4">
         <h2 className="mb-3 text-xl font-semibold text-card-foreground">
@@ -82,8 +92,14 @@ export default function InteractiveFeatures({
             href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
               `https://movies.suhaeb.com/movie/${movie.id}`
             )}`}
-            target="_blank"
-            rel="noopener noreferrer"
+            onClick={(e) => {
+              e.preventDefault();
+              openSharePopup(
+                `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
+                  `https://movies.suhaeb.com/movie/${movie.id}`
+                )}`
+              );
+            }}
             className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-600 text-white hover:bg-blue-700 hover:scale-110 transition-all"
           >
             <FaFacebookF className="text-sm" />
@@ -94,8 +110,16 @@ export default function InteractiveFeatures({
             )}&text=${encodeURIComponent(
               `Check out ${movie.title} on Movies Hub!`
             )}`}
-            target="_blank"
-            rel="noopener noreferrer"
+            onClick={(e) => {
+              e.preventDefault();
+              openSharePopup(
+                `https://twitter.com/intent/tweet?url=${encodeURIComponent(
+                  `https://movies.suhaeb.com/movie/${movie.id}`
+                )}&text=${encodeURIComponent(
+                  `Check out ${movie.title} on Movies Hub!`
+                )}`
+              );
+            }}
             className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-400 text-white hover:bg-blue-500 hover:scale-110 transition-all"
           >
             <FaTwitter className="text-sm" />
@@ -106,8 +130,16 @@ export default function InteractiveFeatures({
                 movie.title
               } on Movies Hub! ${`https://movies.suhaeb.com/movie/${movie.id}`}`
             )}`}
-            target="_blank"
-            rel="noopener noreferrer"
+            onClick={(e) => {
+              e.preventDefault();
+              openSharePopup(
+                `https://wa.me/?text=${encodeURIComponent(
+                  `Check out ${
+                    movie.title
+                  } on Movies Hub! ${`https://movies.suhaeb.com/movie/${movie.id}`}`
+                )}`
+              );
+            }}
             className="flex items-center justify-center w-10 h-10 rounded-full bg-green-600 text-white hover:bg-green-700 hover:scale-110 transition-all"
           >
             <FaWhatsapp className="text-sm" />
