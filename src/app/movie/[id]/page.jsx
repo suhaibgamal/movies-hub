@@ -121,7 +121,7 @@ export default async function MoviePage({ params }) {
                     >
                       ⭐ {rating}
                     </span>
-                    <span className="text-sm text-muted-foreground font-medium bg-muted px-2 py-1 rounded-full">
+                    <span className="text-sm text-muted-foreground bg-muted px-2 py-1 rounded-full font-bold">
                       {releaseYear}
                     </span>
                     {genres.map((genre) => (
