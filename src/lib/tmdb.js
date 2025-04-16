@@ -57,3 +57,16 @@ export const checkLinkStability = unstable_cache(
   ["link-stability"],
   { revalidate: 2592000 } // revalidate approximately once every 30 days
 );
+
+export const getCachedRecommendations = unstable_cache(
+  async (id) => {
+    const res = await fetch(
+      `https://api.themoviedb.org/3/movie/${id}/recommendations?api_key=${process.env.NEXT_PUBLIC_TMDB_KEY}`,
+      { next: { revalidate: 3600 } }
+    );
+    if (!res.ok) throw new Error("Failed to fetch recommendations");
+    return res.json();
+  },
+  ["recommendations-data"],
+  { revalidate: 3600 }
+);

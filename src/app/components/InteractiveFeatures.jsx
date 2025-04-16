@@ -10,8 +10,10 @@ export default function InteractiveFeatures({
   cast,
   movieFound,
   movie,
+  recommendations,
 }) {
   const [isTrailerModalOpen, setTrailerModalOpen] = useState(false);
+  const [isRecModalOpen, setRecModalOpen] = useState(false);
   const openSharePopup = (url) => {
     const width = 600;
     const height = 400;
@@ -41,6 +43,16 @@ export default function InteractiveFeatures({
           movieFound={movieFound}
           id={movie.id}
         />
+        {recommendations &&
+          recommendations.results &&
+          recommendations.results.length > 0 && (
+            <button
+              onClick={() => setRecModalOpen(true)}
+              className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-full bg-green-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-green-700 transition-colors"
+            >
+              View Recommendations
+            </button>
+          )}
       </div>
 
       {/* Cast Section */}
@@ -126,17 +138,13 @@ export default function InteractiveFeatures({
           </a>
           <a
             href={`https://wa.me/?text=${encodeURIComponent(
-              `Check out ${
-                movie.title
-              } on Movies Hub! ${`https://movies.suhaeb.com/movie/${movie.id}`}`
+              `Check out ${movie.title} on Movies Hub! https://movies.suhaeb.com/movie/${movie.id}`
             )}`}
             onClick={(e) => {
               e.preventDefault();
               openSharePopup(
                 `https://wa.me/?text=${encodeURIComponent(
-                  `Check out ${
-                    movie.title
-                  } on Movies Hub! ${`https://movies.suhaeb.com/movie/${movie.id}`}`
+                  `Check out ${movie.title} on Movies Hub! https://movies.suhaeb.com/movie/${movie.id}`
                 )}`
               );
             }}
@@ -154,7 +162,7 @@ export default function InteractiveFeatures({
             <button
               onClick={() => setTrailerModalOpen(false)}
               className="absolute -top-8 right-0 text-white hover:text-gray-200 text-3xl"
-              aria-label="Cencel"
+              aria-label="Cancel"
             >
               &times;
             </button>
@@ -165,6 +173,51 @@ export default function InteractiveFeatures({
                 allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
               />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Recommendations Modal */}
+      {isRecModalOpen && recommendations && recommendations.results && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm overflow-auto">
+          <div className="relative w-full max-w-6xl mx-4 p-4">
+            <button
+              onClick={() => setRecModalOpen(false)}
+              className="absolute -top-8 right-0 text-white hover:text-gray-200 text-3xl"
+              aria-label="Cancel Recommendations"
+            >
+              &times;
+            </button>
+            <h2 className="mb-4 text-2xl font-bold text-card-foreground text-center">
+              Recommended Movies
+            </h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+              {recommendations.results.map((recMovie) => (
+                <div
+                  key={recMovie.id}
+                  className="bg-card rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow"
+                >
+                  <a href={`/movie/${recMovie.id}`}>
+                    <Image
+                      src={
+                        recMovie.poster_path
+                          ? `https://image.tmdb.org/t/p/w300${recMovie.poster_path}`
+                          : "/images/default.webp"
+                      }
+                      alt={recMovie.title}
+                      width={300}
+                      height={450}
+                      className="object-cover"
+                    />
+                    <div className="p-2">
+                      <h3 className="text-sm font-semibold text-card-foreground">
+                        {recMovie.title}
+                      </h3>
+                    </div>
+                  </a>
+                </div>
+              ))}
             </div>
           </div>
         </div>

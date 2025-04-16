@@ -7,6 +7,7 @@ import {
   getCachedMovieData,
   getCachedTrailerData,
   getCachedCredits,
+  getCachedRecommendations,
   checkLinkStability,
 } from "@/lib/tmdb";
 import SkeletonLoader from "@/app/components/SkeletonLoader";
@@ -53,12 +54,14 @@ export default async function MoviePage({ params }) {
     );
 
   try {
-    const [movie, trailerData, creditsData, isFound] = await Promise.all([
-      getCachedMovieData(id),
-      getCachedTrailerData(id),
-      getCachedCredits(id),
-      checkLinkStability(id),
-    ]);
+    const [movie, trailerData, creditsData, isFound, recommendationsData] =
+      await Promise.all([
+        getCachedMovieData(id),
+        getCachedTrailerData(id),
+        getCachedCredits(id),
+        checkLinkStability(id),
+        getCachedRecommendations(id),
+      ]);
     const trailerKey = trailerData.results.find(
       (v) => v.type === "Trailer" && v.site === "YouTube"
     )?.key;
@@ -73,8 +76,6 @@ export default async function MoviePage({ params }) {
         : rating >= 5
         ? "bg-purple-600"
         : "bg-red-600";
-
-    // Extract genres from movie data
     const genres =
       movie.genres?.map((genre) => genre.name).filter(Boolean) || [];
 
@@ -150,6 +151,7 @@ export default async function MoviePage({ params }) {
                     cast={cast}
                     movieFound={isFound}
                     movie={movie}
+                    recommendations={recommendationsData}
                   />
                 </div>
               </div>
