@@ -161,7 +161,7 @@ export default function InteractiveFeatures({
       {/* Trailer Modal */}
       {isTrailerModalOpen && trailerKey && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-          <div className="relative w-full max-w-3xl rounded-lg bg-background p-4 shadow-2xl">
+          <div className="relative w-full max-w-2xl mx-auto rounded-lg bg-background p-4 shadow-2xl">
             <button
               onClick={() => setTrailerModalOpen(false)}
               className="absolute -top-4 right-4 text-white hover:text-gray-300 text-3xl focus:outline-none"
@@ -184,7 +184,7 @@ export default function InteractiveFeatures({
       {/* Recommendations Modal */}
       {isRecModalOpen && recommendations && recommendations.results && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="relative w-full max-w-5xl rounded-lg bg-background p-6 shadow-2xl">
+          <div className="relative w-full max-w-4xl mx-auto rounded-lg bg-background p-6 shadow-2xl">
             <div className="flex items-center justify-between border-b border-muted pb-3 mb-4">
               <h2 className="text-2xl font-bold text-card-foreground">
                 Recommended Movies
@@ -197,7 +197,6 @@ export default function InteractiveFeatures({
                 &times;
               </button>
             </div>
-            {/* Make sure the grid container scrolls if too tall */}
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 max-h-[60vh] overflow-y-auto">
               {recommendations.results.map((recMovie) => (
                 <div
