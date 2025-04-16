@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { FaFacebookF, FaTwitter, FaWhatsapp } from "react-icons/fa";
 import WatchNowButton from "@/app/components/WatchNowButton";
 import Image from "next/image";
@@ -14,6 +15,7 @@ export default function InteractiveFeatures({
 }) {
   const [isTrailerModalOpen, setTrailerModalOpen] = useState(false);
   const [isRecModalOpen, setRecModalOpen] = useState(false);
+
   const openSharePopup = (url) => {
     const width = 600;
     const height = 400;
@@ -27,19 +29,19 @@ export default function InteractiveFeatures({
   };
 
   return (
-    <div className="space-y-6 min-w-0">
+    <div className="space-y-8">
       {/* Action Buttons */}
-      <div className="flex flex-col sm:flex-row gap-3 items-center justify-center max-w-3xl mx-auto w-full">
+      <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
         <button
           onClick={() => setTrailerModalOpen(true)}
-          className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-full bg-blue-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
+          className="flex-1 sm:flex-none flex items-center justify-center gap-2 rounded-full bg-blue-600 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-blue-700"
           disabled={!trailerKey}
           aria-label={trailerKey ? "Watch Trailer" : "Trailer Not Available"}
         >
           {trailerKey ? "Watch Trailer" : "Trailer Not Available"}
         </button>
         <WatchNowButton
-          className="w-full sm:w-auto bg-gray-700 hover:bg-gray-600 px-5 py-2.5 rounded-full text-sm"
+          className="flex-1 sm:flex-none bg-gray-700 hover:bg-gray-600 px-6 py-3 rounded-full text-sm"
           movieFound={movieFound}
           id={movie.id}
         />
@@ -48,7 +50,7 @@ export default function InteractiveFeatures({
           recommendations.results.length > 0 && (
             <button
               onClick={() => setRecModalOpen(true)}
-              className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-full bg-green-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-green-700 transition-colors"
+              className="flex-1 sm:flex-none flex items-center justify-center gap-2 rounded-full bg-green-600 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-green-700"
             >
               View Recommendations
             </button>
@@ -57,18 +59,18 @@ export default function InteractiveFeatures({
 
       {/* Cast Section */}
       {cast.length > 0 && (
-        <div className="min-w-0">
-          <h2 className="mb-3 text-xl font-semibold text-card-foreground px-2">
+        <div className="mt-6">
+          <h2 className="mb-4 px-2 text-xl font-semibold text-card-foreground">
             Top Cast
           </h2>
-          <div className="min-w-0 pb-4">
-            <div className="flex gap-4 overflow-x-auto scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-card/20 hover:scrollbar-thumb-muted-foreground/50 px-2 pb-2">
+          <div className="overflow-x-auto pb-4">
+            <div className="flex gap-4 px-2">
               {cast.map((member) => (
                 <div
                   key={member.id}
-                  className="flex-shrink-0 w-28 bg-card rounded-lg p-2 shadow-lg hover:shadow-xl transition-shadow border border-muted/20"
+                  className="flex-shrink-0 w-24 sm:w-28 md:w-32 bg-card rounded-xl p-3 shadow-md hover:shadow-lg transition-shadow border border-muted/20"
                 >
-                  <div className="relative aspect-square w-full mb-2">
+                  <div className="relative aspect-square w-full mb-3">
                     <Image
                       src={
                         member.profile_path
@@ -76,16 +78,16 @@ export default function InteractiveFeatures({
                           : "/images/default.webp"
                       }
                       alt={member.name}
-                      className="w-full h-full object-cover rounded-md"
+                      className="object-cover rounded-md"
                       loading="lazy"
                       unoptimized
-                      layout="fill"
+                      fill
                     />
                   </div>
-                  <h3 className="text-sm font-medium text-card-foreground truncate">
+                  <h3 className="text-xs sm:text-sm font-medium text-card-foreground truncate">
                     {member.name}
                   </h3>
-                  <p className="text-xs text-muted-foreground/80 truncate">
+                  <p className="text-[10px] text-muted-foreground truncate">
                     {member.character}
                   </p>
                 </div>
@@ -94,12 +96,13 @@ export default function InteractiveFeatures({
           </div>
         </div>
       )}
+
       {/* Social Sharing */}
-      <div className="text-center pt-4">
-        <h2 className="mb-3 text-xl font-semibold text-card-foreground">
+      <div className="text-center">
+        <h2 className="mb-4 text-xl font-semibold text-card-foreground">
           Share This Movie
         </h2>
-        <div className="flex justify-center gap-3">
+        <div className="flex justify-center gap-4">
           <a
             href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
               `https://movies.suhaeb.com/movie/${movie.id}`
@@ -112,7 +115,7 @@ export default function InteractiveFeatures({
                 )}`
               );
             }}
-            className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-600 text-white hover:bg-blue-700 hover:scale-110 transition-all"
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 text-white transition-transform hover:scale-110 hover:bg-blue-700"
           >
             <FaFacebookF className="text-sm" />
           </a>
@@ -132,7 +135,7 @@ export default function InteractiveFeatures({
                 )}`
               );
             }}
-            className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-400 text-white hover:bg-blue-500 hover:scale-110 transition-all"
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-400 text-white transition-transform hover:scale-110 hover:bg-blue-500"
           >
             <FaTwitter className="text-sm" />
           </a>
@@ -148,7 +151,7 @@ export default function InteractiveFeatures({
                 )}`
               );
             }}
-            className="flex items-center justify-center w-10 h-10 rounded-full bg-green-600 text-white hover:bg-green-700 hover:scale-110 transition-all"
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-green-600 text-white transition-transform hover:scale-110 hover:bg-green-700"
           >
             <FaWhatsapp className="text-sm" />
           </a>
@@ -157,16 +160,16 @@ export default function InteractiveFeatures({
 
       {/* Trailer Modal */}
       {isTrailerModalOpen && trailerKey && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm">
-          <div className="relative w-full max-w-4xl mx-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+          <div className="relative w-full max-w-4xl p-4">
             <button
               onClick={() => setTrailerModalOpen(false)}
-              className="absolute -top-8 right-0 text-white hover:text-gray-200 text-3xl"
-              aria-label="Cancel"
+              className="absolute -top-6 right-0 text-white hover:text-gray-200 text-4xl"
+              aria-label="Close Trailer"
             >
               &times;
             </button>
-            <div className="aspect-video bg-black rounded-xl overflow-hidden shadow-2xl">
+            <div className="aspect-video rounded-xl overflow-hidden shadow-2xl">
               <iframe
                 src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1`}
                 className="w-full h-full"
@@ -180,42 +183,44 @@ export default function InteractiveFeatures({
 
       {/* Recommendations Modal */}
       {isRecModalOpen && recommendations && recommendations.results && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm overflow-auto">
-          <div className="relative w-full max-w-6xl mx-4 p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm overflow-y-auto p-4">
+          <div className="relative w-full max-w-6xl rounded-xl bg-background shadow-xl p-6">
             <button
               onClick={() => setRecModalOpen(false)}
-              className="absolute -top-8 right-0 text-white hover:text-gray-200 text-3xl"
-              aria-label="Cancel Recommendations"
+              className="absolute -top-6 right-0 text-white hover:text-gray-200 text-4xl"
+              aria-label="Close Recommendations"
             >
               &times;
             </button>
-            <h2 className="mb-4 text-2xl font-bold text-card-foreground text-center">
+            <h2 className="mb-6 text-center text-2xl font-bold text-card-foreground">
               Recommended Movies
             </h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
               {recommendations.results.map((recMovie) => (
                 <div
                   key={recMovie.id}
-                  className="bg-card rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow"
+                  className="overflow-hidden rounded-xl bg-card shadow-md hover:shadow-xl transition-shadow"
                 >
-                  <a href={`/movie/${recMovie.id}`}>
-                    <Image
-                      src={
-                        recMovie.poster_path
-                          ? `https://image.tmdb.org/t/p/w300${recMovie.poster_path}`
-                          : "/images/default.webp"
-                      }
-                      alt={recMovie.title}
-                      width={300}
-                      height={450}
-                      className="object-cover"
-                    />
-                    <div className="p-2">
-                      <h3 className="text-sm font-semibold text-card-foreground">
-                        {recMovie.title}
-                      </h3>
-                    </div>
-                  </a>
+                  <Link href={`/movie/${recMovie.id}`} legacyBehavior>
+                    <a className="block transition-transform hover:scale-105">
+                      <Image
+                        src={
+                          recMovie.poster_path
+                            ? `https://image.tmdb.org/t/p/w300${recMovie.poster_path}`
+                            : "/images/default.webp"
+                        }
+                        alt={recMovie.title}
+                        width={300}
+                        height={450}
+                        className="object-cover"
+                      />
+                      <div className="p-3">
+                        <h3 className="text-sm font-semibold text-card-foreground">
+                          {recMovie.title}
+                        </h3>
+                      </div>
+                    </a>
+                  </Link>
                 </div>
               ))}
             </div>
