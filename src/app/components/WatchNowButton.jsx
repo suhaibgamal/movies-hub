@@ -33,7 +33,7 @@ export default function WatchNowButton({ className, movieFound, id }) {
         aria-label="Watch movie"
         disabled={!movieFound}
       >
-        <FiFilm className="h-4 w-4" />
+        <FiFilm className="h-4 w-4 text-white" />
         <span className="text-white">
           {movieFound ? "Watch Now" : "Movie Not Available"}
         </span>
