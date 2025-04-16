@@ -74,6 +74,10 @@ export default async function MoviePage({ params }) {
         ? "bg-purple-600"
         : "bg-red-600";
 
+    // Extract genres from movie data
+    const genres =
+      movie.genres?.map((genre) => genre.name).filter(Boolean) || [];
+
     return (
       <div className="min-h-screen bg-background py-6 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
@@ -120,6 +124,14 @@ export default async function MoviePage({ params }) {
                     <span className="text-sm text-muted-foreground font-medium bg-muted px-2 py-1 rounded-full">
                       {releaseYear}
                     </span>
+                    {genres.map((genre) => (
+                      <span
+                        key={genre}
+                        className="text-sm text-muted-foreground font-medium bg-muted px-2 py-1 rounded-full"
+                      >
+                        {genre}
+                      </span>
+                    ))}
                   </div>
                 </header>
 
