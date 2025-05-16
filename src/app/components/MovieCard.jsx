@@ -1,7 +1,7 @@
 // app/components/MovieCard.jsx
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, memo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import WatchlistButton from "@/app/components/WatchlistButton";
@@ -124,4 +124,6 @@ function MovieCard({
   );
 }
 
-export default MovieCard;
+// Wrap MovieCard with React.memo
+const MemoizedMovieCard = memo(MovieCard);
+export default MemoizedMovieCard;

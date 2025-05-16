@@ -52,7 +52,7 @@ export default function LoginClient() {
               placeholder="Enter your username"
               value={form.username}
               onChange={(e) => setForm({ ...form, username: e.target.value })}
-              className="w-3/4 md:w-1/2 px-6 py-3 rounded-xl border bg-card text-card-foreground focus:ring-2 focus:ring-blue-500 transition-all"
+              className="w-3/4 md:w-1/2 px-6 py-3 rounded-xl border bg-card text-card-foreground focus:ring-2 focus:ring-primary focus:border-primary transition-all"
             />
           </div>
           <div className="w-full flex flex-col items-center">
@@ -68,7 +68,7 @@ export default function LoginClient() {
               placeholder="Enter your password"
               value={form.password}
               onChange={(e) => setForm({ ...form, password: e.target.value })}
-              className="w-3/4 md:w-1/2 px-6 py-3 rounded-xl border bg-card text-card-foreground focus:ring-2 focus:ring-blue-500 transition-all"
+              className="w-3/4 md:w-1/2 px-6 py-3 rounded-xl border bg-card text-card-foreground focus:ring-2 focus:ring-primary focus:border-primary transition-all"
             />
           </div>
           {error && <div className="text-destructive">{error}</div>}

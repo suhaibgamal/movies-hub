@@ -4,8 +4,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { FaRegBookmark, FaBookmark } from "react-icons/fa";
+import { FaRegBookmark, FaBookmark, FaSpinner } from "react-icons/fa";
 import { useWatchlist, useWatchlistActions } from "@/app/store/watchlistStore";
+import { useToast } from "@/app/components/ui/use-toast";
 
 export default function WatchlistButton({
   movie,
@@ -17,7 +18,10 @@ export default function WatchlistButton({
   const router = useRouter();
   const watchlist = useWatchlist();
   const { addToWatchlist, removeFromWatchlist } = useWatchlistActions();
+  const { toast } = useToast();
   const [watchlisted, setWatchlisted] = useState(initialWatchlisted);
+  const [isLoading, setIsLoading] = useState(false);
+
   useEffect(() => {
     setWatchlisted(
       Array.isArray(watchlist) ? watchlist.includes(movie.id) : false
@@ -32,6 +36,7 @@ export default function WatchlistButton({
       if (status === "loading") return;
       if (!session) return router.push("/api/auth/signin");
 
+      setIsLoading(true);
       const currentStatus = watchlisted;
       const newStatus = !currentStatus;
       setWatchlisted(newStatus);
@@ -62,13 +67,25 @@ export default function WatchlistButton({
           throw new Error(responseData.error || `HTTP ${response.status}`);
         }
         if (onWatchlistChange) onWatchlistChange(newStatus);
+        toast({
+          title: newStatus ? "Added to Watchlist" : "Removed from Watchlist",
+          description: movie.title,
+          duration: 2000,
+        });
       } catch (error) {
         setWatchlisted(currentStatus);
         currentStatus
           ? addToWatchlist(movie.id)
           : removeFromWatchlist(movie.id);
         console.error("Watchlist update failed:", error.message);
-        alert(`Failed to update watchlist: ${error.message}`);
+        toast({
+          variant: "destructive",
+          title: "Error updating watchlist",
+          description: error.message || "Please try again.",
+          duration: 3000,
+        });
+      } finally {
+        setIsLoading(false);
       }
     },
     [
@@ -80,6 +97,7 @@ export default function WatchlistButton({
       addToWatchlist,
       removeFromWatchlist,
       onWatchlistChange,
+      toast,
     ]
   );
 
@@ -90,11 +108,13 @@ export default function WatchlistButton({
         watchlisted
           ? "text-yellow-400 hover:text-yellow-300"
           : "dark:text-white text-foreground hover:opacity-75"
-      }`}
+      } ${isLoading ? "cursor-not-allowed" : ""}`}
       aria-label={watchlisted ? "Remove from watchlist" : "Add to watchlist"}
-      disabled={status === "loading"}
+      disabled={status === "loading" || isLoading}
     >
-      {watchlisted ? (
+      {isLoading ? (
+        <FaSpinner className="animate-spin" size={small ? 16 : 20} />
+      ) : watchlisted ? (
         <FaBookmark size={small ? 16 : 20} />
       ) : (
         <FaRegBookmark size={small ? 16 : 20} />

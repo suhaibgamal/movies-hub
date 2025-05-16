@@ -62,6 +62,8 @@ function MoviesGrid({ movies, watchlist = [], onWatchlistChange }) {
         </div>
       ) : (
         <div className="text-center py-20">
+          {/* Consider adding an SVG icon here for better visual appeal */}
+          {/* e.g., <MoviesNotFoundIcon className="mx-auto h-16 w-16 text-muted-foreground mb-4" /> */}
           <h2 className="text-2xl text-foreground font-semibold">
             No movies found
           </h2>

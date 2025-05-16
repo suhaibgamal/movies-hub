@@ -90,6 +90,8 @@ export default function WatchlistClient() {
           </div>
         ) : watchlistItems.length === 0 ? (
           <div className="text-center space-y-4">
+            {/* Consider adding an SVG icon here */}
+            {/* e.g., <EmptyWatchlistIcon className="mx-auto h-20 w-20 text-muted-foreground mb-4" /> */}
             <h2 className="text-3xl font-bold text-foreground">
               Your watchlist is empty!
             </h2>

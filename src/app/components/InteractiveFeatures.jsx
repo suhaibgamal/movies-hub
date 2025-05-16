@@ -5,8 +5,12 @@ import Link from "next/link";
 import { FaFacebookF, FaTwitter, FaWhatsapp, FaTimes } from "react-icons/fa";
 import WatchNowButton from "@/app/components/WatchNowButton";
 import Image from "next/image";
-import ActorFilmographyModal from "./ActorFilmographyModal";
 import { getActorMovieCredits } from "@/lib/tmdb";
+import dynamic from "next/dynamic";
+
+const ActorFilmographyModal = dynamic(() => import("./ActorFilmographyModal"), {
+  ssr: false,
+});
 
 export default function InteractiveFeatures({
   trailerKey,
@@ -65,7 +69,7 @@ export default function InteractiveFeatures({
       <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
         <button
           onClick={() => setTrailerModalOpen(true)}
-          className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-full bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+          className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-full bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all active:bg-blue-800 active:scale-95"
           disabled={!trailerKey}
           aria-label={trailerKey ? "Watch Trailer" : "Trailer Not Available"}
         >
