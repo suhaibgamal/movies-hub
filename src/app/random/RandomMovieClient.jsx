@@ -5,27 +5,8 @@ import { useState, useEffect } from "react";
 import MovieCard from "@/app/components/MovieCard";
 import { useWatchlist, useWatchlistActions } from "@/app/store/watchlistStore";
 import SkeletonLoader from "@/app/components/SkeletonLoader";
-
-const GENRES = {
-  28: "Action",
-  12: "Adventure",
-  16: "Animation",
-  35: "Comedy",
-  80: "Crime",
-  99: "Documentary",
-  18: "Drama",
-  10751: "Family",
-  14: "Fantasy",
-  36: "History",
-  27: "Horror",
-  10402: "Music",
-  9648: "Mystery",
-  878: "Science Fiction",
-  10770: "TV Movie",
-  53: "Thriller",
-  10752: "War",
-  37: "Western",
-};
+import { SearchX } from "lucide-react";
+import { GENRES } from "@/lib/constants";
 
 const fetchMovies = async (genre = "") => {
   try {
@@ -202,8 +183,7 @@ export default function RandomMovieClient() {
           </div>
         ) : (
           <p className="text-center text-muted-foreground text-sm">
-            {/* Consider adding an SVG icon here */}
-            {/* e.g., <NoMovieIcon className="mx-auto h-12 w-12 text-muted-foreground mb-2" /> */}
+            <SearchX className="mx-auto h-12 w-12 text-muted-foreground mb-2" />
             No movie found. Try again!
           </p>
         )}

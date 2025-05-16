@@ -4,28 +4,8 @@
 import { useState, useEffect } from "react";
 import MovieCard from "@/app/components/MovieCard";
 import PropTypes from "prop-types";
-
-const GENRES = {
-  28: "Action",
-  12: "Adventure",
-  16: "Animation",
-  35: "Comedy",
-  80: "Crime",
-  99: "Documentary",
-  18: "Drama",
-  10751: "Family",
-  14: "Fantasy",
-  36: "History",
-  27: "Horror",
-  10402: "Music",
-  9648: "Mystery",
-  10749: "Romance",
-  878: "Science Fiction",
-  10770: "TV Movie",
-  53: "Thriller",
-  10752: "War",
-  37: "Western",
-};
+import { SearchX } from "lucide-react";
+import { GENRES } from "@/lib/constants";
 
 function MoviesGrid({ movies, watchlist = [], onWatchlistChange }) {
   // Dynamically determine the number of items above the fold
@@ -64,6 +44,7 @@ function MoviesGrid({ movies, watchlist = [], onWatchlistChange }) {
         <div className="text-center py-20">
           {/* Consider adding an SVG icon here for better visual appeal */}
           {/* e.g., <MoviesNotFoundIcon className="mx-auto h-16 w-16 text-muted-foreground mb-4" /> */}
+          <SearchX className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
           <h2 className="text-2xl text-foreground font-semibold">
             No movies found
           </h2>

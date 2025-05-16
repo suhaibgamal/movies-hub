@@ -6,28 +6,8 @@ import MovieCard from "@/app/components/MovieCard";
 import { useSession } from "next-auth/react";
 import { useWatchlistActions } from "@/app/store/watchlistStore";
 import SkeletonLoader from "../components/SkeletonLoader";
-
-const GENRES = {
-  28: "Action",
-  12: "Adventure",
-  16: "Animation",
-  35: "Comedy",
-  80: "Crime",
-  99: "Documentary",
-  18: "Drama",
-  10751: "Family",
-  14: "Fantasy",
-  36: "History",
-  27: "Horror",
-  10402: "Music",
-  9648: "Mystery",
-  10749: "Romance",
-  878: "Science Fiction",
-  10770: "TV Movie",
-  53: "Thriller",
-  10752: "War",
-  37: "Western",
-};
+import { BookmarkX } from "lucide-react";
+import { GENRES } from "@/lib/constants";
 
 export default function WatchlistClient() {
   const { data: session, status } = useSession();
@@ -92,6 +72,7 @@ export default function WatchlistClient() {
           <div className="text-center space-y-4">
             {/* Consider adding an SVG icon here */}
             {/* e.g., <EmptyWatchlistIcon className="mx-auto h-20 w-20 text-muted-foreground mb-4" /> */}
+            <BookmarkX className="mx-auto h-20 w-20 text-muted-foreground mb-4" />
             <h2 className="text-3xl font-bold text-foreground">
               Your watchlist is empty!
             </h2>
