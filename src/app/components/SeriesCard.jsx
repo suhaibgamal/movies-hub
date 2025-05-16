@@ -1,4 +1,3 @@
-// app/components/MovieCard.jsx
 "use client";
 
 import { useMemo, useState, useEffect, memo } from "react";
@@ -6,18 +5,17 @@ import Image from "next/image";
 import Link from "next/link";
 import WatchlistButton from "@/app/components/WatchlistButton";
 
-function MovieCard({
-  movie,
+function SeriesCard({
+  series,
   href,
-  genres,
+  genres, // Assuming genres list is passed similarly
   initialWatchlisted = false,
   small = false,
-  deletable = false,
+  deletable = false, // If needed for watchlist page
   onWatchlistChange,
-  onDelete,
+  onDelete, // If needed for watchlist page
   isAbove = false, // Marks if the card is above the fold
 }) {
-  // Determine image quality based on viewport width.
   const [imgQuality, setImgQuality] = useState(70);
   useEffect(() => {
     if (typeof window !== "undefined" && window.innerWidth < 640) {
@@ -28,32 +26,32 @@ function MovieCard({
   }, []);
 
   const ratingClass = useMemo(() => {
-    const rating = Number(movie.vote_average) || 0;
+    const rating = Number(series.vote_average) || 0;
     if (rating >= 7) return "bg-blue-600";
     if (rating >= 5) return "bg-purple-600";
     return "bg-red-600";
-  }, [movie.vote_average]);
+  }, [series.vote_average]);
 
   const displayRating = useMemo(() => {
-    const rating = Number(movie.vote_average);
+    const rating = Number(series.vote_average);
     return isNaN(rating)
       ? "N/A"
       : rating % 1 === 0
       ? rating
       : rating.toFixed(1);
-  }, [movie.vote_average]);
+  }, [series.vote_average]);
 
   const imageUrl = useMemo(() => {
-    if (movie.poster_path)
-      return `https://image.tmdb.org/t/p/w500${movie.poster_path}`;
-    if (movie.backdrop_path)
-      return `https://image.tmdb.org/t/p/w500${movie.backdrop_path}`;
-    return "/images/default.webp";
-  }, [movie.poster_path, movie.backdrop_path]);
+    if (series.poster_path)
+      return `https://image.tmdb.org/t/p/w500${series.poster_path}`;
+    if (series.backdrop_path)
+      return `https://image.tmdb.org/t/p/w500${series.backdrop_path}`;
+    return "/images/default.webp"; // Ensure you have this default image
+  }, [series.poster_path, series.backdrop_path]);
 
-  const releaseYear =
-    movie.release_date && !isNaN(new Date(movie.release_date))
-      ? new Date(movie.release_date).getFullYear()
+  const firstAirYear =
+    series.first_air_date && !isNaN(new Date(series.first_air_date))
+      ? new Date(series.first_air_date).getFullYear()
       : "N/A";
 
   const containerClass = small
@@ -68,26 +66,26 @@ function MovieCard({
       <div className={imageContainerClass}>
         <Image
           src={imageUrl}
-          alt={`${movie.title} poster`}
+          alt={`${series.name} poster`}
           fill
           quality={imgQuality}
           sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, (max-width: 1280px) 20vw, 16vw"
           className="object-contain transition-opacity duration-200 opacity-100"
-          // Do not force lazy loading; let priority prop decide.
           priority={isAbove}
           placeholder="blur"
-          blurDataURL="/default-blur.webp"
+          blurDataURL="/default-blur.webp" // Ensure you have this default blur image
         />
       </div>
       <div className={paddingClass}>
         <h3
-          id={`movie-${movie.id}-title`}
+          id={`series-${series.id}-title`}
           className={`${titleClass} text-card-foreground mb-2 line-clamp-2`}
         >
-          {movie.title}
+          {series.name} {/* Changed from movie.title */}
         </h3>
         <div className="flex items-center justify-between text-gray-400 mb-4">
-          <time className="text-xs">{releaseYear}</time>
+          <time className="text-xs">{firstAirYear}</time>{" "}
+          {/* Changed from releaseYear */}
           <span
             className={`text-xs font-bold py-1 px-3 rounded-full ${ratingClass} text-white`}
           >
@@ -95,24 +93,26 @@ function MovieCard({
           </span>
         </div>
         <div className="flex flex-wrap gap-2">
-          {(movie.genre_ids || []).slice(0, 3).map((genre) => (
+          {(series.genre_ids || []).slice(0, 3).map((genreId) => (
             <span
-              key={genre}
+              key={genreId}
               className="px-2 py-0.5 bg-muted rounded-full text-xs text-muted-foreground"
             >
-              {genres[genre] || "Other"}
+              {genres[genreId] || "Other"}{" "}
+              {/* Assuming genres object maps TV genre IDs too */}
             </span>
           ))}
         </div>
       </div>
       <div className="absolute top-2 right-2">
         <WatchlistButton
-          movie={movie}
+          item={{ ...series, title: series.name }} // Pass series data, ensure title is present for WatchlistButton if it expects it
+          itemType="TV" // Specify itemType as TV
           small={small}
           initialWatchlisted={initialWatchlisted}
           onWatchlistChange={(newStatus) => {
             if (deletable && !newStatus && onDelete) {
-              onDelete(movie.id);
+              onDelete(series.id, "TV"); // Pass itemType if onDelete needs it
             }
             if (onWatchlistChange) {
               onWatchlistChange(newStatus);
@@ -124,6 +124,5 @@ function MovieCard({
   );
 }
 
-// Wrap MovieCard with React.memo
-const MemoizedMovieCard = memo(MovieCard);
-export default MemoizedMovieCard;
+const MemoizedSeriesCard = memo(SeriesCard);
+export default MemoizedSeriesCard;

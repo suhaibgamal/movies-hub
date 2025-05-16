@@ -1,33 +1,12 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import MovieCard from "@/app/components/MovieCard";
 import { useSession } from "next-auth/react";
 import { useWatchlistActions } from "@/app/store/watchlistStore";
+import MoviesGrid from "@/app/components/MoviesGrid";
 import SkeletonLoader from "../components/SkeletonLoader";
-
-const GENRES = {
-  28: "Action",
-  12: "Adventure",
-  16: "Animation",
-  35: "Comedy",
-  80: "Crime",
-  99: "Documentary",
-  18: "Drama",
-  10751: "Family",
-  14: "Fantasy",
-  36: "History",
-  27: "Horror",
-  10402: "Music",
-  9648: "Mystery",
-  10749: "Romance",
-  878: "Science Fiction",
-  10770: "TV Movie",
-  53: "Thriller",
-  10752: "War",
-  37: "Western",
-};
+import { BookmarkX } from "lucide-react";
 
 export default function WatchlistClient() {
   const { data: session, status } = useSession();
@@ -50,8 +29,11 @@ export default function WatchlistClient() {
         if (!res.ok) throw new Error(res.statusText);
         const { watchlist } = await res.json();
         setWatchlistItems(watchlist || []);
-        const movieIds = (watchlist || []).map((item) => item.movieId);
-        syncWatchlist(movieIds);
+        const storeItems = (watchlist || []).map((item) => ({
+          id: item.itemId,
+          type: item.itemType,
+        }));
+        syncWatchlist(storeItems);
       } catch (error) {
         console.error("Fetch Error:", error);
       } finally {
@@ -61,12 +43,30 @@ export default function WatchlistClient() {
     fetchWatchlist();
   }, [session, status, router, syncWatchlist]);
 
-  const handleDelete = useCallback((movieId) => {
-    setWatchlistItems((prev) =>
-      prev.filter((item) => item.movieId !== movieId)
-    );
-  }, []);
+  const handleWatchlistItemRemoved = useCallback(
+    (itemIdToRemove, itemTypeToRemove) => {
+      setWatchlistItems((prev) =>
+        prev.filter(
+          (item) =>
+            !(
+              item.itemId === itemIdToRemove &&
+              item.itemType === itemTypeToRemove
+            )
+        )
+      );
+    },
+    []
+  );
+
   const aboveTheFoldCount = 6;
+
+  const transformedItems = useMemo(() => {
+    return watchlistItems.map((item) => ({
+      ...item.itemData,
+      id: item.itemId,
+      media_type: item.itemType.toLowerCase(),
+    }));
+  }, [watchlistItems]);
 
   if (status === "loading")
     return (
@@ -80,7 +80,7 @@ export default function WatchlistClient() {
     <main className="min-h-screen bg-background py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         <h1 className="text-3xl font-bold mb-8 text-foreground">
-          My WatchList
+          My Watchlist
         </h1>
         {loading ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
@@ -88,31 +88,28 @@ export default function WatchlistClient() {
               <SkeletonLoader key={index} />
             ))}
           </div>
-        ) : watchlistItems.length === 0 ? (
-          <div className="text-center space-y-4">
+        ) : transformedItems.length === 0 ? (
+          <div className="text-center space-y-4 py-16">
+            <BookmarkX className="mx-auto h-20 w-20 text-muted-foreground mb-4" />
             <h2 className="text-3xl font-bold text-foreground">
               Your watchlist is empty!
             </h2>
-            <p className="text-lg font-semibold text-foreground">
-              Add Movies to see them here
+            <p className="text-lg text-muted-foreground">
+              Add some movies or TV shows to see them here.
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-            {watchlistItems.map((item, index) => (
-              <MovieCard
-                key={item.id}
-                movie={{ ...item.movieData, id: item.movieId }}
-                href={`/movie/${item.movieId}`}
-                genres={GENRES}
-                initialWatchlisted={true}
-                small={true}
-                deletable={true}
-                onDelete={handleDelete}
-                isAbove={index < aboveTheFoldCount}
-              />
-            ))}
-          </div>
+          <MoviesGrid
+            movies={transformedItems}
+            onWatchlistChange={(item, newStatus) => {
+              if (!newStatus) {
+                handleWatchlistItemRemoved(
+                  item.id,
+                  item.media_type.toUpperCase()
+                );
+              }
+            }}
+          />
         )}
       </div>
     </main>

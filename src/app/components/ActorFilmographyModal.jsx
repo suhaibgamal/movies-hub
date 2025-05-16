@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { FaTimes } from "react-icons/fa";
+import { useEffect, useRef } from "react";
 
 export default function ActorFilmographyModal({
   isOpen,
@@ -10,11 +11,73 @@ export default function ActorFilmographyModal({
   isLoading,
   error,
 }) {
+  const modalRef = useRef(null);
+  const prevActiveElementRef = useRef(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      prevActiveElementRef.current = document.activeElement;
+      if (modalRef.current) {
+        modalRef.current.focus();
+      }
+
+      const handleEsc = (event) => {
+        if (event.key === "Escape") {
+          onClose();
+        }
+      };
+
+      const handleTabKey = (event) => {
+        if (event.key === "Tab" && modalRef.current) {
+          const focusableElements = modalRef.current.querySelectorAll(
+            'a[href], button, input, textarea, select, details, [tabindex]:not([tabindex="-1"])'
+          );
+          const firstElement = focusableElements[0];
+          const lastElement = focusableElements[focusableElements.length - 1];
+
+          if (event.shiftKey) {
+            if (document.activeElement === firstElement) {
+              lastElement.focus();
+              event.preventDefault();
+            }
+          } else {
+            if (document.activeElement === lastElement) {
+              firstElement.focus();
+              event.preventDefault();
+            }
+          }
+        }
+      };
+
+      document.addEventListener("keydown", handleEsc);
+      document.addEventListener("keydown", handleTabKey);
+      return () => {
+        document.removeEventListener("keydown", handleEsc);
+        document.removeEventListener("keydown", handleTabKey);
+        if (prevActiveElementRef.current) {
+          prevActiveElementRef.current.focus();
+        }
+      };
+    }
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto">
-      <div className="relative w-full max-w-4xl mx-auto rounded-lg bg-background p-6 shadow-2xl flex flex-col">
+    <div
+      ref={modalRef}
+      tabIndex={-1}
+      className={`fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto outline-none transition-opacity duration-300 ease-in-out ${
+        isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+      }`}
+      aria-modal="true"
+      role="dialog"
+    >
+      <div
+        className={`relative w-full max-w-4xl mx-auto rounded-lg bg-background p-6 shadow-2xl flex flex-col transition-all duration-300 ease-in-out ${
+          isOpen ? "scale-100 opacity-100" : "scale-95 opacity-0"
+        }`}
+      >
         <div className="flex items-center justify-between border-b border-muted pb-3 mb-4 flex-shrink-0">
           <h2 className="text-xl sm:text-2xl font-bold text-card-foreground">
             {actorName}'s Filmography

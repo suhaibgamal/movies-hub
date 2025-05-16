@@ -1,9 +1,0 @@
--- CreateTable
-CREATE TABLE "WatchlistItem" (
-    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-    "movieId" INTEGER NOT NULL,
-    "movieData" JSONB NOT NULL,
-    "userId" INTEGER NOT NULL,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "WatchlistItem_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
-);

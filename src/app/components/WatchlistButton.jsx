@@ -4,11 +4,12 @@
 import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { FaRegBookmark, FaBookmark } from "react-icons/fa";
+import { FaRegBookmark, FaBookmark, FaSpinner } from "react-icons/fa";
 import { useWatchlist, useWatchlistActions } from "@/app/store/watchlistStore";
 
 export default function WatchlistButton({
-  movie,
+  item,
+  itemType = "MOVIE",
   small = false,
   initialWatchlisted = false,
   onWatchlistChange,
@@ -18,70 +19,115 @@ export default function WatchlistButton({
   const watchlist = useWatchlist();
   const { addToWatchlist, removeFromWatchlist } = useWatchlistActions();
   const [watchlisted, setWatchlisted] = useState(initialWatchlisted);
+  const [isLoading, setIsLoading] = useState(false);
+
   useEffect(() => {
-    setWatchlisted(
-      Array.isArray(watchlist) ? watchlist.includes(movie.id) : false
-    );
-  }, [watchlist, movie.id]);
+    if (!item || typeof item.id === "undefined") return;
+    const isItemInWatchlist = Array.isArray(watchlist)
+      ? watchlist.some((watchlistItem) => {
+          if (
+            typeof watchlistItem === "object" &&
+            watchlistItem !== null &&
+            typeof watchlistItem.id !== "undefined" &&
+            typeof watchlistItem.type !== "undefined"
+          ) {
+            return (
+              watchlistItem.id === item.id && watchlistItem.type === itemType
+            );
+          }
+          return watchlistItem === item.id;
+        })
+      : false;
+    setWatchlisted(isItemInWatchlist);
+  }, [watchlist, item, itemType]);
 
   const handleToggleWatchlist = useCallback(
     async (e) => {
       e.preventDefault();
       e.stopPropagation();
 
+      if (!item || typeof item.id === "undefined") {
+        console.error("WatchlistButton: item or item.id is undefined.");
+        return;
+      }
       if (status === "loading") return;
       if (!session) return router.push("/api/auth/signin");
 
+      setIsLoading(true);
       const currentStatus = watchlisted;
       const newStatus = !currentStatus;
       setWatchlisted(newStatus);
-      newStatus ? addToWatchlist(movie.id) : removeFromWatchlist(movie.id);
+
+      const watchlistItemObject = { id: item.id, type: itemType };
+      newStatus
+        ? addToWatchlist(watchlistItemObject)
+        : removeFromWatchlist(watchlistItemObject);
 
       try {
+        const preparedItemData = {
+          id: item.id,
+          title: item.title || item.name,
+          poster_path: item.poster_path,
+          genre_ids: item.genre_ids,
+          vote_average: item.vote_average,
+          release_date:
+            itemType === "TV" ? item.first_air_date : item.release_date,
+        };
+
         const response = await fetch("/api/watchList", {
           method: newStatus ? "POST" : "DELETE",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            movieId: movie.id,
-            movieData: {
-              id: movie.id,
-              title: movie.title,
-              poster_path: movie.poster_path,
-              genre_ids: movie.genre_ids,
-              vote_average: movie.vote_average,
-              release_date: movie.release_date,
-            },
+            itemId: item.id,
+            itemType: itemType,
+            itemData: preparedItemData,
           }),
         });
 
         const responseData = await response.json();
 
         if (!response.ok) {
-          throw new Error(responseData.error || `HTTP ${response.status}`);
+          throw new Error(
+            responseData.error || `HTTP error ${response.status}`
+          );
         }
         if (onWatchlistChange) onWatchlistChange(newStatus);
+        alert(
+          `${item.title || item.name} ${
+            newStatus ? "added to" : "removed from"
+          } watchlist.`
+        );
       } catch (error) {
         setWatchlisted(currentStatus);
         currentStatus
-          ? addToWatchlist(movie.id)
-          : removeFromWatchlist(movie.id);
+          ? addToWatchlist(watchlistItemObject)
+          : removeFromWatchlist(watchlistItemObject);
         console.error("Watchlist update failed:", error.message);
-        alert(`Failed to update watchlist: ${error.message}`);
+        alert(
+          `Error updating watchlist: ${error.message || "Please try again."}`
+        );
+      } finally {
+        setIsLoading(false);
       }
     },
     [
       watchlisted,
       session,
       status,
-      movie,
+      item,
+      itemType,
       router,
       addToWatchlist,
       removeFromWatchlist,
       onWatchlistChange,
     ]
   );
+
+  if (!item || typeof item.id === "undefined") {
+    return null;
+  }
 
   return (
     <button
@@ -90,11 +136,13 @@ export default function WatchlistButton({
         watchlisted
           ? "text-yellow-400 hover:text-yellow-300"
           : "dark:text-white text-foreground hover:opacity-75"
-      }`}
+      } ${isLoading ? "cursor-not-allowed" : ""}`}
       aria-label={watchlisted ? "Remove from watchlist" : "Add to watchlist"}
-      disabled={status === "loading"}
+      disabled={status === "loading" || isLoading}
     >
-      {watchlisted ? (
+      {isLoading ? (
+        <FaSpinner className="animate-spin" size={small ? 16 : 20} />
+      ) : watchlisted ? (
         <FaBookmark size={small ? 16 : 20} />
       ) : (
         <FaRegBookmark size={small ? 16 : 20} />

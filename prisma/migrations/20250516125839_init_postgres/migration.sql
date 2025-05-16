@@ -13,10 +13,11 @@ CREATE TABLE "User" (
 
 -- CreateTable
 CREATE TABLE "WatchlistItem" (
-    "id" SERIAL NOT NULL,
+    "id" INTEGER NOT NULL,
     "userId" TEXT NOT NULL,
-    "movieId" INTEGER NOT NULL,
-    "movieData" JSONB NOT NULL,
+    "itemId" INTEGER NOT NULL,
+    "itemType" TEXT NOT NULL,
+    "itemData" JSONB NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "WatchlistItem_pkey" PRIMARY KEY ("id")
@@ -29,7 +30,7 @@ CREATE UNIQUE INDEX "User_username_key" ON "User"("username");
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "WatchlistItem_userId_movieId_key" ON "WatchlistItem"("userId", "movieId");
+CREATE UNIQUE INDEX "WatchlistItem_userId_itemId_itemType_key" ON "WatchlistItem"("userId", "itemId", "itemType");
 
 -- AddForeignKey
 ALTER TABLE "WatchlistItem" ADD CONSTRAINT "WatchlistItem_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

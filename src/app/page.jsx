@@ -1,5 +1,6 @@
 // app/page.jsx
 import MoviesListClient from "@/app/MoviesListClient";
+// import TestToastButton from "@/app/components/TestToastButton";
 import { Suspense } from "react";
 
 export const metadata = {
@@ -18,6 +19,7 @@ export const metadata = {
 export default function HomePage() {
   return (
     <Suspense fallback={<div>Loading movies...</div>}>
+      {/* <TestToastButton /> */}
       <MoviesListClient />
     </Suspense>
   );
