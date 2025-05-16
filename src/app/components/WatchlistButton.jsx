@@ -6,7 +6,6 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { FaRegBookmark, FaBookmark, FaSpinner } from "react-icons/fa";
 import { useWatchlist, useWatchlistActions } from "@/app/store/watchlistStore";
-import { useToast } from "@/app/components/ui/use-toast";
 
 export default function WatchlistButton({
   item,
@@ -19,7 +18,6 @@ export default function WatchlistButton({
   const router = useRouter();
   const watchlist = useWatchlist();
   const { addToWatchlist, removeFromWatchlist } = useWatchlistActions();
-  const { toast } = useToast();
   const [watchlisted, setWatchlisted] = useState(initialWatchlisted);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -96,23 +94,20 @@ export default function WatchlistButton({
           );
         }
         if (onWatchlistChange) onWatchlistChange(newStatus);
-        toast({
-          title: newStatus ? "Added to Watchlist" : "Removed from Watchlist",
-          description: item.title || item.name,
-          duration: 2000,
-        });
+        alert(
+          `${item.title || item.name} ${
+            newStatus ? "added to" : "removed from"
+          } watchlist.`
+        );
       } catch (error) {
         setWatchlisted(currentStatus);
         currentStatus
           ? addToWatchlist(watchlistItemObject)
           : removeFromWatchlist(watchlistItemObject);
         console.error("Watchlist update failed:", error.message);
-        toast({
-          variant: "destructive",
-          title: "Error updating watchlist",
-          description: error.message || "Please try again.",
-          duration: 3000,
-        });
+        alert(
+          `Error updating watchlist: ${error.message || "Please try again."}`
+        );
       } finally {
         setIsLoading(false);
       }
@@ -127,7 +122,6 @@ export default function WatchlistButton({
       addToWatchlist,
       removeFromWatchlist,
       onWatchlistChange,
-      toast,
     ]
   );
 
