@@ -22,8 +22,10 @@ model WatchlistItem {
   id        Int      @id @default(autoincrement())
   userId    String
   user      User     @relation(fields: [userId], references: [id])
-  movieId   Int
-  movieData Json
+  itemId    Int
+  itemType  String
+  itemData  Json
   createdAt DateTime @default(now())
-  @@unique([userId, movieId])
+  @@unique([userId, itemId, itemType])
 }
+
