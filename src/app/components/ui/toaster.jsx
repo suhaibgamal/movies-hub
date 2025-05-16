@@ -4,7 +4,7 @@ import {
   Toast,
   ToastClose,
   ToastDescription,
-  ToastProvider,
+  ToastProvider as ShadcnToastProvider,
   ToastTitle,
   ToastViewport,
 } from "@/app/components/ui/toast";
@@ -12,18 +12,22 @@ import {
   useToast,
   ToastContext,
   useToastProvider,
-} from "@/app/components/ui/use-toast"; // Ensure this path is correct
+} from "@/app/components/ui/use-toast";
 import * as React from "react";
 
 export function Toaster() {
-  const { toasts, ...toastContextValue } = useToastProvider(); // Get the full context value
+  const toastContextValue = useToastProvider();
 
   return (
     <ToastContext.Provider value={toastContextValue}>
-      {" "}
-      {/* Provide the context */}
-      <ToastProvider>
-        {toasts.map(function ({ id, title, description, action, ...props }) {
+      <ShadcnToastProvider>
+        {toastContextValue.toasts.map(function ({
+          id,
+          title,
+          description,
+          action,
+          ...props
+        }) {
           return (
             <Toast key={id} {...props}>
               <div className="grid gap-1">
@@ -38,7 +42,7 @@ export function Toaster() {
           );
         })}
         <ToastViewport />
-      </ToastProvider>
+      </ShadcnToastProvider>
     </ToastContext.Provider>
   );
 }
