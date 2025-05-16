@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { FaFacebookF, FaTwitter, FaWhatsapp } from "react-icons/fa";
+import { FaFacebookF, FaTwitter, FaWhatsapp, FaTimes } from "react-icons/fa";
 import WatchNowButton from "@/app/components/WatchNowButton";
 import Image from "next/image";
+import ActorFilmographyModal from "./ActorFilmographyModal";
+import { getActorMovieCredits } from "@/lib/tmdb";
 
 export default function InteractiveFeatures({
   trailerKey,
@@ -15,6 +17,11 @@ export default function InteractiveFeatures({
 }) {
   const [isTrailerModalOpen, setTrailerModalOpen] = useState(false);
   const [isRecModalOpen, setRecModalOpen] = useState(false);
+  const [selectedActor, setSelectedActor] = useState(null);
+  const [isActorModalOpen, setIsActorModalOpen] = useState(false);
+  const [actorMovies, setActorMovies] = useState([]);
+  const [actorMoviesLoading, setActorMoviesLoading] = useState(false);
+  const [actorMoviesError, setActorMoviesError] = useState(null);
 
   const openSharePopup = (url) => {
     const width = 600;
@@ -27,6 +34,30 @@ export default function InteractiveFeatures({
       `width=${width},height=${height},top=${top},left=${left},resizable=yes,scrollbars=yes`
     );
   };
+
+  const handleCastMemberClick = useCallback((actor) => {
+    setSelectedActor(actor);
+    setIsActorModalOpen(true);
+    setActorMovies([]);
+    setActorMoviesError(null);
+  }, []);
+
+  useEffect(() => {
+    if (selectedActor && isActorModalOpen) {
+      const fetchActorMovies = async () => {
+        setActorMoviesLoading(true);
+        try {
+          const moviesData = await getActorMovieCredits(selectedActor.id);
+          setActorMovies(moviesData);
+        } catch (err) {
+          setActorMoviesError(err.message || "Failed to load filmography.");
+        } finally {
+          setActorMoviesLoading(false);
+        }
+      };
+      fetchActorMovies();
+    }
+  }, [selectedActor, isActorModalOpen]);
 
   return (
     <div className="space-y-8">
@@ -66,9 +97,11 @@ export default function InteractiveFeatures({
           <div className="overflow-x-auto">
             <div className="flex gap-4 pl-2">
               {cast.map((member) => (
-                <div
+                <button
                   key={member.id}
-                  className="flex-shrink-0 w-20 sm:w-24 md:w-28 bg-card rounded-lg p-2 shadow hover:shadow-lg transition-shadow border border-muted/20"
+                  onClick={() => handleCastMemberClick(member)}
+                  className="flex-shrink-0 w-20 sm:w-24 md:w-28 bg-card rounded-lg p-2 shadow hover:shadow-lg transition-all duration-200 border border-muted/20 hover:border-primary focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer text-left"
+                  aria-label={`View movies by ${member.name}`}
                 >
                   <div className="relative w-full aspect-square rounded-md overflow-hidden mb-2">
                     <Image
@@ -90,7 +123,7 @@ export default function InteractiveFeatures({
                   <p className="text-[9px] text-muted-foreground truncate">
                     {member.character}
                   </p>
-                </div>
+                </button>
               ))}
             </div>
           </div>
@@ -164,10 +197,10 @@ export default function InteractiveFeatures({
           <div className="relative w-full max-w-2xl mx-auto rounded-lg bg-background p-4 shadow-2xl">
             <button
               onClick={() => setTrailerModalOpen(false)}
-              className="absolute -top-4 right-4 text-white hover:text-gray-300 text-3xl focus:outline-none"
+              className="absolute -top-3 -right-3 sm:top-4 sm:right-4 text-white bg-black/50 rounded-full p-1 hover:text-gray-300 text-3xl focus:outline-none z-10"
               aria-label="Close Trailer"
             >
-              &times;
+              <FaTimes size={20} />
             </button>
             <div className="aspect-video rounded-md overflow-hidden">
               <iframe
@@ -191,33 +224,39 @@ export default function InteractiveFeatures({
               </h2>
               <button
                 onClick={() => setRecModalOpen(false)}
-                className="text-white hover:text-gray-300 text-3xl focus:outline-none"
+                className="text-white bg-black/50 rounded-full p-1 hover:text-gray-300 text-3xl focus:outline-none"
                 aria-label="Close Recommendations"
               >
-                &times;
+                <FaTimes size={20} />
               </button>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 max-h-[60vh] overflow-y-auto">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 max-h-[60vh] overflow-y-auto pr-2">
               {recommendations.results.map((recMovie) => (
                 <div
                   key={recMovie.id}
-                  className="overflow-hidden rounded-lg bg-card shadow hover:shadow-lg transition transform hover:scale-105"
+                  className="overflow-hidden rounded-lg bg-card shadow hover:shadow-lg transition-all duration-200 transform hover:scale-105 border border-transparent hover:border-primary"
                 >
                   <Link href={`/movie/${recMovie.id}`} legacyBehavior>
-                    <a className="block">
-                      <Image
-                        src={
-                          recMovie.poster_path
-                            ? `https://image.tmdb.org/t/p/w300${recMovie.poster_path}`
-                            : "/images/default.webp"
-                        }
-                        alt={recMovie.title}
-                        width={300}
-                        height={450}
-                        className="object-cover"
-                      />
-                      <div className="p-2">
-                        <h3 className="text-center text-xs font-medium text-card-foreground">
+                    <a
+                      className="block"
+                      onClick={() => setIsActorModalOpen(false)}
+                    >
+                      <div className="relative aspect-[2/3] w-full bg-muted">
+                        <Image
+                          src={
+                            recMovie.poster_path
+                              ? `https://image.tmdb.org/t/p/w300${recMovie.poster_path}`
+                              : "/images/default.webp"
+                          }
+                          alt={`${recMovie.title} poster`}
+                          fill
+                          className="object-cover"
+                          unoptimized
+                          loading="lazy"
+                        />
+                      </div>
+                      <div className="p-2 sm:p-3 text-center">
+                        <h3 className="text-xs sm:text-sm font-medium text-card-foreground truncate">
                           {recMovie.title}
                         </h3>
                       </div>
@@ -229,6 +268,16 @@ export default function InteractiveFeatures({
           </div>
         </div>
       )}
+
+      {/* Actor Filmography Modal */}
+      <ActorFilmographyModal
+        isOpen={isActorModalOpen}
+        onClose={() => setIsActorModalOpen(false)}
+        actorName={selectedActor?.name}
+        movies={actorMovies}
+        isLoading={actorMoviesLoading}
+        error={actorMoviesError}
+      />
     </div>
   );
 }

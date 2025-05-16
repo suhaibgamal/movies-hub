@@ -70,3 +70,27 @@ export const getCachedRecommendations = unstable_cache(
   ["recommendations-data"],
   { revalidate: 3600 }
 );
+
+// New function to fetch actor movie credits (client-side utility)
+export const getActorMovieCredits = async (actorId) => {
+  try {
+    const res = await fetch(
+      `https://api.themoviedb.org/3/person/${actorId}/movie_credits?api_key=${process.env.NEXT_PUBLIC_TMDB_KEY}`
+    );
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(
+        errorData.status_message || "Failed to fetch actor credits"
+      );
+    }
+    const data = await res.json();
+    // Sort movies by popularity, prioritizing ones with poster_path
+    const sortedMovies = (data.cast || [])
+      .filter((movie) => movie.poster_path) // Ensure movie has a poster
+      .sort((a, b) => (b.popularity || 0) - (a.popularity || 0)); // Sort by popularity
+    return sortedMovies;
+  } catch (err) {
+    console.error("Error fetching actor movie credits from lib:", err);
+    throw err; // Re-throw the error to be caught by the calling component
+  }
+};
