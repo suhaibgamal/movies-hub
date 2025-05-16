@@ -9,7 +9,8 @@ import { useWatchlist, useWatchlistActions } from "@/app/store/watchlistStore";
 import { useToast } from "@/app/components/ui/use-toast";
 
 export default function WatchlistButton({
-  movie,
+  item,
+  itemType = "MOVIE",
   small = false,
   initialWatchlisted = false,
   onWatchlistChange,
@@ -23,16 +24,34 @@ export default function WatchlistButton({
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    setWatchlisted(
-      Array.isArray(watchlist) ? watchlist.includes(movie.id) : false
-    );
-  }, [watchlist, movie.id]);
+    if (!item || typeof item.id === "undefined") return;
+    const isItemInWatchlist = Array.isArray(watchlist)
+      ? watchlist.some((watchlistItem) => {
+          if (
+            typeof watchlistItem === "object" &&
+            watchlistItem !== null &&
+            typeof watchlistItem.id !== "undefined" &&
+            typeof watchlistItem.type !== "undefined"
+          ) {
+            return (
+              watchlistItem.id === item.id && watchlistItem.type === itemType
+            );
+          }
+          return watchlistItem === item.id;
+        })
+      : false;
+    setWatchlisted(isItemInWatchlist);
+  }, [watchlist, item, itemType]);
 
   const handleToggleWatchlist = useCallback(
     async (e) => {
       e.preventDefault();
       e.stopPropagation();
 
+      if (!item || typeof item.id === "undefined") {
+        console.error("WatchlistButton: item or item.id is undefined.");
+        return;
+      }
       if (status === "loading") return;
       if (!session) return router.push("/api/auth/signin");
 
@@ -40,43 +59,53 @@ export default function WatchlistButton({
       const currentStatus = watchlisted;
       const newStatus = !currentStatus;
       setWatchlisted(newStatus);
-      newStatus ? addToWatchlist(movie.id) : removeFromWatchlist(movie.id);
+
+      const watchlistItemObject = { id: item.id, type: itemType };
+      newStatus
+        ? addToWatchlist(watchlistItemObject)
+        : removeFromWatchlist(watchlistItemObject);
 
       try {
+        const preparedItemData = {
+          id: item.id,
+          title: item.title || item.name,
+          poster_path: item.poster_path,
+          genre_ids: item.genre_ids,
+          vote_average: item.vote_average,
+          release_date:
+            itemType === "TV" ? item.first_air_date : item.release_date,
+        };
+
         const response = await fetch("/api/watchList", {
           method: newStatus ? "POST" : "DELETE",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            movieId: movie.id,
-            movieData: {
-              id: movie.id,
-              title: movie.title,
-              poster_path: movie.poster_path,
-              genre_ids: movie.genre_ids,
-              vote_average: movie.vote_average,
-              release_date: movie.release_date,
-            },
+            itemId: item.id,
+            itemType: itemType,
+            itemData: preparedItemData,
           }),
         });
 
         const responseData = await response.json();
 
         if (!response.ok) {
-          throw new Error(responseData.error || `HTTP ${response.status}`);
+          throw new Error(
+            responseData.error || `HTTP error ${response.status}`
+          );
         }
         if (onWatchlistChange) onWatchlistChange(newStatus);
         toast({
           title: newStatus ? "Added to Watchlist" : "Removed from Watchlist",
-          description: movie.title,
+          description: item.title || item.name,
           duration: 2000,
         });
       } catch (error) {
         setWatchlisted(currentStatus);
         currentStatus
-          ? addToWatchlist(movie.id)
-          : removeFromWatchlist(movie.id);
+          ? addToWatchlist(watchlistItemObject)
+          : removeFromWatchlist(watchlistItemObject);
         console.error("Watchlist update failed:", error.message);
         toast({
           variant: "destructive",
@@ -92,7 +121,8 @@ export default function WatchlistButton({
       watchlisted,
       session,
       status,
-      movie,
+      item,
+      itemType,
       router,
       addToWatchlist,
       removeFromWatchlist,
@@ -100,6 +130,10 @@ export default function WatchlistButton({
       toast,
     ]
   );
+
+  if (!item || typeof item.id === "undefined") {
+    return null;
+  }
 
   return (
     <button

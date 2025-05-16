@@ -19,11 +19,12 @@ model User {
 }
 
 model WatchlistItem {
-  id        Int      @id @default(autoincrement())
+  id        Int      @id
   userId    String
   user      User     @relation(fields: [userId], references: [id])
-  movieId   Int
-  movieData Json
+  itemId    Int      // Renamed from movieId
+  itemType  String   // Added for TV/Movie differentiation
+  itemData  Json     // Renamed from movieData
   createdAt DateTime @default(now())
-  @@unique([userId, movieId])
+  @@unique([userId, itemId, itemType]) // Updated unique constraint
 }

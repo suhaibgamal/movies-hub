@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import MovieCard from "@/app/components/MovieCard";
+import SeriesCard from "@/app/components/SeriesCard";
 import { useSession } from "next-auth/react";
 import { useWatchlistActions } from "@/app/store/watchlistStore";
 import SkeletonLoader from "../components/SkeletonLoader";
@@ -30,8 +31,11 @@ export default function WatchlistClient() {
         if (!res.ok) throw new Error(res.statusText);
         const { watchlist } = await res.json();
         setWatchlistItems(watchlist || []);
-        const movieIds = (watchlist || []).map((item) => item.movieId);
-        syncWatchlist(movieIds);
+        const storeItems = (watchlist || []).map((item) => ({
+          id: item.itemId,
+          type: item.itemType,
+        }));
+        syncWatchlist(storeItems);
       } catch (error) {
         console.error("Fetch Error:", error);
       } finally {
@@ -41,11 +45,17 @@ export default function WatchlistClient() {
     fetchWatchlist();
   }, [session, status, router, syncWatchlist]);
 
-  const handleDelete = useCallback((movieId) => {
+  const handleDelete = useCallback((itemIdToDelete, itemTypeToDelete) => {
     setWatchlistItems((prev) =>
-      prev.filter((item) => item.movieId !== movieId)
+      prev.filter(
+        (item) =>
+          !(
+            item.itemId === itemIdToDelete && item.itemType === itemTypeToDelete
+          )
+      )
     );
   }, []);
+
   const aboveTheFoldCount = 6;
 
   if (status === "loading")
@@ -60,7 +70,7 @@ export default function WatchlistClient() {
     <main className="min-h-screen bg-background py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         <h1 className="text-3xl font-bold mb-8 text-foreground">
-          My WatchList
+          My Watchlist
         </h1>
         {loading ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
@@ -70,31 +80,48 @@ export default function WatchlistClient() {
           </div>
         ) : watchlistItems.length === 0 ? (
           <div className="text-center space-y-4">
-            {/* Consider adding an SVG icon here */}
-            {/* e.g., <EmptyWatchlistIcon className="mx-auto h-20 w-20 text-muted-foreground mb-4" /> */}
             <BookmarkX className="mx-auto h-20 w-20 text-muted-foreground mb-4" />
             <h2 className="text-3xl font-bold text-foreground">
               Your watchlist is empty!
             </h2>
             <p className="text-lg font-semibold text-foreground">
-              Add Movies to see them here
+              Add items to see them here
             </p>
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-            {watchlistItems.map((item, index) => (
-              <MovieCard
-                key={item.id}
-                movie={{ ...item.movieData, id: item.movieId }}
-                href={`/movie/${item.movieId}`}
-                genres={GENRES}
-                initialWatchlisted={true}
-                small={true}
-                deletable={true}
-                onDelete={handleDelete}
-                isAbove={index < aboveTheFoldCount}
-              />
-            ))}
+            {watchlistItems.map((item, index) => {
+              if (item.itemType === "MOVIE") {
+                return (
+                  <MovieCard
+                    key={`${item.itemType}-${item.itemId}`}
+                    movie={{ ...item.itemData, id: item.itemId }}
+                    href={`/movie/${item.itemId}`}
+                    genres={GENRES}
+                    initialWatchlisted={true}
+                    small={true}
+                    deletable={true}
+                    onDelete={() => handleDelete(item.itemId, item.itemType)}
+                    isAbove={index < aboveTheFoldCount}
+                  />
+                );
+              } else if (item.itemType === "TV") {
+                return (
+                  <SeriesCard
+                    key={`${item.itemType}-${item.itemId}`}
+                    series={{ ...item.itemData, id: item.itemId }}
+                    href={`/tv/${item.itemId}`}
+                    genres={GENRES}
+                    initialWatchlisted={true}
+                    small={true}
+                    deletable={true}
+                    onDelete={() => handleDelete(item.itemId, item.itemType)}
+                    isAbove={index < aboveTheFoldCount}
+                  />
+                );
+              }
+              return null;
+            })}
           </div>
         )}
       </div>

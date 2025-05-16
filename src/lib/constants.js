@@ -19,3 +19,25 @@ export const GENRES = {
   10752: "War",
   37: "Western",
 };
+
+export const TV_GENRES = {
+  10759: "Action & Adventure",
+  16: "Animation",
+  35: "Comedy",
+  80: "Crime",
+  99: "Documentary",
+  18: "Drama",
+  10751: "Family",
+  10762: "Kids",
+  9648: "Mystery",
+  10763: "News",
+  10764: "Reality",
+  10765: "Sci-Fi & Fantasy",
+  10766: "Soap",
+  10767: "Talk",
+  10768: "War & Politics",
+  37: "Western",
+  // Consider adding genres that TMDB suggests using as keywords if not in the main list:
+  // e.g., Horror, Romance, History, Music, Thriller if TMDB API for TV series might return these IDs in genre_ids array for some shows.
+  // For now, sticking to the official GET /genre/tv/list response.
+};

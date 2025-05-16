@@ -94,3 +94,71 @@ export const getActorMovieCredits = async (actorId) => {
     throw err; // Re-throw the error to be caught by the calling component
   }
 };
+
+// --- TV Show Specific Functions ---
+
+export const getCachedTvShowDetails = unstable_cache(
+  async (tvId) => {
+    const res = await fetch(
+      `https://api.themoviedb.org/3/tv/${tvId}?api_key=${process.env.NEXT_PUBLIC_TMDB_KEY}`
+    );
+    if (!res.ok) throw new Error("Failed to fetch TV show details");
+    return res.json();
+  },
+  ["tv-show-details"],
+  { revalidate: 86400 } // Revalidate daily
+);
+
+export const getCachedTvShowCredits = unstable_cache(
+  async (tvId) => {
+    const res = await fetch(
+      `https://api.themoviedb.org/3/tv/${tvId}/credits?api_key=${process.env.NEXT_PUBLIC_TMDB_KEY}`
+    );
+    if (!res.ok) throw new Error("Failed to fetch TV show credits");
+    return res.json();
+  },
+  ["tv-show-credits"],
+  { revalidate: 86400 } // Revalidate daily
+);
+
+export const getCachedTvShowRecommendations = unstable_cache(
+  async (tvId) => {
+    const res = await fetch(
+      `https://api.themoviedb.org/3/tv/${tvId}/recommendations?api_key=${process.env.NEXT_PUBLIC_TMDB_KEY}`
+    );
+    // It's okay if recommendations are not found, return empty results
+    if (!res.ok) return { results: [] };
+    return res.json();
+  },
+  ["tv-show-recommendations"],
+  { revalidate: 86400 } // Revalidate daily
+);
+
+// Server-side function to fetch discover TV shows (example)
+export const fetchDiscoverTvShows = async ({
+  page = 1,
+  genre = "",
+  sortBy = "popularity.desc",
+} = {}) => {
+  let url = `https://api.themoviedb.org/3/discover/tv?api_key=${process.env.NEXT_PUBLIC_TMDB_KEY}&page=${page}&sort_by=${sortBy}`;
+  if (genre) {
+    url += `&with_genres=${genre}`;
+  }
+  // Add other filters as needed, e.g., vote_average.gte, first_air_date_year
+
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("Failed to fetch discover TV shows");
+  return res.json();
+};
+
+// Server-side function to search TV shows (example)
+export const fetchSearchTvShows = async ({ query, page = 1 } = {}) => {
+  if (!query) throw new Error("Search query is required");
+  const url = `https://api.themoviedb.org/3/search/tv?api_key=${
+    process.env.NEXT_PUBLIC_TMDB_KEY
+  }&query=${encodeURIComponent(query)}&page=${page}`;
+
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("Failed to search TV shows");
+  return res.json();
+};

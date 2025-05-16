@@ -146,6 +146,12 @@ function Header() {
             Watchlist
           </Link>
           <Link
+            href="/tv"
+            className="text-card-foreground hover:text-muted-foreground"
+          >
+            TV Shows
+          </Link>
+          <Link
             href="/random"
             className="text-card-foreground hover:text-muted-foreground"
           >
