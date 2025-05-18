@@ -15,9 +15,6 @@ import {
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
-// Assuming GENRES is aliased as MOVIE_GENRES upon import if GENRES is for movies.
-// If your import is `import { GENRES, TV_GENRES } from "@/lib/constants";`
-// you'd use `mediaType === "movie" ? GENRES : TV_GENRES`
 import {
   GENRES as MOVIE_GENRES_OBJ,
   TV_GENRES as TV_GENRES_OBJ,
@@ -32,20 +29,13 @@ const RATING_OPTIONS_RANDOM = [
   { value: "5", label: "5+" },
 ];
 
-// Generate Year options (Current year is 2025 based on context)
+// Generate Year options
 const currentDynamicYear = new Date().getFullYear();
 const YEAR_OPTIONS_RANDOM = (() => {
   const options = [{ value: "", label: "Any Year" }];
-
-  // Individual years from current year down to 2010
   for (let year = currentDynamicYear; year >= 2010; year--) {
-    options.push({
-      value: year.toString(),
-      label: year.toString(),
-    });
+    options.push({ value: year.toString(), label: year.toString() });
   }
-
-  // Decades
   options.push(
     {
       value: "2000s",
@@ -70,7 +60,7 @@ const YEAR_OPTIONS_RANDOM = (() => {
   return options;
 })();
 
-// API fetching logic
+// API fetching logic (ensure NEXT_PUBLIC_TMDB_KEY is set in .env)
 const fetchRandomDiscoverItems = async ({
   mediaType,
   genre,
@@ -82,9 +72,8 @@ const fetchRandomDiscoverItems = async ({
     const typePath = mediaType === "tv" ? "tv" : "movie";
     const dateFilterKey =
       mediaType === "tv" ? "first_air_date" : "primary_release_date";
-
-    // Ensure NEXT_PUBLIC_TMDB_KEY is available
     const apiKey = process.env.NEXT_PUBLIC_TMDB_KEY;
+
     if (!apiKey) {
       console.error(
         "TMDB API key is missing. Please set NEXT_PUBLIC_TMDB_KEY."
@@ -93,7 +82,6 @@ const fetchRandomDiscoverItems = async ({
     }
 
     let discoverUrl = `https://api.themoviedb.org/3/discover/${typePath}?api_key=${apiKey}&language=en-US&sort_by=popularity.desc&vote_count.gte=100&include_adult=false`;
-
     if (genre) discoverUrl += `&with_genres=${genre}`;
     if (rating) discoverUrl += `&vote_average.gte=${rating}`;
 
@@ -109,36 +97,21 @@ const fetchRandomDiscoverItems = async ({
     }
 
     const initialRes = await fetch(discoverUrl + "&page=1");
-    if (!initialRes.ok) {
-      const errorBody = await initialRes.text();
-      console.error(
-        `TMDB API Error (Initial Page): ${initialRes.status} - ${typePath}`,
-        { url: discoverUrl + "&page=1", errorBody }
-      );
+    if (!initialRes.ok)
       throw new Error(
         `Failed to fetch initial discovery data (status ${initialRes.status})`
       );
-    }
     const initialData = await initialRes.json();
-    let totalPages = initialData.total_pages;
-
-    totalPages = Math.min(totalPages, 500);
+    let totalPages = Math.min(initialData.total_pages, 500);
     if (totalPages === 0) return [];
 
     const randomPageToFetch =
       Math.floor(Math.random() * Math.min(totalPages, pageLimit)) + 1;
-
     const finalRes = await fetch(`${discoverUrl}&page=${randomPageToFetch}`);
-    if (!finalRes.ok) {
-      const errorBody = await finalRes.text();
-      console.error(
-        `TMDB API Error (Random Page): ${finalRes.status} - ${typePath}`,
-        { url: `${discoverUrl}&page=${randomPageToFetch}`, errorBody }
-      );
+    if (!finalRes.ok)
       throw new Error(
         `Failed to fetch random page data (status ${finalRes.status})`
       );
-    }
     const finalData = await finalRes.json();
     return (finalData.results || []).map((item) => ({
       ...item,
@@ -174,7 +147,7 @@ export default function RandomClient() {
   });
 
   const zustandWatchlist = useZustandWatchlist();
-  const isMounted = useRef(false);
+  const isMounted = useRef(false); // For filter change effect
 
   const currentGenreObject = useMemo(
     () => (mediaType === "movie" ? MOVIE_GENRES_OBJ : TV_GENRES_OBJ),
@@ -186,9 +159,7 @@ export default function RandomClient() {
       if (typeof window !== "undefined") {
         const mobileCheck = window.innerWidth < 1024;
         setIsMobile(mobileCheck);
-        if (!mobileCheck && !showFilterInputs) {
-          setShowFilterInputs(true);
-        }
+        if (!mobileCheck && !showFilterInputs) setShowFilterInputs(true);
       }
     };
     checkMobile();
@@ -198,30 +169,27 @@ export default function RandomClient() {
 
   const pickAndSetRandomItem = useCallback(
     async (isInitialCall = false, forceRefetch = false) => {
-      if (isInitialCall) {
-        setIsLoadingInitial(true);
-      } else {
-        setIsPicking(true);
-      }
+      if (isInitialCall) setIsLoadingInitial(true);
+      else setIsPicking(true);
       setError(null);
 
       if (!forceRefetch && !isInitialCall) {
-        let currentCache = itemCache[mediaType];
-        let currentSeen = seenItems[mediaType];
-        let potentialItemsFromCache = currentCache.filter(
-          (item) => !currentSeen.has(item.id)
+        const currentMediaTypeCache = itemCache[mediaType]; // Read from closure
+        const currentMediaTypeSeen = seenItems[mediaType]; // Read from closure
+        let potentialItemsFromCache = currentMediaTypeCache.filter(
+          (item) => !currentMediaTypeSeen.has(item.id)
         );
 
         if (
           potentialItemsFromCache.length === 0 &&
-          currentCache.length > 0 &&
-          currentSeen.size >= currentCache.length
+          currentMediaTypeCache.length > 0 &&
+          currentMediaTypeSeen.size >= currentMediaTypeCache.length
         ) {
           const newSeenSet = new Set();
           setSeenItems((prev) => ({ ...prev, [mediaType]: newSeenSet }));
-          currentSeen = newSeenSet;
-          potentialItemsFromCache = currentCache.filter(
-            (item) => !currentSeen.has(item.id)
+          // Re-filter with the reset seen set (conceptually, currentMediaTypeSeen is now newSeenSet for this path)
+          potentialItemsFromCache = currentMediaTypeCache.filter(
+            (item) => !newSeenSet.has(item.id)
           );
         }
 
@@ -233,7 +201,7 @@ export default function RandomClient() {
           setRandomItem(chosenItem);
           setSeenItems((prev) => ({
             ...prev,
-            [mediaType]: new Set(prev[mediaType]).add(chosenItem.id),
+            [mediaType]: new Set(prev[mediaType]).add(chosenItem.id), // Use functional update with prev state
           }));
           if (isInitialCall) setIsLoadingInitial(false);
           setIsPicking(false);
@@ -256,14 +224,20 @@ export default function RandomClient() {
           } found for the selected criteria. Please try different filters.`
         );
       } else {
-        const newCombinedCache = Array.from(
-          new Map([
-            ...itemCache[mediaType].map((item) => [item.id, item]),
-            ...newItems.map((item) => [item.id, item]),
-          ]).values()
-        );
-        setItemCache((prev) => ({ ...prev, [mediaType]: newCombinedCache }));
+        setItemCache((prev) => {
+          // Functional update for itemCache
+          const existingCacheForType = prev[mediaType] || [];
+          const newCombinedCache = Array.from(
+            new Map([
+              ...existingCacheForType.map((item) => [item.id, item]),
+              ...newItems.map((item) => [item.id, item]),
+            ]).values()
+          );
+          return { ...prev, [mediaType]: newCombinedCache };
+        });
 
+        // Read seenItems again AFTER potential setItemCache, or use a ref if strict sequence matters.
+        // For this pick, using the 'seenItems' from closure is fine for filtering newItems initially.
         let currentSeenForPick = seenItems[mediaType];
         let potentialNewItems = newItems.filter(
           (item) => !currentSeenForPick.has(item.id)
@@ -274,27 +248,26 @@ export default function RandomClient() {
           setSeenItems((prev) => ({
             ...prev,
             [mediaType]: newSeenSetForBatch,
-          }));
-          potentialNewItems = newItems;
+          })); // Reset seen for this type
+          potentialNewItems = newItems; // Use the new items directly
         }
 
         if (potentialNewItems.length > 0) {
-          // Ensure there's something to pick
           const randomIndex = Math.floor(
             Math.random() * potentialNewItems.length
           );
           const chosenItem = potentialNewItems[randomIndex];
           setRandomItem(chosenItem);
           setSeenItems((prev) => ({
+            // Functional update for seenItems
             ...prev,
             [mediaType]: new Set(prev[mediaType]).add(chosenItem.id),
           }));
         } else {
-          // Fallback if even after reset, no items (e.g. newItems was empty initially after all)
           setError(
             `No ${
               mediaType === "tv" ? "TV shows" : "movies"
-            } found after attempting to fetch new items. Please adjust filters.`
+            } found after fetching. Please adjust filters.`
           );
         }
       }
@@ -306,26 +279,32 @@ export default function RandomClient() {
       mediaType,
       selectedGenre,
       selectedRating,
-      selectedYear,
-      itemCache,
-      seenItems,
+      selectedYear /* itemCache, seenItems removed */,
     ]
   );
+  // State setters (setError, setRandomItem etc.) are stable and don't need to be listed.
 
+  // Initial fetch on mount
   useEffect(() => {
+    // `pickAndSetRandomItem` reference is now stable unless filters change.
+    // This effect runs once on mount due to empty dependency array effectively.
+    // The pickAndSetRandomItem called here will use initial filter states.
     pickAndSetRandomItem(true, true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pickAndSetRandomItem]);
+  }, []); // No dependencies, runs once.
 
+  // Effect for filter changes
   useEffect(() => {
     if (isMounted.current) {
+      // Avoid running on initial mount
       setIsPicking(true);
-      pickAndSetRandomItem(false, true);
+      pickAndSetRandomItem(false, true); // Not initial, force refetch due to filter change
     } else {
       isMounted.current = true;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mediaType, selectedGenre, selectedRating, selectedYear]);
+  }, [mediaType, selectedGenre, selectedRating, selectedYear]); // Re-run when filters change. `pickAndSetRandomItem` is not needed as a dep here
+  // because this effect's purpose IS to call it when these filters change.
 
   const handleMediaTypeChange = (newType) => {
     if (mediaType === newType) return;
@@ -347,11 +326,13 @@ export default function RandomClient() {
 
   return (
     <div className="min-h-screen w-full bg-background text-foreground flex flex-col lg:flex-row overflow-x-hidden">
+      {/* Filters Panel */}
       <div
         className={`w-full lg:w-[320px] xl:w-[360px] bg-card lg:h-screen flex flex-col flex-shrink-0 
                     border-b lg:border-b-0 lg:border-r border-border/30`}
       >
-        <div className="p-4 pt-5 sm:p-6 flex justify-between items-center border-b border-border/30 lg:mb-0 shrink-0">
+        {/* Panel Header */}
+        <div className="p-4 pt-5 sm:p-6 flex justify-between items-center border-b border-border/30 shrink-0">
           <h2 className="text-xl sm:text-2xl font-bold text-primary flex items-center gap-2">
             <FilterIcon size={22} className="mt-[-2px]" /> Filters
           </h2>
@@ -373,16 +354,18 @@ export default function RandomClient() {
           )}
         </div>
 
+        {/* Scrollable Area for Filter Inputs - NO flex-grow */}
         <div
-          className={`flex-grow lg:overflow-y-auto custom-scrollbar transition-all duration-300 ease-in-out
+          className={`lg:overflow-y-auto custom-scrollbar transition-all duration-300 ease-in-out
                       ${
                         showFilterInputs || !isMobile
-                          ? "opacity-100 p-4 sm:p-6 pt-3 sm:pt-4"
-                          : "opacity-0 max-h-0 overflow-hidden p-0 lg:opacity-100 lg:max-h-none lg:p-4 sm:lg:p-6 lg:pt-3"
+                          ? "opacity-100 p-4 sm:p-6 pt-3 sm:pt-4" // Visible: has padding
+                          : "opacity-0 max-h-0 overflow-hidden p-0 lg:opacity-100 lg:max-h-auto lg:p-4 sm:lg:p-6 lg:pt-3" // Hidden on mobile, visible on desktop
                       }`}
         >
           {(showFilterInputs || !isMobile) && (
             <div className="space-y-4 sm:space-y-5 animate-fadeIn">
+              {/* Media Type Selector */}
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1.5">
                   Media Type
@@ -412,7 +395,7 @@ export default function RandomClient() {
                   </button>
                 </div>
               </div>
-
+              {/* Genre Filter */}
               <div className="relative">
                 <label
                   htmlFor="genre"
@@ -444,7 +427,7 @@ export default function RandomClient() {
                   aria-hidden="true"
                 />
               </div>
-
+              {/* Rating Filter */}
               <div className="relative">
                 <label
                   htmlFor="rating"
@@ -471,7 +454,7 @@ export default function RandomClient() {
                   aria-hidden="true"
                 />
               </div>
-
+              {/* Year Filter */}
               <div className="relative">
                 <label
                   htmlFor="year"
@@ -502,7 +485,8 @@ export default function RandomClient() {
           )}
         </div>
 
-        <div className="p-4 sm:p-6 pt-3 sm:pt-4 mt-auto lg:mt-6 lg:mb-4 shrink-0">
+        {/* Pick Button Area - Sits below filters. `mt-auto` for mobile, `lg:mt-6` for desktop */}
+        <div className="p-4 sm:p-6 pt-3 sm:pt-4 shrink-0 mt-auto lg:mt-6 lg:mb-4">
           <button
             onClick={() => pickAndSetRandomItem(false, false)}
             disabled={isLoadingInitial || isPicking}
@@ -519,6 +503,7 @@ export default function RandomClient() {
         </div>
       </div>
 
+      {/* Display Area */}
       <div className="w-full lg:flex-grow flex flex-col justify-center items-center p-4 sm:p-6 lg:h-screen">
         {displayLoadingState ? (
           <div

@@ -1,97 +1,155 @@
+// src/app/about/page.jsx
+
 import Image from "next/image";
+import Link from "next/link"; // Import Link for internal navigation if needed
 
 export const metadata = {
-  title: "Movies Hub - About",
+  title: "About Movies Hub", // Kept title concise
   description:
-    "Learn about Movies Hub, your resource for movie reviews, trailers, and more.",
-  alternates: { canonical: "https://movies.suhaeb.com/about" },
+    "Learn more about Movies Hub, your go-to resource for discovering and tracking movies and TV shows, exploring detailed information, trailers, and managing your personal watchlist.",
+  alternates: { canonical: "https://movies.suhaeb.com/about" }, // Ensure this is your production URL
 };
 
 const AboutPage = () => {
   return (
-    <div className="bg-background p-5 sm:p-8 md:p-10 lg:p-12 xl:p-16 max-w-3xl mx-auto font-sans leading-relaxed text-foreground text-center text-base sm:text-lg md:text-lg lg:text-xl">
-      <h1 className="text-center text-3xl sm:text-4xl md:text-5xl mb-5 font-semibold">
-        About Movies Hub
-      </h1>
-      <p>
-        Welcome to Movies Hub! This platform is dedicated to providing you with
-        the latest information on movies, including where to watch them,
-        reviews, and trailers. Whether you're looking for the newest blockbuster
-        or an indie gem, we've got you covered.
-      </p>
-      <br />
-      <p>
-        On Movies Hub, you will find detailed reviews, insightful articles, and
-        up-to-date news on the latest releases. We strive to cover a wide range
-        of films to cater to all tastes and preferences.
-      </p>
-      <br />
-      <p>
-        Our goal is to create a comprehensive resource for movie enthusiasts,
-        where you can find everything you need to stay informed and entertained.
-        We are constantly updating the site with new content, so be sure to
-        check back often for the latest updates.
-      </p>
-      <br />
-      <p>
-        Thank you for visiting Movies Hub! Your support and feedback are greatly
-        appreciated. If you have any suggestions or comments, feel free to reach
-        out.
-      </p>
-      <br />
-      <p>
-        Connect with me on{" "}
-        <a
-          href="https://github.com/suhaibgamal"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-blue-500"
-        >
-          GitHub
-        </a>
-        . For any inquiries, you can email me at{" "}
-        <a href="mailto:contact@suhaeb.com" className="text-blue-500">
-          contact@suhaeb.com
-        </a>
-        .
-      </p>
-      <br />
-      <p>
-        Please note that Movies Hub is a non-commercial project created for
-        development and educational purposes.
-      </p>
-      <br />
-      <p>
-        Data provided by{" "}
-        <a
-          href="https://www.themoviedb.org/"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-blue-500"
-        >
-          The Movie Database (TMDb)
-        </a>
-      </p>
-
-      <div className="mt-4 flex flex-col items-center">
-        <a
-          href="https://www.themoviedb.org/"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="block"
-        >
-          <Image
-            unoptimized
-            src="/images/tmdb_logo.svg"
-            alt="TMDb Logo"
-            width={100}
-            height={0}
-          />
-        </a>
-        <p className="text-sm text-gray-500 mt-2">
-          This product uses the TMDb API but is not endorsed or certified by
-          TMDb.
-        </p>
+    <div className="bg-background text-foreground py-10 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-3xl mx-auto space-y-6 sm:space-y-8 text-center sm:text-left">
+        {" "}
+        {/* Allow left align on sm+ */}
+        <header>
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-center mb-6 sm:mb-8 bg-gradient-to-r from-primary via-purple-500 to-pink-500 bg-clip-text text-transparent">
+            About Movies Hub
+          </h1>
+        </header>
+        <section className="space-y-4 text-base sm:text-lg leading-relaxed">
+          <p>
+            Welcome to Movies Hub! This platform is your comprehensive guide to
+            the world of cinema and television. We're dedicated to providing you
+            with the latest information on a vast array of movies and TV series,
+            including detailed insights, trailers, cast information, and where
+            you might be able to watch them.
+          </p>
+          <p>
+            Whether you're searching for the newest blockbuster, a critically
+            acclaimed TV show, an indie gem, or just looking for a random
+            suggestion for your next watch, Movies Hub aims to be your go-to
+            resource.
+          </p>
+        </section>
+        <section className="space-y-4 text-base sm:text-lg leading-relaxed">
+          <h2 className="text-xl sm:text-2xl font-semibold text-primary mb-3 text-center sm:text-left">
+            Our Features
+          </h2>
+          <ul className="list-disc list-inside space-y-2 text-muted-foreground marker:text-primary text-left mx-auto sm:mx-0 max-w-xl">
+            <li>
+              Explore detailed information for both{" "}
+              <strong className="text-foreground">movies and TV series</strong>.
+            </li>
+            <li>
+              Discover content through{" "}
+              <strong className="text-foreground">advanced filters</strong>{" "}
+              (genre, rating, year) and categories (Popular, Top Rated,
+              Trending).
+            </li>
+            <li>
+              Get{" "}
+              <strong className="text-foreground">
+                random movie or TV show suggestions
+              </strong>{" "}
+              with our Picker tool.
+            </li>
+            <li>
+              Create and manage your personal{" "}
+              <strong className="text-foreground">Watchlist</strong> (requires
+              login).
+            </li>
+            <li>View trailers, cast details, and recommendations.</li>
+            <li>
+              For TV shows, browse{" "}
+              <strong className="text-foreground">
+                seasons and episode lists
+              </strong>
+              .
+            </li>
+            <li>
+              Enjoy a clean, responsive interface with{" "}
+              <strong className="text-foreground">Light and Dark modes</strong>.
+            </li>
+          </ul>
+        </section>
+        <section className="space-y-4 text-base sm:text-lg leading-relaxed">
+          <h2 className="text-xl sm:text-2xl font-semibold text-primary mb-3 text-center sm:text-left">
+            Our Goal
+          </h2>
+          <p>
+            Our mission is to create an intuitive and enjoyable platform for all
+            film and television enthusiasts. We strive to keep the information
+            up-to-date and cover a wide range of content to cater to diverse
+            tastes and preferences. Movies Hub is continuously evolving, with
+            new features and improvements planned.
+          </p>
+        </section>
+        <section className="space-y-4 text-base sm:text-lg leading-relaxed">
+          <h2 className="text-xl sm:text-2xl font-semibold text-primary mb-3 text-center sm:text-left">
+            Connect & Feedback
+          </h2>
+          <p>
+            This project was developed by Suhaib Gamal. Your support and
+            feedback are greatly appreciated! If you have any suggestions,
+            comments, or encounter any issues, please feel free to reach out.
+          </p>
+          <div className="flex flex-col sm:flex-row justify-center items-center gap-4 sm:gap-6 pt-2">
+            <a
+              href="https://github.com/suhaibgamal/movies-hub" // Assuming this is the correct repo URL
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block px-5 py-2.5 rounded-md bg-card hover:bg-muted border border-border font-medium text-foreground transition-colors"
+            >
+              View Project on GitHub
+            </a>
+            <a
+              href="mailto:contact@suhaeb.com" // Your contact email
+              className="inline-block px-5 py-2.5 rounded-md bg-primary hover:bg-primary/90 text-primary-foreground font-medium transition-colors"
+            >
+              Email Me
+            </a>
+          </div>
+        </section>
+        <section className="space-y-4 text-base sm:text-lg leading-relaxed border-t border-border/30 pt-6 sm:pt-8 mt-6 sm:mt-8">
+          <h2 className="text-xl sm:text-2xl font-semibold text-primary mb-3 text-center sm:text-left">
+            Disclaimers
+          </h2>
+          <p className="text-sm text-muted-foreground text-center sm:text-left">
+            Please note that Movies Hub is a non-commercial project created
+            primarily for educational and portfolio purposes. It is not
+            affiliated with any of the streaming services mentioned or linked.
+          </p>
+          <div className="flex flex-col items-center pt-4">
+            <p className="text-sm text-muted-foreground mb-2">
+              Data and imagery provided by:
+            </p>
+            <a
+              href="https://www.themoviedb.org/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block"
+              aria-label="The Movie Database"
+            >
+              <Image
+                unoptimized // Keep if this is your project's default for TMDB assets
+                src="/images/tmdb_logo.svg" // Ensure this path is correct in your /public folder
+                alt="The Movie Database (TMDb) Logo"
+                width={130} // Slightly larger for better visibility
+                height={30} // Adjust height proportionally or based on original aspect ratio
+                className="h-auto" // Maintain aspect ratio
+              />
+            </a>
+            <p className="text-xs text-muted-foreground/80 mt-2">
+              This product uses the TMDb API but is not endorsed or certified by
+              TMDb.
+            </p>
+          </div>
+        </section>
       </div>
     </div>
   );
