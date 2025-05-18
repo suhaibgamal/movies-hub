@@ -6,6 +6,7 @@ import MovieCard from "@/app/components/MovieCard";
 import SeriesCard from "@/app/components/SeriesCard"; // Import SeriesCard
 import { useWatchlist as useZustandWatchlist } from "@/app/store/watchlistStore"; // For initialWatchlisted prop
 import SkeletonLoader from "@/app/components/SkeletonLoader"; // For card loading
+import GridCardSkeleton from "@/app/components/GridCardSkeleton"; // For card loading
 import {
   Shuffle,
   Film,
