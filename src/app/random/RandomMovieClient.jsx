@@ -6,7 +6,14 @@ import MovieCard from "@/app/components/MovieCard";
 import SeriesCard from "@/app/components/SeriesCard"; // Import SeriesCard
 import { useWatchlist as useZustandWatchlist } from "@/app/store/watchlistStore"; // For initialWatchlisted prop
 import SkeletonLoader from "@/app/components/SkeletonLoader"; // For card loading
-import { Shuffle, Film, Tv as TvIcon, SearchX, Filter } from "lucide-react";
+import {
+  Shuffle,
+  Film,
+  Tv as TvIcon,
+  SearchX,
+  Filter,
+  ChevronDown,
+} from "lucide-react";
 import { GENRES, TV_GENRES } from "@/lib/constants";
 
 // Helper to fetch items (movies or TV shows)
