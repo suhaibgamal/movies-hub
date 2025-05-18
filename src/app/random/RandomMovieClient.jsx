@@ -56,12 +56,6 @@ const YEARS = Array.from({ length: 50 }, (_, i) => ({
 // This function would typically interact with your backend or TMDB API directly
 // and respect all the filters.
 const fetchRandomItemAPI = async ({ mediaType, genre, rating, year }) => {
-  console.log("Fetching random item with filters:", {
-    mediaType,
-    genre,
-    rating,
-    year,
-  });
   // Simulate API delay
   await new Promise((resolve) => setTimeout(resolve, 1000));
 
@@ -134,7 +128,7 @@ export default function RandomMovieClient() {
       });
       setRandomItem(item);
     } catch (err) {
-      console.error("Failed to fetch random item:", err);
+      // console.error("Failed to fetch random item:", err); // Keep for dev, remove for prod if too noisy
       setError("Could not fetch a random item. Please try again.");
       setRandomItem(null);
     } finally {
@@ -144,22 +138,28 @@ export default function RandomMovieClient() {
   }, [mediaType, selectedGenre, selectedRating, selectedYear]);
 
   useEffect(() => {
-    // Fetch an initial random item when the component mounts or core filters change
+    // Fetch an initial random item when the component mounts
     setIsLoading(true); // Use isLoading for the very first load
     fetchAndSetRandomItem();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Fetch only on mount initially. Subsequent fetches via button.
 
   const handlePickRandom = () => {
     fetchAndSetRandomItem();
   };
 
-  const isWatchlisted = randomItem
-    ? zustandWatchlist.some(
-        (watchlistItem) =>
-          watchlistItem.id === randomItem.id &&
-          watchlistItem.media_type === randomItem.media_type
-      )
-    : false;
+  const isWatchlisted =
+    randomItem &&
+    randomItem.id !== undefined &&
+    typeof randomItem.media_type === "string" &&
+    Array.isArray(zustandWatchlist)
+      ? zustandWatchlist.some(
+          (watchlistItem) =>
+            watchlistItem && // Ensure watchlistItem itself is valid
+            watchlistItem.id === randomItem.id &&
+            watchlistItem.type === randomItem.media_type.toUpperCase()
+        )
+      : false;
 
   // Toggle filter visibility on smaller screens
   useEffect(() => {
