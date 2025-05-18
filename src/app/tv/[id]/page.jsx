@@ -15,7 +15,7 @@ import InteractiveFeatures from "@/app/components/InteractiveFeatures";
 import WatchlistButton from "@/app/components/WatchlistButton";
 import TvSeasonsDisplay from "@/app/components/TvSeasonsDisplay";
 import DetailItem from "@/app/components/DetailItem"; // <<< IMPORT SHARED COMPONENT
-// Ensure all icons used by DetailItem and this page are imported
+// Icons used in this page for DetailItem
 import {
   CalendarDays,
   Tv as TvIcon,
@@ -110,7 +110,7 @@ export default async function TvShowPage({ params }) {
   }
 
   try {
-    const seriesData = await getCachedTvShowDetails(id);
+    const seriesData = await getCachedTvShowDetails(id); // Fetches details, videos, external_ids
 
     if (!seriesData || Object.keys(seriesData).length === 0) {
       console.error(
@@ -126,6 +126,7 @@ export default async function TvShowPage({ params }) {
       getCachedRecommendations(id, "tv"),
     ]);
 
+    // Use videos from seriesData as it's appended
     const trailerKey =
       seriesData.videos?.results?.find(
         (v) => v.type === "Trailer" && v.site === "YouTube" && v.official
@@ -240,37 +241,61 @@ export default async function TvShowPage({ params }) {
                   </p>
                 </section>
 
-                {/* Using the imported DetailItem component */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 text-sm mb-4 sm:mb-5">
                   <DetailItem
-                    icon={TvIcon}
+                    icon={
+                      <TvIcon
+                        size={16}
+                        className="text-primary mt-0.5 sm:mt-1 flex-shrink-0 opacity-80"
+                      />
+                    }
                     label="Status"
                     value={seriesData.status}
                   />
                   {seriesData.number_of_episodes > 0 && (
                     <DetailItem
-                      icon={CalendarDays}
+                      icon={
+                        <CalendarDays
+                          size={16}
+                          className="text-primary mt-0.5 sm:mt-1 flex-shrink-0 opacity-80"
+                        />
+                      }
                       label="Total Episodes"
                       value={seriesData.number_of_episodes}
                     />
                   )}
                   {seriesData.networks && seriesData.networks.length > 0 && (
                     <DetailItem
-                      icon={Info}
+                      icon={
+                        <Info
+                          size={16}
+                          className="text-primary mt-0.5 sm:mt-1 flex-shrink-0 opacity-80"
+                        />
+                      }
                       label="Network"
                       value={seriesData.networks.map((n) => n.name).join(", ")}
                     />
                   )}
                   {creators.length > 0 && (
                     <DetailItem
-                      icon={Users}
+                      icon={
+                        <Users
+                          size={16}
+                          className="text-primary mt-0.5 sm:mt-1 flex-shrink-0 opacity-80"
+                        />
+                      }
                       label="Created by"
                       value={creators.map((c) => c.name).join(", ")}
                     />
                   )}
                   {homepageLink && (
                     <DetailItem
-                      icon={ExternalLinkIcon}
+                      icon={
+                        <ExternalLinkIcon
+                          size={16}
+                          className="text-primary mt-0.5 sm:mt-1 flex-shrink-0 opacity-80"
+                        />
+                      }
                       label="Homepage"
                       value={homepageLink}
                       isLink={true}
@@ -278,7 +303,12 @@ export default async function TvShowPage({ params }) {
                   )}
                   {imdbId && (
                     <DetailItem
-                      icon={Info}
+                      icon={
+                        <Info
+                          size={16}
+                          className="text-primary mt-0.5 sm:mt-1 flex-shrink-0 opacity-80"
+                        />
+                      }
                       label="IMDb"
                       value={`https://www.imdb.com/title/${imdbId}`}
                       isLink={true}
@@ -286,7 +316,12 @@ export default async function TvShowPage({ params }) {
                   )}
                   {seriesData.last_episode_to_air && (
                     <DetailItem
-                      icon={PlayCircle}
+                      icon={
+                        <PlayCircle
+                          size={16}
+                          className="text-primary mt-0.5 sm:mt-1 flex-shrink-0 opacity-80"
+                        />
+                      }
                       label="Last Aired"
                       value={`${
                         seriesData.last_episode_to_air.name ||
@@ -301,7 +336,12 @@ export default async function TvShowPage({ params }) {
                   )}
                   {seriesData.next_episode_to_air && (
                     <DetailItem
-                      icon={PlayCircle}
+                      icon={
+                        <PlayCircle
+                          size={16}
+                          className="text-primary mt-0.5 sm:mt-1 flex-shrink-0 opacity-80"
+                        />
+                      }
                       label="Next Episode"
                       value={`${
                         seriesData.next_episode_to_air.name ||

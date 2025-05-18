@@ -1,15 +1,17 @@
 // src/app/components/DetailItem.jsx
-"use client";
+"use client"; // Marking as a Client Component
 
-import { ExternalLink as ExternalLinkIcon } from "lucide-react";
+import { ExternalLink as ExternalLinkIcon } from "lucide-react"; // Used for the link badge
 
 const DetailItem = ({
-  icon: Icon,
+  icon,
   label,
   value,
   valueClassName = "text-muted-foreground",
   isLink = false,
 }) => {
+  // The 'icon' prop will now receive pre-rendered JSX, e.g., <Film size={16} className="..." />
+
   // Return null if the value is not meaningful to display
   if (
     value === null ||
@@ -34,8 +36,8 @@ const DetailItem = ({
                       bg-primary/10 hover:bg-primary/20 text-primary 
                       dark:bg-primary/20 dark:hover:bg-primary/30 dark:text-primary-foreground/80 
                       focus:outline-none focus-visible:ring-1 focus-visible:ring-ring 
-                      ring-offset-1 dark:ring-offset-background`}
-          title={value}
+                      ring-offset-1 dark:ring-offset-background`} // Ensure focus ring respects theme
+          title={value} // Show full URL on hover for accessibility and information
         >
           {linkHostname}
           <ExternalLinkIcon
@@ -46,6 +48,7 @@ const DetailItem = ({
       );
     } catch (e) {
       console.warn("DetailItem: Invalid URL provided for link:", value);
+      // Fallback to displaying the value as plain text if URL parsing fails
       displayValueNode = (
         <span className={`ml-1 ${valueClassName} break-words`}>
           {String(value)}
@@ -62,12 +65,8 @@ const DetailItem = ({
 
   return (
     <div className="flex items-start space-x-2 py-1 group">
-      {Icon && (
-        <Icon
-          size={16}
-          className="text-primary mt-0.5 sm:mt-1 flex-shrink-0 opacity-80"
-        />
-      )}
+      {icon}{" "}
+      {/* Render the icon JSX directly, as it's passed from the Server Component parent */}
       <div className="min-w-0 flex-grow">
         <span className="font-semibold text-card-foreground">{label}:</span>
         {displayValueNode}

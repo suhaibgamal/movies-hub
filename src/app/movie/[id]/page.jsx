@@ -15,13 +15,15 @@ import {
 import SkeletonLoader from "@/app/components/SkeletonLoader";
 import InteractiveFeatures from "@/app/components/InteractiveFeatures";
 import WatchlistButton from "@/app/components/WatchlistButton";
-import DetailItem from "@/app/components/DetailItem"; // <<< IMPORT SHARED COMPONENT
+import DetailItem from "@/app/components/DetailItem"; // <<< IMPORTED SHARED COMPONENT
+// Icons used in this page for DetailItem
 import {
   Star as StarIcon,
   Film,
   Info,
   ExternalLink as ExternalLinkIcon,
-} from "lucide-react"; // <<< ENSURE ALL ICONS FOR DETAIL ITEMS ARE HERE
+  CalendarDays,
+} from "lucide-react";
 
 const BASE_URL_FOR_STATIC_PARAMS = "https://api.themoviedb.org/3";
 
@@ -109,7 +111,7 @@ export default async function MoviePage({ params }) {
   }
 
   try {
-    const movie = await getCachedMovieData(id);
+    const movie = await getCachedMovieData(id); // Fetches details, videos, external_ids
 
     if (!movie || Object.keys(movie).length === 0) {
       throw new Error(
@@ -117,9 +119,12 @@ export default async function MoviePage({ params }) {
       );
     }
 
+    // Note: movie.videos and movie.external_ids are now fetched by getCachedMovieData
+    // The separate calls to getCachedTrailerData might be redundant if the former is sufficient.
+    // For now, we'll keep it to ensure trailerKey logic doesn't break if movie.videos is missing.
     const [trailerData, creditsData, isFound, recommendationsData] =
       await Promise.all([
-        getCachedTrailerData(id, "movie"),
+        getCachedTrailerData(id, "movie"), // Can potentially be removed if movie.videos is reliable
         getCachedCredits(id, "movie"),
         checkLinkStability(id, "movie"),
         getCachedRecommendations(id, "movie"),
@@ -133,6 +138,7 @@ export default async function MoviePage({ params }) {
         (v) => v.type === "Trailer" && v.site === "YouTube"
       )?.key ||
       trailerData.results.find(
+        // Fallback to separate trailerData fetch
         (v) => v.type === "Trailer" && v.site === "YouTube" && v.official
       )?.key ||
       trailerData.results.find(
@@ -155,8 +161,8 @@ export default async function MoviePage({ params }) {
     const runtime = movie.runtime
       ? `${Math.floor(movie.runtime / 60)}h ${movie.runtime % 60}m`
       : null;
-    const budget = movie.budget ? `$${movie.budget.toLocaleString()}` : null;
-    const revenue = movie.revenue ? `$${movie.revenue.toLocaleString()}` : null;
+    const budget = movie.budget ? `$${movie.budget.toLocaleString()}` : null; // For display
+    const revenue = movie.revenue ? `$${movie.revenue.toLocaleString()}` : null; // For display
     const homepageLink = movie.homepage;
     const imdbId = movie.external_ids?.imdb_id;
 
@@ -237,18 +243,49 @@ export default async function MoviePage({ params }) {
                   </p>
                 </section>
 
-                {/* Using the imported DetailItem component */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 text-sm mb-4 sm:mb-5">
-                  <DetailItem icon={Film} label="Status" value={movie.status} />
+                  <DetailItem
+                    icon={
+                      <Film
+                        size={16}
+                        className="text-primary mt-0.5 sm:mt-1 flex-shrink-0 opacity-80"
+                      />
+                    }
+                    label="Status"
+                    value={movie.status}
+                  />
                   {movie.budget > 0 && (
-                    <DetailItem icon={Info} label="Budget" value={budget} />
+                    <DetailItem
+                      icon={
+                        <Info
+                          size={16}
+                          className="text-primary mt-0.5 sm:mt-1 flex-shrink-0 opacity-80"
+                        />
+                      }
+                      label="Budget"
+                      value={budget}
+                    />
                   )}
                   {movie.revenue > 0 && (
-                    <DetailItem icon={Info} label="Revenue" value={revenue} />
+                    <DetailItem
+                      icon={
+                        <Info
+                          size={16}
+                          className="text-primary mt-0.5 sm:mt-1 flex-shrink-0 opacity-80"
+                        />
+                      }
+                      label="Revenue"
+                      value={revenue}
+                    />
                   )}
                   {homepageLink && (
                     <DetailItem
-                      icon={ExternalLinkIcon}
+                      icon={
+                        <ExternalLinkIcon
+                          size={16}
+                          className="text-primary mt-0.5 sm:mt-1 flex-shrink-0 opacity-80"
+                        />
+                      }
                       label="Homepage"
                       value={homepageLink}
                       isLink={true}
@@ -256,7 +293,12 @@ export default async function MoviePage({ params }) {
                   )}
                   {imdbId && (
                     <DetailItem
-                      icon={Info}
+                      icon={
+                        <Info
+                          size={16}
+                          className="text-primary mt-0.5 sm:mt-1 flex-shrink-0 opacity-80"
+                        />
+                      }
                       label="IMDb"
                       value={`https://www.imdb.com/title/${imdbId}`}
                       isLink={true}
