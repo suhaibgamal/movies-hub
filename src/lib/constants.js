@@ -18,6 +18,7 @@ export const GENRES = {
   53: "Thriller",
   10752: "War",
   37: "Western",
+  10769: "Foreign", // Optional, TMDB movie genre
 };
 
 export const TV_GENRES = {
@@ -37,7 +38,18 @@ export const TV_GENRES = {
   10767: "Talk",
   10768: "War & Politics",
   37: "Western",
-  // Consider adding genres that TMDB suggests using as keywords if not in the main list:
-  // e.g., Horror, Romance, History, Music, Thriller if TMDB API for TV series might return these IDs in genre_ids array for some shows.
-  // For now, sticking to the official GET /genre/tv/list response.
+  // Optional cross-over genres (safe to include if using genre_ids from TMDB results)
+  14: "Fantasy",
+  27: "Horror",
+  36: "History",
+  10402: "Music",
+  10749: "Romance",
+  53: "Thriller",
+  10769: "Foreign", // Rare but possible
+};
+
+// Unified map for safe use with mixed media (e.g., search results)
+export const ALL_GENRES = {
+  ...GENRES,
+  ...TV_GENRES,
 };

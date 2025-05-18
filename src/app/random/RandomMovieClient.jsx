@@ -321,15 +321,15 @@ export default function RandomMovieClient() {
       {/* Display Area */}
       <div className="w-full lg:w-2/3 xl:w-3/4 flex justify-center items-center p-4 lg:h-screen mt-6 lg:mt-0">
         {isLoading ? ( // Initial page load skeleton
-          <div className="w-64 lg:w-80">
+          <div className="w-48 sm:w-56 lg:w-64">
             <SkeletonLoader /> {/* Generic loader */}
           </div>
         ) : isPicking ? ( // Skeleton while picking a new item after button press
-          <div className="w-64 lg:w-80">
+          <div className="w-48 sm:w-56 lg:w-64">
             <GridCardSkeleton small={true} /> {/* Card-like skeleton */}
           </div>
         ) : randomItem ? (
-          <div className="w-64 lg:w-80 transform transition-all duration-500 ease-out scale-100 animate-fadeIn">
+          <div className="w-48 sm:w-56 lg:w-64 transform transition-all duration-500 ease-out scale-100 animate-fadeIn">
             {randomItem.media_type === "tv" ? (
               <SeriesCard
                 series={randomItem}
