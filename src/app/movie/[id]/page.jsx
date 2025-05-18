@@ -7,7 +7,7 @@ import { Suspense } from "react";
 import { authOptions } from "@/app/api/auth/authOptions";
 import {
   getCachedMovieData,
-  getCachedTrailerData, // Make sure to use this or movieData.videos
+  getCachedTrailerData,
   getCachedCredits,
   getCachedRecommendations,
   checkLinkStability,
@@ -15,9 +15,10 @@ import {
 import SkeletonLoader from "@/app/components/SkeletonLoader";
 import InteractiveFeatures from "@/app/components/InteractiveFeatures";
 import WatchlistButton from "@/app/components/WatchlistButton";
-import { Star as StarIcon, Film } from "lucide-react";
+// Ensure all icons used in DetailItem and elsewhere are imported
+import { Star as StarIcon, Film, Info } from "lucide-react"; // <<<<< ADDED Info HERE
 
-// DetailItem component (if you've kept it here or imported it)
+// DetailItem component (as defined previously)
 const DetailItem = ({
   icon: Icon,
   label,
@@ -121,7 +122,7 @@ export async function generateMetadata({ params }) {
 export default async function MoviePage({ params }) {
   const { id } = params;
 
-  // Restore the original authentication check
+  // Restore the original authentication check (REMOVE THE BYPASS)
   const session = await getServerSession(authOptions);
   if (!session) {
     redirect(`/login?callbackUrl=${encodeURIComponent(`/movie/${id}`)}`);
@@ -138,7 +139,6 @@ export default async function MoviePage({ params }) {
   }
 
   try {
-    // ... rest of the MoviePage component (data fetching, JSX) remains the same as the last full version provided ...
     const movie = await getCachedMovieData(id);
 
     if (!movie || Object.keys(movie).length === 0) {
@@ -188,7 +188,7 @@ export default async function MoviePage({ params }) {
     const budget = movie.budget ? `$${movie.budget.toLocaleString()}` : null;
     const revenue = movie.revenue ? `$${movie.revenue.toLocaleString()}` : null;
     const homepageLink = movie.homepage;
-    const imdbId = movie.external_ids?.imdb_id;
+    const imdbId = movie.external_ids?.imdb_id; // Make sure getCachedMovieData appends external_ids
 
     return (
       <div className="min-h-screen bg-background py-6 px-2 sm:px-4 lg:px-6">
@@ -269,12 +269,14 @@ export default async function MoviePage({ params }) {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 text-sm mb-4 sm:mb-5">
                   <DetailItem icon={Film} label="Status" value={movie.status} />
-                  {budget && (
+                  {budget > 0 && (
                     <DetailItem icon={Info} label="Budget" value={budget} />
-                  )}
-                  {revenue && (
+                  )}{" "}
+                  {/* Check budget > 0 */}
+                  {revenue > 0 && (
                     <DetailItem icon={Info} label="Revenue" value={revenue} />
-                  )}
+                  )}{" "}
+                  {/* Check revenue > 0 */}
                   {homepageLink && (
                     <DetailItem
                       icon={Film}
