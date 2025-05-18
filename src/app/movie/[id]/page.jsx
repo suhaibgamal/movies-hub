@@ -15,42 +15,13 @@ import {
 import SkeletonLoader from "@/app/components/SkeletonLoader";
 import InteractiveFeatures from "@/app/components/InteractiveFeatures";
 import WatchlistButton from "@/app/components/WatchlistButton";
-// Ensure all icons used in DetailItem and elsewhere are imported
-import { Star as StarIcon, Film, Info } from "lucide-react"; // <<<<< ADDED Info HERE
-
-// DetailItem component (as defined previously)
-const DetailItem = ({
-  icon: Icon,
-  label,
-  value,
-  valueClassName = "text-muted-foreground",
-  isLink = false,
-}) => {
-  if (!value && typeof value !== "number" && typeof value !== "boolean")
-    return null;
-  const ValueComponent =
-    isLink && typeof value === "string" ? (
-      <a
-        href={value}
-        target="_blank"
-        rel="noopener noreferrer"
-        className={`ml-1 ${valueClassName} hover:text-primary underline`}
-      >
-        {value}
-      </a>
-    ) : (
-      <span className={`ml-1 ${valueClassName}`}>{String(value)}</span>
-    );
-  return (
-    <div className="flex items-start space-x-2 py-1">
-      <Icon size={16} className="text-primary mt-1 flex-shrink-0 opacity-80" />
-      <div>
-        <span className="font-semibold text-card-foreground">{label}:</span>
-        {ValueComponent}
-      </div>
-    </div>
-  );
-};
+import DetailItem from "@/app/components/DetailItem"; // <<< IMPORT SHARED COMPONENT
+import {
+  Star as StarIcon,
+  Film,
+  Info,
+  ExternalLink as ExternalLinkIcon,
+} from "lucide-react"; // <<< ENSURE ALL ICONS FOR DETAIL ITEMS ARE HERE
 
 const BASE_URL_FOR_STATIC_PARAMS = "https://api.themoviedb.org/3";
 
@@ -122,7 +93,6 @@ export async function generateMetadata({ params }) {
 export default async function MoviePage({ params }) {
   const { id } = params;
 
-  // Restore the original authentication check (REMOVE THE BYPASS)
   const session = await getServerSession(authOptions);
   if (!session) {
     redirect(`/login?callbackUrl=${encodeURIComponent(`/movie/${id}`)}`);
@@ -188,7 +158,7 @@ export default async function MoviePage({ params }) {
     const budget = movie.budget ? `$${movie.budget.toLocaleString()}` : null;
     const revenue = movie.revenue ? `$${movie.revenue.toLocaleString()}` : null;
     const homepageLink = movie.homepage;
-    const imdbId = movie.external_ids?.imdb_id; // Make sure getCachedMovieData appends external_ids
+    const imdbId = movie.external_ids?.imdb_id;
 
     return (
       <div className="min-h-screen bg-background py-6 px-2 sm:px-4 lg:px-6">
@@ -262,24 +232,23 @@ export default async function MoviePage({ params }) {
                   <h2 className="mb-1.5 text-lg sm:text-xl font-semibold text-card-foreground">
                     Overview
                   </h2>
-                  <p className="text-muted-foreground text-sm leading-relaxed line-clamp-5 hover:line-clamp-none transition-all duration-300 ease-in-out">
+                  <p className="text-muted-foreground text-sm leading-relaxed line-clamp-4 hover:line-clamp-none transition-all duration-300 ease-in-out">
                     {movie.overview || "No overview available for this movie."}
                   </p>
                 </section>
 
+                {/* Using the imported DetailItem component */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 text-sm mb-4 sm:mb-5">
                   <DetailItem icon={Film} label="Status" value={movie.status} />
-                  {budget > 0 && (
+                  {movie.budget > 0 && (
                     <DetailItem icon={Info} label="Budget" value={budget} />
-                  )}{" "}
-                  {/* Check budget > 0 */}
-                  {revenue > 0 && (
+                  )}
+                  {movie.revenue > 0 && (
                     <DetailItem icon={Info} label="Revenue" value={revenue} />
-                  )}{" "}
-                  {/* Check revenue > 0 */}
+                  )}
                   {homepageLink && (
                     <DetailItem
-                      icon={Film}
+                      icon={ExternalLinkIcon}
                       label="Homepage"
                       value={homepageLink}
                       isLink={true}

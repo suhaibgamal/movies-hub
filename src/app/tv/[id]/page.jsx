@@ -14,6 +14,8 @@ import SkeletonLoader from "@/app/components/SkeletonLoader";
 import InteractiveFeatures from "@/app/components/InteractiveFeatures";
 import WatchlistButton from "@/app/components/WatchlistButton";
 import TvSeasonsDisplay from "@/app/components/TvSeasonsDisplay";
+import DetailItem from "@/app/components/DetailItem"; // <<< IMPORT SHARED COMPONENT
+// Ensure all icons used by DetailItem and this page are imported
 import {
   CalendarDays,
   Tv as TvIcon,
@@ -22,41 +24,8 @@ import {
   PlayCircle,
   Star as StarIcon,
   Film,
+  ExternalLink as ExternalLinkIcon,
 } from "lucide-react";
-
-// DetailItem component (as defined in your previous version or imported)
-const DetailItem = ({
-  icon: Icon,
-  label,
-  value,
-  valueClassName = "text-muted-foreground",
-  isLink = false,
-}) => {
-  if (!value && typeof value !== "number" && typeof value !== "boolean")
-    return null;
-  const ValueComponent =
-    isLink && typeof value === "string" ? (
-      <a
-        href={value}
-        target="_blank"
-        rel="noopener noreferrer"
-        className={`ml-1 ${valueClassName} hover:text-primary underline`}
-      >
-        {value}
-      </a>
-    ) : (
-      <span className={`ml-1 ${valueClassName}`}>{String(value)}</span>
-    );
-  return (
-    <div className="flex items-start space-x-2 py-1">
-      <Icon size={16} className="text-primary mt-1 flex-shrink-0 opacity-80" />
-      <div>
-        <span className="font-semibold text-card-foreground">{label}:</span>
-        {ValueComponent}
-      </div>
-    </div>
-  );
-};
 
 const BASE_URL_FOR_STATIC_PARAMS = "https://api.themoviedb.org/3";
 
@@ -125,7 +94,6 @@ export async function generateMetadata({ params }) {
 export default async function TvShowPage({ params }) {
   const { id } = params;
 
-  // Restore the original authentication check
   const session = await getServerSession(authOptions);
   if (!session) {
     redirect(`/login?callbackUrl=${encodeURIComponent(`/tv/${id}`)}`);
@@ -142,7 +110,6 @@ export default async function TvShowPage({ params }) {
   }
 
   try {
-    // ... rest of the TvShowPage component (data fetching, JSX) remains the same as the last full version provided ...
     const seriesData = await getCachedTvShowDetails(id);
 
     if (!seriesData || Object.keys(seriesData).length === 0) {
@@ -273,6 +240,7 @@ export default async function TvShowPage({ params }) {
                   </p>
                 </section>
 
+                {/* Using the imported DetailItem component */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 text-sm mb-4 sm:mb-5">
                   <DetailItem
                     icon={TvIcon}
@@ -302,7 +270,7 @@ export default async function TvShowPage({ params }) {
                   )}
                   {homepageLink && (
                     <DetailItem
-                      icon={Film}
+                      icon={ExternalLinkIcon}
                       label="Homepage"
                       value={homepageLink}
                       isLink={true}
