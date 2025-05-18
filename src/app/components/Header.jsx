@@ -119,7 +119,8 @@ function Header() {
           {session ? (
             <div className="flex items-center space-x-3">
               <Link
-                href="/profile"
+                href="/"
+                onClick={handleHomeClick}
                 className="flex items-center gap-2 group focus:outline-none"
               >
                 <Image
@@ -242,8 +243,8 @@ function Header() {
             {session ? (
               <>
                 <Link
-                  href="/profile"
-                  onClick={() => setIsOpen(false)}
+                  href="/"
+                  onClick={handleHomeClick}
                   className="flex items-center gap-2 group focus:outline-none py-2"
                 >
                   <Image
