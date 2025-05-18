@@ -1,362 +1,474 @@
+// src/app/random/RandomMovieClient.jsx
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import MovieCard from "@/app/components/MovieCard";
 import SeriesCard from "@/app/components/SeriesCard";
 import { useWatchlist as useZustandWatchlist } from "@/app/store/watchlistStore";
-import SkeletonLoader from "@/app/components/SkeletonLoader"; // Generic skeleton for initial load
-import GridCardSkeleton from "@/app/components/GridCardSkeleton"; // Card-specific skeleton
+import GridCardSkeleton from "@/app/components/GridCardSkeleton"; // Using GridCardSkeleton for a card-like loading state
 import {
   Shuffle,
   Film,
-  TvIcon,
+  Tv as TvIcon,
   SearchX,
-  Filter as FilterIcon, // Renamed to avoid conflict with array.filter
+  Filter as FilterIcon,
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
+import { GENRES as MOVIE_GENRES, TV_GENRES } from "@/lib/constants"; // Use actual constants
 
-// Assume these are imported from a constants file, e.g., '@/lib/constants'
-// Simplified for brevity
-const MOVIE_GENRES = [
-  { id: "28", name: "Action" },
-  { id: "12", name: "Adventure" },
-  { id: "35", name: "Comedy" },
-  { id: "18", name: "Drama" },
-  { id: "14", name: "Fantasy" },
-  { id: "27", name: "Horror" },
-  { id: "878", name: "Science Fiction" },
-  { id: "53", name: "Thriller" },
-  // Add more movie genres as needed
+// Define Rating options similar to MoviesListClient for consistency
+const RATING_OPTIONS_RANDOM = [
+  { value: "", label: "Any Rating" },
+  { value: "8", label: "8+" },
+  { value: "7", label: "7+" },
+  { value: "6", label: "6+" },
+  { value: "5", label: "5+" },
 ];
-const TV_GENRES = [
-  { id: "10759", name: "Action & Adventure" },
-  { id: "16", name: "Animation" },
-  { id: "35", name: "Comedy" },
-  { id: "80", name: "Crime" },
-  { id: "18", name: "Drama" },
-  { id: "10765", name: "Sci-Fi & Fantasy" },
-  // Add more TV genres as needed
-];
-const RATINGS = [
-  { id: "9", name: "9+" },
-  { id: "8", name: "8+" },
-  { id: "7", name: "7+" },
-  { id: "6", name: "6+" },
-  { id: "5", name: "5+" },
-];
-// Generate years dynamically or have a predefined list
+
+// Generate Year options
 const currentYear = new Date().getFullYear();
-const YEARS = Array.from({ length: 50 }, (_, i) => ({
-  id: (currentYear - i).toString(),
-  name: (currentYear - i).toString(),
-}));
+const YEAR_OPTIONS_RANDOM = [
+  { value: "", label: "Any Year" },
+  ...Array.from({ length: 30 }, (_, i) => ({
+    // Last 30 years
+    value: (currentYear - i).toString(),
+    label: (currentYear - i).toString(),
+  })),
+  { value: "2000s", label: "2000-2009", gte: "2000-01-01", lte: "2009-12-31" },
+  { value: "1990s", label: "1990-1999", gte: "1990-01-01", lte: "1999-12-31" },
+  { value: "1980s", label: "1980-1979", gte: "1980-01-01", lte: "1989-12-31" },
+];
 
-// Mock fetchRandomItem function - replace with actual API call logic
-// This function would typically interact with your backend or TMDB API directly
-// and respect all the filters.
-const fetchRandomItemAPI = async ({ mediaType, genre, rating, year }) => {
-  // Simulate API delay
-  await new Promise((resolve) => setTimeout(resolve, 1000));
+// Actual API fetching logic
+const fetchRandomDiscoverItems = async ({
+  mediaType,
+  genre,
+  rating,
+  year,
+  pageLimit = 20,
+}) => {
+  // pageLimit here means how many pages to consider for random selection, not items per page from API.
+  // TMDB returns 20 items per page by default.
+  try {
+    const typePath = mediaType === "tv" ? "tv" : "movie";
+    const dateFilterKey =
+      mediaType === "tv" ? "first_air_date" : "primary_release_date";
 
-  // Simulate API response
-  const isMovie = mediaType === "movie";
-  const items = [
-    {
-      id: 1,
-      title: isMovie ? "Awesome Random Movie" : undefined,
-      name: !isMovie ? "Amazing Random Series" : undefined,
-      poster_path: "/qA5kPYZA7wCIX7Cs1g4BGEtGfz.jpg", // Example poster
-      vote_average: 8.5,
-      release_date: isMovie ? "2023-05-15" : undefined,
-      first_air_date: !isMovie ? "2022-10-20" : undefined,
-      overview:
-        "A thrilling adventure that will keep you on the edge of your seat. Discover secrets, face dangers, and emerge victorious.",
-      media_type: mediaType,
-      genre_ids: genre ? [parseInt(genre)] : isMovie ? [28] : [10759], // Example genre
-    },
-    {
-      id: 2,
-      title: isMovie ? "Another Great Movie Pick" : undefined,
-      name: !isMovie ? "Must-Watch TV Show" : undefined,
-      poster_path: "/uS1AIL7I1Ycgs8tWRQvKy1H0Bq2.jpg", // Example poster
-      vote_average: parseFloat(rating || "7.8"),
-      release_date: isMovie ? `${year || "2021"}-07-21` : undefined,
-      first_air_date: !isMovie ? `${year || "2020"}-03-10` : undefined,
-      overview:
-        "An epic tale of heroes and villains, with stunning visuals and a captivating story. Perfect for a movie night.",
-      media_type: mediaType,
-      genre_ids: genre ? [parseInt(genre)] : isMovie ? [12] : [10765],
-    },
-  ];
-  // Simulate finding an item or not
-  if (Math.random() > 0.2) {
-    // 80% chance of finding an item
-    return items[Math.floor(Math.random() * items.length)];
+    let discoverUrl = `https://api.themoviedb.org/3/discover/${typePath}?api_key=${process.env.NEXT_PUBLIC_TMDB_KEY}&language=en-US&sort_by=popularity.desc&vote_count.gte=100&include_adult=false`;
+
+    if (genre) discoverUrl += `&with_genres=${genre}`;
+    if (rating) discoverUrl += `&vote_average.gte=${rating}`;
+
+    const yearOption = YEAR_OPTIONS_RANDOM.find((y) => y.value === year);
+    if (yearOption) {
+      if (yearOption.gte && yearOption.lte) {
+        // For ranges like "2000s"
+        discoverUrl += `&${dateFilterKey}.gte=${yearOption.gte}&${dateFilterKey}.lte=${yearOption.lte}`;
+      } else if (
+        !yearOption.gte &&
+        !yearOption.lte &&
+        yearOption.value !== ""
+      ) {
+        // For specific year
+        discoverUrl += `&${
+          mediaType === "tv" ? "first_air_date_year" : "primary_release_year"
+        }=${year}`;
+      }
+    }
+
+    const initialRes = await fetch(discoverUrl + "&page=1");
+    if (!initialRes.ok) {
+      console.error(
+        `Failed to fetch initial page for ${mediaType} discovery:`,
+        await initialRes.text()
+      );
+      throw new Error(`Failed to fetch initial page for ${mediaType}`);
+    }
+    const initialData = await initialRes.json();
+    let totalPages = initialData.total_pages;
+
+    // TMDB limits discover to 500 pages.
+    totalPages = Math.min(totalPages, 500);
+    if (totalPages === 0) return [];
+
+    const randomPage =
+      Math.floor(Math.random() * Math.min(totalPages, pageLimit)) + 1;
+
+    const finalRes = await fetch(`${discoverUrl}&page=${randomPage}`);
+    if (!finalRes.ok) {
+      console.error(
+        `Failed to fetch random page for ${mediaType}:`,
+        await finalRes.text()
+      );
+      throw new Error(`Failed to fetch random page for ${mediaType}`);
+    }
+    const finalData = await finalRes.json();
+    return (finalData.results || []).map((item) => ({
+      ...item,
+      media_type: typePath, // Ensure media_type is set ('movie' or 'tv')
+    }));
+  } catch (error) {
+    console.error(`Error in fetchRandomDiscoverItems for ${mediaType}:`, error);
+    return [];
   }
-  return null; // Simulate no item found
 };
 
-export default function RandomMovieClient() {
+export default function RandomClient() {
   const [randomItem, setRandomItem] = useState(null);
-  const [isLoading, setIsLoading] = useState(true); // For initial page load
-  const [isPicking, setIsPicking] = useState(false); // When "pick" button is clicked
+  const [isLoading, setIsLoading] = useState(true);
+  const [isPicking, setIsPicking] = useState(false);
   const [error, setError] = useState(null);
 
-  const [mediaType, setMediaType] = useState("movie"); // 'movie' or 'tv'
+  const [mediaType, setMediaType] = useState("movie");
   const [selectedGenre, setSelectedGenre] = useState("");
-  const [selectedRating, setSelectedRating] = useState(""); // e.g., "7" for 7+
+  const [selectedRating, setSelectedRating] = useState("");
   const [selectedYear, setSelectedYear] = useState("");
 
-  const [showFilters, setShowFilters] = useState(true); // Filters visible by default on larger screens
+  const [showFilters, setShowFilters] = useState(true);
+  const [itemCache, setItemCache] = useState({ movie: [], tv: [] });
+  const [seenItems, setSeenItems] = useState({
+    movie: new Set(),
+    tv: new Set(),
+  });
 
-  const { watchlist: zustandWatchlist, addOrRemoveFromWatchlist } =
-    useZustandWatchlist();
+  const zustandWatchlist = useZustandWatchlist();
 
-  const currentGenres = mediaType === "movie" ? MOVIE_GENRES : TV_GENRES;
+  const currentGenreOptions = useMemo(
+    () => (mediaType === "movie" ? MOVIE_GENRES : TV_GENRES),
+    [mediaType]
+  );
 
-  const fetchAndSetRandomItem = useCallback(async () => {
+  const pickAndSetRandomItem = useCallback(async () => {
     setIsPicking(true);
     setError(null);
-    setRandomItem(null); // Clear previous item immediately
-    try {
-      const item = await fetchRandomItemAPI({
+    setRandomItem(null);
+
+    let cacheForType = itemCache[mediaType];
+    let seenForType = seenItems[mediaType];
+
+    let potentialItems = cacheForType.filter(
+      (item) => !seenForType.has(item.id)
+    );
+
+    if (potentialItems.length === 0) {
+      // console.log(`Cache empty or all seen for ${mediaType}, fetching new batch...`);
+      const newItems = await fetchRandomDiscoverItems({
         mediaType,
         genre: selectedGenre,
         rating: selectedRating,
         year: selectedYear,
       });
-      setRandomItem(item);
-    } catch (err) {
-      // console.error("Failed to fetch random item:", err); // Keep for dev, remove for prod if too noisy
-      setError("Could not fetch a random item. Please try again.");
-      setRandomItem(null);
-    } finally {
-      setIsPicking(false);
-      setIsLoading(false); // Ensure initial loading is also turned off
+      if (
+        newItems.length === 0 &&
+        cacheForType.length > 0 &&
+        seenForType.size >= cacheForType.length
+      ) {
+        // All items from cache matching current filters have been seen, reset seen list for this type
+        // console.log(`All cached items for ${mediaType} (filters applied) seen. Resetting seen list.`);
+        setSeenItems((prev) => ({ ...prev, [mediaType]: new Set() }));
+        seenForType = new Set(); // Use the reset set for this pick
+        potentialItems = cacheForType.filter(
+          (item) => !seenForType.has(item.id)
+        ); // Re-filter from cache
+      } else if (newItems.length > 0) {
+        // Add new items to cache, avoiding duplicates by ID with existing cache
+        const updatedCache = [...cacheForType];
+        newItems.forEach((newItem) => {
+          if (
+            !updatedCache.some((cachedItem) => cachedItem.id === newItem.id)
+          ) {
+            updatedCache.push(newItem);
+          }
+        });
+        setItemCache((prev) => ({ ...prev, [mediaType]: updatedCache }));
+        potentialItems = newItems.filter((item) => !seenForType.has(item.id)); // Use fresh items primarily
+        if (potentialItems.length === 0 && newItems.length > 0) {
+          // All newly fetched items already seen (edge case)
+          potentialItems = newItems; // Allow repeat from newly fetched batch if all were seen
+          setSeenItems((prev) => ({ ...prev, [mediaType]: new Set() })); // Reset seen for this batch
+        }
+      }
     }
-  }, [mediaType, selectedGenre, selectedRating, selectedYear]);
+
+    if (potentialItems.length > 0) {
+      const randomIndex = Math.floor(Math.random() * potentialItems.length);
+      const chosenItem = potentialItems[randomIndex];
+      setRandomItem(chosenItem);
+      setSeenItems((prev) => ({
+        ...prev,
+        [mediaType]: new Set(prev[mediaType]).add(chosenItem.id),
+      }));
+    } else {
+      setError(
+        `No ${
+          mediaType === "tv" ? "TV shows" : "movies"
+        } found for the selected criteria. Try different filters!`
+      );
+      setRandomItem(null);
+    }
+
+    setIsPicking(false);
+    if (isLoading) setIsLoading(false); // Turn off initial loading state
+  }, [
+    mediaType,
+    selectedGenre,
+    selectedRating,
+    selectedYear,
+    itemCache,
+    seenItems,
+    isLoading,
+  ]);
 
   useEffect(() => {
-    // Fetch an initial random item when the component mounts
-    setIsLoading(true); // Use isLoading for the very first load
-    fetchAndSetRandomItem();
+    setIsLoading(true);
+    pickAndSetRandomItem();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Fetch only on mount initially. Subsequent fetches via button.
+  }, [mediaType, selectedGenre, selectedRating, selectedYear]); // Re-pick if filters change
 
-  const handlePickRandom = () => {
-    fetchAndSetRandomItem();
+  const handleMediaTypeChange = (newType) => {
+    setMediaType(newType);
+    setSelectedGenre(""); // Reset genre when media type changes
+    // No need to reset rating or year as they are generic
+    setRandomItem(null); // Clear current item
+    // pickAndSetRandomItem will be called by the useEffect above
   };
 
-  const isWatchlisted =
-    randomItem &&
-    randomItem.id !== undefined &&
-    typeof randomItem.media_type === "string" &&
-    Array.isArray(zustandWatchlist)
-      ? zustandWatchlist.some(
-          (watchlistItem) =>
-            watchlistItem && // Ensure watchlistItem itself is valid
-            watchlistItem.id === randomItem.id &&
-            watchlistItem.type === randomItem.media_type.toUpperCase()
-        )
-      : false;
-
-  // Toggle filter visibility on smaller screens
+  // Responsive filter toggle
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth >= 1024) {
         // lg breakpoint
         setShowFilters(true);
       } else {
-        // setShowFilters(false); // Or keep current state on resize for mobile
+        // setShowFilters(false); // uncomment if you want filters to hide by default on mobile after resize
       }
     };
-    handleResize(); // Set initial state
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+    if (typeof window !== "undefined") {
+      handleResize(); // Set initial state based on window size
+      window.addEventListener("resize", handleResize);
+      return () => window.removeEventListener("resize", handleResize);
+    }
   }, []);
+
+  const isWatchlisted = useMemo(() => {
+    if (!randomItem || !zustandWatchlist || !randomItem.media_type)
+      return false;
+    return zustandWatchlist.some(
+      (watchItem) =>
+        watchItem.id === randomItem.id &&
+        watchItem.type === randomItem.media_type.toUpperCase()
+    );
+  }, [randomItem, zustandWatchlist]);
+
+  const getGenreName = (genreId) => {
+    const source = mediaType === "movie" ? MOVIE_GENRES : TV_GENRES;
+    const genre = source.find((g) => String(g.id) === String(genreId));
+    return genre ? genre.name : "Unknown Genre";
+  };
 
   return (
     <div className="min-h-screen w-full bg-background text-foreground flex flex-col lg:flex-row overflow-hidden">
       {/* Filters Panel */}
       <div
-        className={`w-full lg:w-1/3 xl:w-1/4 p-4 lg:p-6 bg-card lg:h-screen lg:overflow-y-auto transition-all duration-300 ease-in-out ${
-          showFilters
-            ? "max-h-screen opacity-100"
-            : "max-h-0 opacity-0 lg:max-h-screen lg:opacity-100 overflow-hidden"
+        className={`w-full lg:w-[320px] xl:w-[360px] p-4 pt-5 sm:p-6 bg-card lg:h-screen lg:overflow-y-auto transition-all duration-300 ease-in-out border-b lg:border-b-0 lg:border-r border-border/30 flex-shrink-0 ${
+          showFilters || window.innerWidth >= 1024 // Always show on lg+
+            ? "max-h-[80vh] lg:max-h-none opacity-100" // Increased max-h for mobile when shown
+            : "max-h-0 opacity-0 overflow-hidden lg:max-h-none lg:opacity-100" // Collapse on mobile when hidden
         }`}
       >
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-primary">Random Picker</h2>
+        <div className="flex justify-between items-center mb-5 sm:mb-6">
+          <h2 className="text-xl sm:text-2xl font-bold text-primary flex items-center gap-2">
+            <FilterIcon size={22} className="mt-[-2px]" /> Random Picker Filters
+          </h2>
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className="lg:hidden p-2 rounded-md hover:bg-muted"
+            className="lg:hidden p-1.5 rounded-md hover:bg-muted focus:outline-none focus-visible:ring-1 focus-visible:ring-primary"
             aria-label={showFilters ? "Hide Filters" : "Show Filters"}
+            aria-expanded={showFilters}
           >
-            {showFilters ? <ChevronUp size={24} /> : <ChevronDown size={24} />}
+            {showFilters ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
           </button>
         </div>
 
-        <div className="space-y-6">
-          {/* Media Type Selector */}
-          <div>
-            <label
-              className="block text-sm font-medium mb-1"
-              htmlFor="mediaType"
-            >
-              Media Type
-            </label>
-            <div className="flex space-x-2">
-              <button
-                onClick={() => {
-                  setMediaType("movie");
-                  setSelectedGenre("");
-                }}
-                className={`flex-1 p-3 rounded-md text-sm font-semibold transition-colors ${
-                  mediaType === "movie"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted hover:bg-muted/80"
-                }`}
-              >
-                <Film size={18} className="inline mr-2" /> Movies
-              </button>
-              <button
-                onClick={() => {
-                  setMediaType("tv");
-                  setSelectedGenre("");
-                }}
-                className={`flex-1 p-3 rounded-md text-sm font-semibold transition-colors ${
-                  mediaType === "tv"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted hover:bg-muted/80"
-                }`}
-              >
-                <TvIcon size={18} className="inline mr-2" /> TV Shows
-              </button>
+        {(showFilters ||
+          (typeof window !== "undefined" && window.innerWidth >= 1024)) && ( // Conditionally render content
+          <div className="space-y-4 sm:space-y-5 animate-fadeIn">
+            {/* Media Type Selector */}
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1.5">
+                Media Type
+              </label>
+              <div className="flex space-x-2 bg-muted p-1 rounded-lg">
+                <button
+                  onClick={() => handleMediaTypeChange("movie")}
+                  className={`flex-1 p-2 rounded-md text-xs sm:text-sm font-semibold transition-colors flex items-center justify-center gap-1.5 ${
+                    mediaType === "movie"
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "hover:bg-background/70 dark:hover:bg-card"
+                  }`}
+                >
+                  <Film size={16} /> Movies
+                </button>
+                <button
+                  onClick={() => handleMediaTypeChange("tv")}
+                  className={`flex-1 p-2 rounded-md text-xs sm:text-sm font-semibold transition-colors flex items-center justify-center gap-1.5 ${
+                    mediaType === "tv"
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "hover:bg-background/70 dark:hover:bg-card"
+                  }`}
+                >
+                  <TvIcon size={16} /> TV Shows
+                </button>
+              </div>
             </div>
-          </div>
 
-          {/* Genre Filter */}
-          <div>
-            <label
-              htmlFor="genre"
-              className="block text-sm font-medium text-foreground mb-1"
-            >
-              Genre
-            </label>
-            <select
-              id="genre"
-              value={selectedGenre}
-              onChange={(e) => setSelectedGenre(e.target.value)}
-              className="w-full p-3 border bg-input border-border rounded-md focus:ring-2 focus:ring-primary outline-none text-sm"
-            >
-              <option value="">Any Genre</option>
-              {currentGenres.map((genre) => (
-                <option key={genre.id} value={genre.id}>
-                  {genre.name}
+            {/* Genre Filter */}
+            <div className="relative">
+              <label
+                htmlFor="genre"
+                className="block text-sm font-medium text-foreground mb-1.5"
+              >
+                Genre
+              </label>
+              <select
+                id="genre"
+                value={selectedGenre}
+                onChange={(e) => setSelectedGenre(e.target.value)}
+                className="w-full p-2.5 pl-3 pr-8 border bg-input border-border rounded-md focus:ring-1 focus:ring-primary outline-none text-sm appearance-none"
+              >
+                <option value="">
+                  Any {mediaType === "tv" ? "TV" : "Movie"} Genre
                 </option>
-              ))}
-            </select>
-          </div>
+                {Object.entries(currentGenreOptions).map(([id, nameOrObj]) => {
+                  const name =
+                    typeof nameOrObj === "string" ? nameOrObj : nameOrObj.name; // Handle both GENRES and TV_GENRES structure
+                  const genreId =
+                    typeof nameOrObj === "string" ? id : nameOrObj.id;
+                  return (
+                    <option key={genreId} value={genreId}>
+                      {name}
+                    </option>
+                  );
+                })}
+              </select>
+              <ChevronDown
+                size={18}
+                className="absolute right-3 top-1/2 mt-[3px] text-muted-foreground pointer-events-none"
+              />
+            </div>
 
-          {/* Rating Filter */}
-          <div>
-            <label
-              htmlFor="rating"
-              className="block text-sm font-medium text-foreground mb-1"
-            >
-              Minimum Rating
-            </label>
-            <select
-              id="rating"
-              value={selectedRating}
-              onChange={(e) => setSelectedRating(e.target.value)}
-              className="w-full p-3 border bg-input border-border rounded-md focus:ring-2 focus:ring-primary outline-none text-sm"
-            >
-              <option value="">Any Rating</option>
-              {RATINGS.map((rate) => (
-                <option key={rate.id} value={rate.id}>
-                  {rate.name}
-                </option>
-              ))}
-            </select>
-          </div>
+            {/* Rating Filter */}
+            <div className="relative">
+              <label
+                htmlFor="rating"
+                className="block text-sm font-medium text-foreground mb-1.5"
+              >
+                Min. Rating
+              </label>
+              <select
+                id="rating"
+                value={selectedRating}
+                onChange={(e) => setSelectedRating(e.target.value)}
+                className="w-full p-2.5 pl-3 pr-8 border bg-input border-border rounded-md focus:ring-1 focus:ring-primary outline-none text-sm appearance-none"
+              >
+                {RATING_OPTIONS_RANDOM.map((rate) => (
+                  <option key={rate.value} value={rate.value}>
+                    {rate.label}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown
+                size={18}
+                className="absolute right-3 top-1/2 mt-[3px] text-muted-foreground pointer-events-none"
+              />
+            </div>
 
-          {/* Year Filter */}
-          <div>
-            <label
-              htmlFor="year"
-              className="block text-sm font-medium text-foreground mb-1"
-            >
-              Release/Air Year
-            </label>
-            <select
-              id="year"
-              value={selectedYear}
-              onChange={(e) => setSelectedYear(e.target.value)}
-              className="w-full p-3 border bg-input border-border rounded-md focus:ring-2 focus:ring-primary outline-none text-sm"
-            >
-              <option value="">Any Year</option>
-              {YEARS.map((year) => (
-                <option key={year.id} value={year.id}>
-                  {year.name}
-                </option>
-              ))}
-            </select>
-          </div>
+            {/* Year Filter */}
+            <div className="relative">
+              <label
+                htmlFor="year"
+                className="block text-sm font-medium text-foreground mb-1.5"
+              >
+                {mediaType === "tv" ? "First Air Year" : "Release Year"}
+              </label>
+              <select
+                id="year"
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(e.target.value)}
+                className="w-full p-2.5 pl-3 pr-8 border bg-input border-border rounded-md focus:ring-1 focus:ring-primary outline-none text-sm appearance-none"
+              >
+                {YEAR_OPTIONS_RANDOM.map((yearOpt) => (
+                  <option key={yearOpt.value} value={yearOpt.value}>
+                    {yearOpt.label}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown
+                size={18}
+                className="absolute right-3 top-1/2 mt-[3px] text-muted-foreground pointer-events-none"
+              />
+            </div>
 
-          {/* Pick Button */}
-          <button
-            onClick={handlePickRandom}
-            disabled={isPicking || isLoading}
-            className="w-full p-4 bg-primary text-primary-foreground rounded-md font-bold hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center text-base"
-            aria-label="Get Random Pick"
-          >
-            <Shuffle size={20} className="mr-2" />
-            {isPicking ? "Picking..." : "Pick Random"}
-          </button>
-        </div>
+            {/* Pick Button */}
+            <button
+              onClick={pickAndSetRandomItem} // Changed from handleGetRandom for clarity
+              disabled={isPicking || isLoading}
+              className="w-full p-3 sm:p-3.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-bold hover:from-blue-500 hover:to-purple-500 transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center text-sm sm:text-base mt-2"
+              aria-label="Get another random pick"
+            >
+              <Shuffle size={18} className="mr-2" />
+              {isPicking
+                ? "Picking..."
+                : `Get Another ${mediaType === "tv" ? "Show" : "Movie"}`}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Display Area */}
-      <div className="w-full lg:w-2/3 xl:w-3/4 flex justify-center items-center p-4 lg:h-screen mt-6 lg:mt-0">
-        {isLoading ? ( // Initial page load skeleton
-          <div className="w-48 sm:w-56 lg:w-64">
-            <SkeletonLoader /> {/* Generic loader */}
+      <div className="w-full lg:flex-grow flex flex-col justify-center items-center p-4 sm:p-6 lg:h-screen">
+        {" "}
+        {/* Added flex-grow */}
+        {isLoading ? (
+          <div className="w-full max-w-[220px] sm:max-w-[250px]">
+            <GridCardSkeleton small={false} />
           </div>
-        ) : isPicking ? ( // Skeleton while picking a new item after button press
-          <div className="w-48 sm:w-56 lg:w-64">
-            <GridCardSkeleton small={true} /> {/* Card-like skeleton */}
+        ) : isPicking ? (
+          <div className="w-full max-w-[220px] sm:max-w-[250px]">
+            <GridCardSkeleton small={false} />
           </div>
         ) : randomItem ? (
-          <div className="w-48 sm:w-56 lg:w-64 transform transition-all duration-500 ease-out scale-100 animate-fadeIn">
+          <div className="w-full max-w-[220px] sm:max-w-[250px] transform transition-all duration-300 ease-out animate-fadeInUp">
+            {" "}
+            {/* Simple fade in up */}
             {randomItem.media_type === "tv" ? (
               <SeriesCard
                 series={randomItem}
-                small={true}
+                href={`/tv/${randomItem.id}`}
+                small={false} // Use larger card for focused display
                 initialWatchlisted={isWatchlisted}
-                isAbove={true} // Treat as high priority since it's the focus
+                isAbove={true}
               />
             ) : (
               <MovieCard
                 movie={randomItem}
-                href={`/${randomItem.media_type}/${randomItem.id}`}
-                small={true}
+                href={`/movie/${randomItem.id}`}
+                small={false} // Use larger card for focused display
                 initialWatchlisted={isWatchlisted}
                 isAbove={true}
               />
             )}
           </div>
         ) : error ? (
-          <div className="text-center text-destructive">
-            <SearchX size={48} className="mx-auto mb-2" />
-            <p>{error}</p>
+          <div className="text-center p-6 bg-destructive/10 text-destructive rounded-lg max-w-md mx-auto">
+            <SearchX size={40} className="mx-auto mb-3 opacity-70" />
+            <p className="font-semibold text-base">{error}</p>
           </div>
         ) : (
-          <div className="text-center text-muted-foreground">
-            <SearchX size={48} className="mx-auto mb-2" />
-            <p>No item found matching your criteria.</p>
-            <p>Try adjusting filters or picking again!</p>
+          <div className="text-center text-muted-foreground p-6">
+            <SearchX size={40} className="mx-auto mb-3 opacity-50" />
+            <p>Click the button to get a random suggestion!</p>
           </div>
         )}
       </div>
