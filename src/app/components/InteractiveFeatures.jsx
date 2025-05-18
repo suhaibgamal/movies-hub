@@ -1,18 +1,28 @@
+// src/app/components/InteractiveFeatures.jsx
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { FaFacebookF, FaTwitter, FaWhatsapp, FaTimes } from "react-icons/fa";
 import WatchNowButton from "@/app/components/WatchNowButton";
 import Image from "next/image";
-import ActorFilmographyModal from "./ActorFilmographyModal";
-import { getActorMovieCredits } from "@/lib/tmdb";
+import { getActorMovieCredits } from "@/lib/tmdb"; // This fetches movie credits
+// If you need TV credits for an actor, a similar function getActorTvCredits would be needed
+import dynamic from "next/dynamic";
+
+const ActorFilmographyModal = dynamic(() => import("./ActorFilmographyModal"), {
+  ssr: false,
+  loading: () => (
+    <div className="p-4 text-center">Loading actor details...</div>
+  ),
+});
 
 export default function InteractiveFeatures({
+  item,
+  itemType, // "MOVIE" or "TV"
   trailerKey,
   cast,
-  movieFound,
-  movie,
+  itemFound, // Replaces movieFound, indicates if the item is generally "found" or playable via WatchNowButton
   recommendations,
 }) {
   const [isTrailerModalOpen, setTrailerModalOpen] = useState(false);
@@ -22,6 +32,11 @@ export default function InteractiveFeatures({
   const [actorMovies, setActorMovies] = useState([]);
   const [actorMoviesLoading, setActorMoviesLoading] = useState(false);
   const [actorMoviesError, setActorMoviesError] = useState(null);
+
+  const trailerModalRef = useRef(null);
+  const trailerPrevActiveElementRef = useRef(null);
+  const recModalRef = useRef(null); // For recommendations modal focus
+  const recPrevActiveElementRef = useRef(null);
 
   const openSharePopup = (url) => {
     const width = 600;
@@ -44,83 +59,134 @@ export default function InteractiveFeatures({
 
   useEffect(() => {
     if (selectedActor && isActorModalOpen) {
-      const fetchActorMovies = async () => {
+      const fetchActorFilmography = async () => {
         setActorMoviesLoading(true);
         try {
-          const moviesData = await getActorMovieCredits(selectedActor.id);
-          setActorMovies(moviesData);
+          // Currently, getActorMovieCredits fetches movie credits.
+          // If itemType is TV and you want to show TV credits for the actor,
+          // you might need a different TMDB endpoint or an adjusted function.
+          // For now, it will show movie roles regardless of current page type.
+          const filmographyData = await getActorMovieCredits(selectedActor.id);
+          setActorMovies(filmographyData);
         } catch (err) {
           setActorMoviesError(err.message || "Failed to load filmography.");
         } finally {
           setActorMoviesLoading(false);
         }
       };
-      fetchActorMovies();
+      fetchActorFilmography();
     }
   }, [selectedActor, isActorModalOpen]);
 
+  // Modal Focus Management & Escape Key for Trailer
+  useEffect(() => {
+    let prevActiveElement;
+    if (isTrailerModalOpen && trailerModalRef.current) {
+      prevActiveElement = document.activeElement;
+      trailerModalRef.current.focus();
+      const handleEsc = (event) => {
+        if (event.key === "Escape") setTrailerModalOpen(false);
+      };
+      document.addEventListener("keydown", handleEsc);
+      return () => {
+        document.removeEventListener("keydown", handleEsc);
+        if (prevActiveElement instanceof HTMLElement) prevActiveElement.focus();
+      };
+    }
+  }, [isTrailerModalOpen]);
+
+  // Modal Focus Management & Escape Key for Recommendations
+  useEffect(() => {
+    let prevActiveElement;
+    if (isRecModalOpen && recModalRef.current) {
+      prevActiveElement = document.activeElement;
+      recModalRef.current.focus();
+      const handleEsc = (event) => {
+        if (event.key === "Escape") setRecModalOpen(false);
+      };
+      document.addEventListener("keydown", handleEsc);
+      return () => {
+        document.removeEventListener("keydown", handleEsc);
+        if (prevActiveElement instanceof HTMLElement) prevActiveElement.focus();
+      };
+    }
+  }, [isRecModalOpen]);
+
+  if (!item || typeof item.id === "undefined") {
+    return (
+      <div className="py-4 text-center text-muted-foreground">
+        Loading item features...
+      </div>
+    );
+  }
+
+  const displayTitle = item.title || item.name;
+  const itemPagePath =
+    itemType === "TV" ? `/tv/${item.id}` : `/movie/${item.id}`;
+  const fullItemUrl = `https://movies.suhaeb.com${itemPagePath}`;
+
   return (
-    <div className="space-y-8">
-      {/* Action Buttons */}
-      <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-        <button
-          onClick={() => setTrailerModalOpen(true)}
-          className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-full bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-          disabled={!trailerKey}
-          aria-label={trailerKey ? "Watch Trailer" : "Trailer Not Available"}
-        >
-          {trailerKey ? "Watch Trailer" : "Trailer Unavailable"}
-        </button>
+    <div className="space-y-6 sm:space-y-8">
+      <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
+        {trailerKey && ( // Only show button if trailerKey exists
+          <button
+            onClick={() => setTrailerModalOpen(true)}
+            className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-full bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background focus:ring-blue-500 transition-all active:bg-blue-800 active:scale-95"
+            aria-label="Watch Trailer"
+          >
+            Watch Trailer
+          </button>
+        )}
         <WatchNowButton
-          className="w-full sm:w-auto bg-gray-800 hover:bg-gray-700 px-4 py-2 rounded-full text-sm font-medium shadow transition-all focus:outline-none focus:ring-2 focus:ring-gray-600"
-          movieFound={movieFound}
-          id={movie.id}
+          className="w-full sm:w-auto bg-gray-800 hover:bg-gray-700 dark:bg-slate-700 dark:hover:bg-slate-600 px-4 py-2 rounded-full text-sm font-medium text-white shadow transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background focus:ring-gray-500"
+          itemAvailable={itemFound}
+          itemId={item.id}
+          itemType={itemType}
         />
         {recommendations &&
           recommendations.results &&
           recommendations.results.length > 0 && (
             <button
               onClick={() => setRecModalOpen(true)}
-              className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-full bg-green-600 hover:bg-green-700 px-4 py-2 text-sm font-medium text-white shadow transition-all focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-full bg-green-600 hover:bg-green-700 px-4 py-2 text-sm font-medium text-white shadow transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background focus:ring-green-500"
             >
               View Recommendations
             </button>
           )}
       </div>
 
-      {/* Cast Section */}
-      {cast.length > 0 && (
-        <div className="mt-6">
-          <h2 className="mb-4 pl-2 text-xl font-bold text-card-foreground">
-            Top Cast
+      {cast && cast.length > 0 && (
+        <div className="mt-5 sm:mt-6">
+          <h2 className="mb-3 sm:mb-4 pl-1 text-lg sm:text-xl font-semibold text-card-foreground">
+            Top Billed Cast
           </h2>
-          <div className="overflow-x-auto">
-            <div className="flex gap-4 pl-2">
+          <div className="overflow-x-auto hide-scrollbar">
+            <div className="flex gap-3 sm:gap-4 pl-1 pb-2">
               {cast.map((member) => (
                 <button
                   key={member.id}
                   onClick={() => handleCastMemberClick(member)}
-                  className="flex-shrink-0 w-20 sm:w-24 md:w-28 bg-card rounded-lg p-2 shadow hover:shadow-lg transition-all duration-200 border border-muted/20 hover:border-primary focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer text-left"
-                  aria-label={`View movies by ${member.name}`}
+                  className="flex-shrink-0 w-[90px] sm:w-[100px] md:w-[110px] bg-card rounded-lg p-1.5 sm:p-2 shadow hover:shadow-md transition-all duration-200 border border-border/30 hover:border-primary/70 focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer text-left group"
+                  aria-label={`View filmography for ${member.name}`}
                 >
-                  <div className="relative w-full aspect-square rounded-md overflow-hidden mb-2">
+                  <div className="relative w-full aspect-[2/3] rounded-md overflow-hidden mb-1.5 bg-muted group-hover:opacity-90 transition-opacity">
                     <Image
                       src={
                         member.profile_path
                           ? `https://image.tmdb.org/t/p/w185${member.profile_path}`
-                          : "/images/default.webp"
+                          : "/images/user_profile.png"
                       }
-                      alt={member.name}
+                      alt={member.name || "Cast member"}
                       fill
                       className="object-cover"
                       loading="lazy"
                       unoptimized
                     />
                   </div>
-                  <h3 className="text-xs sm:text-sm font-medium text-card-foreground truncate">
+                  <h3 className="text-xs sm:text-sm font-medium text-card-foreground truncate group-hover:text-primary transition-colors">
                     {member.name}
                   </h3>
-                  <p className="text-[9px] text-muted-foreground truncate">
+                  <p className="text-[10px] sm:text-xs text-muted-foreground truncate">
                     {member.character}
                   </p>
                 </button>
@@ -130,83 +196,84 @@ export default function InteractiveFeatures({
         </div>
       )}
 
-      {/* Social Sharing */}
-      <div className="text-center">
-        <h2 className="mb-4 text-xl font-bold text-card-foreground">
-          Share This Movie
+      <div className="text-center pt-2">
+        <h2 className="mb-3 sm:mb-4 text-lg sm:text-xl font-semibold text-card-foreground">
+          Share This {itemType === "TV" ? "Series" : "Movie"}
         </h2>
-        <div className="flex justify-center gap-4">
-          <a
-            href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
-              `https://movies.suhaeb.com/movie/${movie.id}`
-            )}`}
-            onClick={(e) => {
-              e.preventDefault();
-              openSharePopup(
-                `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
-                  `https://movies.suhaeb.com/movie/${movie.id}`
-                )}`
-              );
-            }}
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 text-white shadow hover:shadow-lg transition-transform hover:scale-110"
-          >
-            <FaFacebookF className="text-base" />
-          </a>
-          <a
-            href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(
-              `https://movies.suhaeb.com/movie/${movie.id}`
-            )}&text=${encodeURIComponent(
-              `Check out ${movie.title} on Movies Hub!`
-            )}`}
-            onClick={(e) => {
-              e.preventDefault();
-              openSharePopup(
-                `https://twitter.com/intent/tweet?url=${encodeURIComponent(
-                  `https://movies.suhaeb.com/movie/${movie.id}`
-                )}&text=${encodeURIComponent(
-                  `Check out ${movie.title} on Movies Hub!`
-                )}`
-              );
-            }}
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-400 text-white shadow hover:shadow-lg transition-transform hover:scale-110"
-          >
-            <FaTwitter className="text-base" />
-          </a>
-          <a
-            href={`https://wa.me/?text=${encodeURIComponent(
-              `Check out ${movie.title} on Movies Hub! https://movies.suhaeb.com/movie/${movie.id}`
-            )}`}
-            onClick={(e) => {
-              e.preventDefault();
-              openSharePopup(
-                `https://wa.me/?text=${encodeURIComponent(
-                  `Check out ${movie.title} on Movies Hub! https://movies.suhaeb.com/movie/${movie.id}`
-                )}`
-              );
-            }}
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-green-600 text-white shadow hover:shadow-lg transition-transform hover:scale-110"
-          >
-            <FaWhatsapp className="text-base" />
-          </a>
+        <div className="flex justify-center gap-3 sm:gap-4">
+          {[
+            {
+              Icon: FaFacebookF,
+              color: "bg-blue-600",
+              label: "Facebook",
+              url: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
+                fullItemUrl
+              )}`,
+            },
+            {
+              Icon: FaTwitter,
+              color: "bg-sky-500",
+              label: "Twitter",
+              url: `https://twitter.com/intent/tweet?url=${encodeURIComponent(
+                fullItemUrl
+              )}&text=${encodeURIComponent(
+                `Check out ${displayTitle} on Movies Hub!`
+              )}`,
+            },
+            {
+              Icon: FaWhatsapp,
+              color: "bg-green-500",
+              label: "WhatsApp",
+              url: `https://wa.me/?text=${encodeURIComponent(
+                `Check out ${displayTitle} on Movies Hub! ${fullItemUrl}`
+              )}`,
+            },
+          ].map((social) => (
+            <a
+              key={social.label}
+              href={social.url}
+              onClick={(e) => {
+                e.preventDefault();
+                openSharePopup(social.url);
+              }}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-full ${social.color} text-white shadow hover:shadow-md transition-transform hover:scale-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:ring-current`}
+              aria-label={`Share on ${social.label}`}
+            >
+              <social.Icon className="text-sm sm:text-base" />
+            </a>
+          ))}
         </div>
       </div>
 
-      {/* Trailer Modal */}
       {isTrailerModalOpen && trailerKey && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-          <div className="relative w-full max-w-2xl mx-auto rounded-lg bg-background p-4 shadow-2xl">
+        <div
+          ref={trailerModalRef}
+          tabIndex={-1}
+          className="fixed inset-0 z-[80] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 outline-none"
+          aria-modal="true"
+          role="dialog"
+          aria-labelledby="trailer-modal-title"
+        >
+          <div className="relative w-full max-w-2xl lg:max-w-3xl mx-auto rounded-lg bg-background p-3 sm:p-4 shadow-2xl">
+            <h2
+              id="trailer-modal-title"
+              className="sr-only"
+            >{`${displayTitle} Trailer`}</h2>
             <button
               onClick={() => setTrailerModalOpen(false)}
-              className="absolute -top-3 -right-3 sm:top-4 sm:right-4 text-white bg-black/50 rounded-full p-1 hover:text-gray-300 text-3xl focus:outline-none z-10"
+              className="absolute -top-2.5 -right-2.5 sm:top-2 sm:right-2 text-white bg-black/60 rounded-full p-1 hover:text-gray-300 text-xl focus:outline-none z-10 transition-colors"
               aria-label="Close Trailer"
             >
-              <FaTimes size={20} />
+              <FaTimes size={16} />
             </button>
             <div className="aspect-video rounded-md overflow-hidden">
               <iframe
-                src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1`}
+                src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1&rel=0&modestbranding=1`}
+                title={`${displayTitle} Trailer`}
                 className="w-full h-full"
-                allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowFullScreen
               />
             </div>
@@ -214,67 +281,88 @@ export default function InteractiveFeatures({
         </div>
       )}
 
-      {/* Recommendations Modal */}
-      {isRecModalOpen && recommendations && recommendations.results && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="relative w-full max-w-4xl mx-auto rounded-lg bg-background p-6 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-muted pb-3 mb-4">
-              <h2 className="text-2xl font-bold text-card-foreground">
-                Recommended Movies
-              </h2>
-              <button
-                onClick={() => setRecModalOpen(false)}
-                className="text-white bg-black/50 rounded-full p-1 hover:text-gray-300 text-3xl focus:outline-none"
-                aria-label="Close Recommendations"
-              >
-                <FaTimes size={20} />
-              </button>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 max-h-[60vh] overflow-y-auto pr-2">
-              {recommendations.results.map((recMovie) => (
-                <div
-                  key={recMovie.id}
-                  className="overflow-hidden rounded-lg bg-card shadow hover:shadow-lg transition-all duration-200 transform hover:scale-105 border border-transparent hover:border-primary"
+      {isRecModalOpen &&
+        recommendations &&
+        recommendations.results &&
+        recommendations.results.length > 0 && (
+          <div
+            ref={recModalRef}
+            tabIndex={-1}
+            className="fixed inset-0 z-[80] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto outline-none"
+            aria-modal="true"
+            role="dialog"
+            aria-labelledby="recommendations-modal-title"
+          >
+            <div className="relative w-full max-w-4xl lg:max-w-5xl mx-auto rounded-lg bg-background p-4 sm:p-6 shadow-2xl flex flex-col max-h-[90vh]">
+              <div className="flex items-center justify-between border-b border-border/30 pb-3 mb-4 flex-shrink-0">
+                <h2
+                  id="recommendations-modal-title"
+                  className="text-xl sm:text-2xl font-bold text-card-foreground"
                 >
-                  <Link href={`/movie/${recMovie.id}`} legacyBehavior>
-                    <a
-                      className="block"
-                      onClick={() => setIsActorModalOpen(false)}
+                  You Might Also Like
+                </h2>
+                <button
+                  onClick={() => setRecModalOpen(false)}
+                  className="text-muted-foreground hover:text-card-foreground bg-transparent hover:bg-muted/50 rounded-full p-1 text-2xl focus:outline-none transition-colors"
+                  aria-label="Close Recommendations"
+                >
+                  <FaTimes size={18} />
+                </button>
+              </div>
+              <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 overflow-y-auto pr-1.5 hide-scrollbar flex-grow">
+                {recommendations.results.map((recItem) => {
+                  const recItemTypeResolved =
+                    recItem.media_type ||
+                    (itemType === "MOVIE" ? "movie" : "tv");
+                  const recDisplayTitle = recItem.title || recItem.name;
+                  const recHref =
+                    recItemTypeResolved === "tv"
+                      ? `/tv/${recItem.id}`
+                      : `/movie/${recItem.id}`;
+                  return (
+                    <div
+                      key={recItem.id}
+                      className="overflow-hidden rounded-lg bg-card shadow hover:shadow-md transition-all duration-200 transform hover:scale-[1.03] border border-border/30 hover:border-primary/70 group"
                     >
-                      <div className="relative aspect-[2/3] w-full bg-muted">
-                        <Image
-                          src={
-                            recMovie.poster_path
-                              ? `https://image.tmdb.org/t/p/w300${recMovie.poster_path}`
-                              : "/images/default.webp"
-                          }
-                          alt={`${recMovie.title} poster`}
-                          fill
-                          className="object-cover"
-                          unoptimized
-                          loading="lazy"
-                        />
-                      </div>
-                      <div className="p-2 sm:p-3 text-center">
-                        <h3 className="text-xs sm:text-sm font-medium text-card-foreground truncate">
-                          {recMovie.title}
-                        </h3>
-                      </div>
-                    </a>
-                  </Link>
-                </div>
-              ))}
+                      <Link href={recHref} legacyBehavior>
+                        <a
+                          className="block"
+                          onClick={() => setRecModalOpen(false)}
+                        >
+                          <div className="relative aspect-[2/3] w-full bg-muted group-hover:opacity-90 transition-opacity">
+                            <Image
+                              src={
+                                recItem.poster_path
+                                  ? `https://image.tmdb.org/t/p/w300${recItem.poster_path}`
+                                  : "/images/default.webp"
+                              }
+                              alt={`${recDisplayTitle} poster`}
+                              fill
+                              className="object-cover"
+                              unoptimized
+                              loading="lazy"
+                            />
+                          </div>
+                          <div className="p-1.5 sm:p-2 text-center">
+                            <h3 className="text-xs sm:text-sm font-medium text-card-foreground truncate group-hover:text-primary transition-colors">
+                              {recDisplayTitle}
+                            </h3>
+                          </div>
+                        </a>
+                      </Link>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Actor Filmography Modal */}
       <ActorFilmographyModal
         isOpen={isActorModalOpen}
         onClose={() => setIsActorModalOpen(false)}
         actorName={selectedActor?.name}
-        movies={actorMovies}
+        movies={actorMovies} // This currently shows only movie credits
         isLoading={actorMoviesLoading}
         error={actorMoviesError}
       />

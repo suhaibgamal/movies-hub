@@ -14,14 +14,18 @@ if (process.env.NODE_ENV === "production") {
   prisma = global.prisma;
 }
 
+const ItemTypeEnum = z.enum(["MOVIE", "TV"]);
+
 // Schemas for validation
 const watchListPostSchema = z.object({
-  movieId: z.number(),
-  movieData: z.object({}).passthrough(),
+  itemId: z.number(),
+  itemType: ItemTypeEnum,
+  itemData: z.object({}).passthrough(), // General object for movie or TV data
 });
 
 const watchListDeleteSchema = z.object({
-  movieId: z.number(),
+  itemId: z.number(),
+  itemType: ItemTypeEnum,
 });
 
 export async function POST(req) {
@@ -47,25 +51,26 @@ export async function POST(req) {
         { status: 400 }
       );
     }
-    const { movieId, movieData } = parsed.data;
+    const { itemId, itemType, itemData } = parsed.data;
     const existingItem = await prisma.watchlistItem.findFirst({
-      where: { userId, movieId },
+      where: { userId, itemId, itemType },
     });
     if (existingItem) {
       return NextResponse.json(
-        { message: "Movie already in watchlist" },
+        { message: "Item already in watchlist" },
         { status: 200 }
       );
     } else {
       const newItem = await prisma.watchlistItem.create({
         data: {
           user: { connect: { id: userId } },
-          movieId,
-          movieData,
+          itemId,
+          itemType,
+          itemData,
         },
       });
       return NextResponse.json(
-        { message: "Movie added to watchlist", item: newItem },
+        { message: "Item added to watchlist", item: newItem },
         { status: 201 }
       );
     }
@@ -101,18 +106,18 @@ export async function DELETE(req) {
         { status: 400 }
       );
     }
-    const { movieId } = parsed.data;
+    const { itemId, itemType } = parsed.data;
     const deletedItem = await prisma.watchlistItem.deleteMany({
-      where: { userId, movieId },
+      where: { userId, itemId, itemType },
     });
     if (deletedItem.count > 0) {
       return NextResponse.json(
-        { message: "Movie removed from watchlist" },
+        { message: "Item removed from watchlist" },
         { status: 200 }
       );
     } else {
       return NextResponse.json(
-        { message: "Movie not found in watchlist" },
+        { message: "Item not found in watchlist" },
         { status: 404 }
       );
     }
@@ -137,18 +142,32 @@ export async function GET(req) {
     }
 
     const { searchParams } = new URL(req.url);
-    const movieId = searchParams.get("movieId");
+    const itemIdParam = searchParams.get("itemId");
+    const itemTypeParam = searchParams.get("itemType");
 
-    if (movieId) {
+    if (itemIdParam && itemTypeParam) {
+      const validatedItemType = ItemTypeEnum.safeParse(itemTypeParam);
+      if (!validatedItemType.success) {
+        return NextResponse.json(
+          { error: "Invalid itemType" },
+          { status: 400 }
+        );
+      }
+      const itemId = Number(itemIdParam);
+      if (isNaN(itemId)) {
+        return NextResponse.json({ error: "Invalid itemId" }, { status: 400 });
+      }
+
       const item = await prisma.watchlistItem.findFirst({
-        where: { userId, movieId: Number(movieId) },
+        where: { userId, itemId: itemId, itemType: validatedItemType.data },
       });
       return NextResponse.json({ watchlisted: !!item });
     }
 
-    // Return full watchlist if no movieId is provided.
+    // Return full watchlist if no itemId is provided.
     const watchlist = await prisma.watchlistItem.findMany({
       where: { userId },
+      orderBy: { createdAt: "desc" }, // Optional: order by creation date
     });
     return NextResponse.json({ watchlist });
   } catch (error) {

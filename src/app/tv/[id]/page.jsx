@@ -1,4 +1,4 @@
-// src/app/movie/[id]/page.jsx
+// src/app/tv/[id]/page.jsx
 
 import { getServerSession } from "next-auth/next";
 import { redirect } from "next/navigation";
@@ -6,18 +6,25 @@ import Image from "next/image";
 import { Suspense } from "react";
 import { authOptions } from "@/app/api/auth/authOptions";
 import {
-  getCachedMovieData,
-  getCachedTrailerData, // Make sure to use this or movieData.videos
+  getCachedTvShowDetails,
   getCachedCredits,
   getCachedRecommendations,
-  checkLinkStability,
 } from "@/lib/tmdb";
 import SkeletonLoader from "@/app/components/SkeletonLoader";
 import InteractiveFeatures from "@/app/components/InteractiveFeatures";
 import WatchlistButton from "@/app/components/WatchlistButton";
-import { Star as StarIcon, Film } from "lucide-react";
+import TvSeasonsDisplay from "@/app/components/TvSeasonsDisplay";
+import {
+  CalendarDays,
+  Tv as TvIcon,
+  Info,
+  Users,
+  PlayCircle,
+  Star as StarIcon,
+  Film,
+} from "lucide-react";
 
-// DetailItem component (if you've kept it here or imported it)
+// DetailItem component (as defined in your previous version or imported)
 const DetailItem = ({
   icon: Icon,
   label,
@@ -56,11 +63,11 @@ const BASE_URL_FOR_STATIC_PARAMS = "https://api.themoviedb.org/3";
 export async function generateStaticParams() {
   try {
     const res = await fetch(
-      `${BASE_URL_FOR_STATIC_PARAMS}/movie/popular?api_key=${process.env.NEXT_PUBLIC_TMDB_KEY}&language=en-US&page=1`
+      `${BASE_URL_FOR_STATIC_PARAMS}/tv/popular?api_key=${process.env.NEXT_PUBLIC_TMDB_KEY}&language=en-US&page=1`
     );
     if (!res.ok) {
       console.error(
-        "Failed to fetch popular movies for static params:",
+        "Failed to fetch popular TV for static params:",
         res.status
       );
       return [];
@@ -68,9 +75,9 @@ export async function generateStaticParams() {
     const popular = await res.json();
     return (popular.results || [])
       .slice(0, 20)
-      .map((movie) => ({ id: movie.id.toString() }));
+      .map((series) => ({ id: series.id.toString() }));
   } catch (error) {
-    console.error("Error in generateStaticParams for Movies:", error);
+    console.error("Error in generateStaticParams for TV:", error);
     return [];
   }
 }
@@ -80,100 +87,94 @@ export const revalidate = 3600;
 export async function generateMetadata({ params }) {
   const { id } = params;
   try {
-    const movie = await getCachedMovieData(id);
-    if (!movie || Object.keys(movie).length === 0) {
-      console.warn(`No movie data found for metadata, ID: ${id}`);
-      throw new Error("Movie not found for metadata");
+    const series = await getCachedTvShowDetails(id);
+    if (!series || Object.keys(series).length === 0) {
+      console.warn(`No series data found for metadata, ID: ${id}`);
+      throw new Error("Series not found for metadata");
     }
     return {
-      title: `${movie.title || "Movie"} - Movies Hub`,
+      title: `${series.name || "TV Series"} - Movies Hub`,
       description:
-        movie.overview ||
-        `Details about the movie ${
-          movie.title || ""
-        }, including cast, ratings, and trailers.`,
+        series.overview ||
+        `Details about the TV series ${
+          series.name || ""
+        }, including seasons, episodes, cast, and ratings.`,
       alternates: {
-        canonical: `https://movies.suhaeb.com/movie/${id}`,
+        canonical: `https://movies.suhaeb.com/tv/${id}`,
       },
       openGraph: {
-        title: `${movie.title || "Movie"} - Movies Hub`,
+        title: `${series.name || "TV Series"} - Movies Hub`,
         description:
-          movie.overview ||
-          `Detailed information about the movie ${movie.title || ""}.`,
-        images: movie.poster_path
-          ? [`https://image.tmdb.org/t/p/w780${movie.poster_path}`]
+          series.overview ||
+          `Detailed information about the TV series ${series.name || ""}.`,
+        images: series.poster_path
+          ? [`https://image.tmdb.org/t/p/w780${series.poster_path}`]
           : ["/images/default-og.png"],
-        type: "video.movie",
+        type: "video.tv_show",
       },
     };
   } catch (error) {
-    console.error(
-      `Error generating metadata for Movie ID ${id}:`,
-      error.message
-    );
+    console.error(`Error generating metadata for TV ID ${id}:`, error.message);
     return {
-      title: "Movie Not Found - Movies Hub",
-      description: "Details for this movie could not be loaded.",
+      title: "TV Series Not Found - Movies Hub",
+      description: "Details for this TV series could not be loaded.",
     };
   }
 }
 
-export default async function MoviePage({ params }) {
+export default async function TvShowPage({ params }) {
   const { id } = params;
 
   // Restore the original authentication check
   const session = await getServerSession(authOptions);
   if (!session) {
-    redirect(`/login?callbackUrl=${encodeURIComponent(`/movie/${id}`)}`);
+    redirect(`/login?callbackUrl=${encodeURIComponent(`/tv/${id}`)}`);
   }
 
   if (!id || !/^\d+$/.test(id)) {
     return (
       <main className="min-h-screen bg-background flex items-center justify-center p-4">
         <p className="text-center text-xl font-semibold text-destructive">
-          Invalid Movie ID.
+          Invalid TV Series ID.
         </p>
       </main>
     );
   }
 
   try {
-    // ... rest of the MoviePage component (data fetching, JSX) remains the same as the last full version provided ...
-    const movie = await getCachedMovieData(id);
+    // ... rest of the TvShowPage component (data fetching, JSX) remains the same as the last full version provided ...
+    const seriesData = await getCachedTvShowDetails(id);
 
-    if (!movie || Object.keys(movie).length === 0) {
+    if (!seriesData || Object.keys(seriesData).length === 0) {
+      console.error(
+        `No data returned from getCachedTvShowDetails for TV show ID ${id}.`
+      );
       throw new Error(
-        `No data returned for movie ID ${id}. It might not exist.`
+        `No data returned for TV show ID ${id}. It might not exist or TMDB fetch failed.`
       );
     }
 
-    const [trailerData, creditsData, isFound, recommendationsData] =
-      await Promise.all([
-        getCachedTrailerData(id, "movie"),
-        getCachedCredits(id, "movie"),
-        checkLinkStability(id, "movie"),
-        getCachedRecommendations(id, "movie"),
-      ]);
+    const [creditsData, recommendationsData] = await Promise.all([
+      getCachedCredits(id, "tv"),
+      getCachedRecommendations(id, "tv"),
+    ]);
 
     const trailerKey =
-      movie.videos?.results?.find(
+      seriesData.videos?.results?.find(
         (v) => v.type === "Trailer" && v.site === "YouTube" && v.official
       )?.key ||
-      movie.videos?.results?.find(
-        (v) => v.type === "Trailer" && v.site === "YouTube"
-      )?.key ||
-      trailerData.results.find(
-        (v) => v.type === "Trailer" && v.site === "YouTube" && v.official
-      )?.key ||
-      trailerData.results.find(
+      seriesData.videos?.results?.find(
         (v) => v.type === "Trailer" && v.site === "YouTube"
       )?.key;
 
     const cast = creditsData.cast?.slice(0, 12) || [];
-    const releaseYear = movie.release_date
-      ? new Date(movie.release_date).getFullYear()
+    const creators = seriesData.created_by || [];
+    const firstAirYear = seriesData.first_air_date
+      ? new Date(seriesData.first_air_date).getFullYear()
       : "N/A";
-    const rating = movie.vote_average ? movie.vote_average.toFixed(1) : "N/A";
+    const rating = seriesData.vote_average
+      ? seriesData.vote_average.toFixed(1)
+      : "N/A";
     const ratingColor =
       rating >= 7
         ? "bg-blue-600"
@@ -181,14 +182,9 @@ export default async function MoviePage({ params }) {
         ? "bg-purple-600"
         : "bg-red-600";
     const genres =
-      movie.genres?.map((genre) => genre.name).filter(Boolean) || [];
-    const runtime = movie.runtime
-      ? `${Math.floor(movie.runtime / 60)}h ${movie.runtime % 60}m`
-      : null;
-    const budget = movie.budget ? `$${movie.budget.toLocaleString()}` : null;
-    const revenue = movie.revenue ? `$${movie.revenue.toLocaleString()}` : null;
-    const homepageLink = movie.homepage;
-    const imdbId = movie.external_ids?.imdb_id;
+      seriesData.genres?.map((genre) => genre.name).filter(Boolean) || [];
+    const homepageLink = seriesData.homepage;
+    const imdbId = seriesData.external_ids?.imdb_id;
 
     return (
       <div className="min-h-screen bg-background py-6 px-2 sm:px-4 lg:px-6">
@@ -199,11 +195,11 @@ export default async function MoviePage({ params }) {
                 <Image
                   unoptimized
                   src={
-                    movie.poster_path
-                      ? `https://image.tmdb.org/t/p/w780${movie.poster_path}`
+                    seriesData.poster_path
+                      ? `https://image.tmdb.org/t/p/w780${seriesData.poster_path}`
                       : "/images/default.webp"
                   }
-                  alt={`${movie.title || "Movie"} poster`}
+                  alt={`${seriesData.name || "Series"} poster`}
                   width={780}
                   height={1170}
                   className="aspect-[2/3] w-full object-cover lg:rounded-l-xl lg:rounded-r-none"
@@ -219,16 +215,19 @@ export default async function MoviePage({ params }) {
                 <div className="flex justify-between items-start mb-2 sm:mb-3">
                   <div className="pr-10 flex-grow min-w-0">
                     <h1 className="text-2xl font-bold text-card-foreground sm:text-3xl xl:text-4xl break-words leading-tight">
-                      {movie.title}
+                      {seriesData.name}
                     </h1>
-                    {movie.tagline && (
+                    {seriesData.tagline && (
                       <p className="text-sm text-muted-foreground italic mt-1">
-                        "{movie.tagline}"
+                        "{seriesData.tagline}"
                       </p>
                     )}
                   </div>
                   <div className="flex-shrink-0 z-10">
-                    <WatchlistButton item={movie} itemType="MOVIE" />
+                    <WatchlistButton
+                      item={{ ...seriesData, title: seriesData.name }}
+                      itemType="TV"
+                    />
                   </div>
                 </div>
 
@@ -241,14 +240,20 @@ export default async function MoviePage({ params }) {
                     </span>
                   )}
                   <span className="text-muted-foreground bg-muted px-2 py-0.5 rounded-full font-medium">
-                    {releaseYear}
+                    {firstAirYear}
                   </span>
-                  {runtime && (
+                  {seriesData.number_of_seasons && (
                     <span className="text-muted-foreground bg-muted px-2 py-0.5 rounded-full font-medium">
-                      {runtime}
+                      {seriesData.number_of_seasons} Season
+                      {seriesData.number_of_seasons !== 1 ? "s" : ""}
                     </span>
                   )}
-                  {genres.slice(0, 3).map((genre) => (
+                  {seriesData.type && (
+                    <span className="text-muted-foreground bg-muted px-2 py-0.5 rounded-full font-medium">
+                      {seriesData.type}
+                    </span>
+                  )}
+                  {genres.slice(0, 2).map((genre) => (
                     <span
                       key={genre}
                       className="text-muted-foreground font-medium bg-muted px-2 py-0.5 rounded-full truncate"
@@ -262,18 +267,38 @@ export default async function MoviePage({ params }) {
                   <h2 className="mb-1.5 text-lg sm:text-xl font-semibold text-card-foreground">
                     Overview
                   </h2>
-                  <p className="text-muted-foreground text-sm leading-relaxed line-clamp-5 hover:line-clamp-none transition-all duration-300 ease-in-out">
-                    {movie.overview || "No overview available for this movie."}
+                  <p className="text-muted-foreground text-sm leading-relaxed line-clamp-4 hover:line-clamp-none transition-all duration-300 ease-in-out">
+                    {seriesData.overview ||
+                      "No overview available for this series."}
                   </p>
                 </section>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 text-sm mb-4 sm:mb-5">
-                  <DetailItem icon={Film} label="Status" value={movie.status} />
-                  {budget && (
-                    <DetailItem icon={Info} label="Budget" value={budget} />
+                  <DetailItem
+                    icon={TvIcon}
+                    label="Status"
+                    value={seriesData.status}
+                  />
+                  {seriesData.number_of_episodes > 0 && (
+                    <DetailItem
+                      icon={CalendarDays}
+                      label="Total Episodes"
+                      value={seriesData.number_of_episodes}
+                    />
                   )}
-                  {revenue && (
-                    <DetailItem icon={Info} label="Revenue" value={revenue} />
+                  {seriesData.networks && seriesData.networks.length > 0 && (
+                    <DetailItem
+                      icon={Info}
+                      label="Network"
+                      value={seriesData.networks.map((n) => n.name).join(", ")}
+                    />
+                  )}
+                  {creators.length > 0 && (
+                    <DetailItem
+                      icon={Users}
+                      label="Created by"
+                      value={creators.map((c) => c.name).join(", ")}
+                    />
                   )}
                   {homepageLink && (
                     <DetailItem
@@ -291,15 +316,50 @@ export default async function MoviePage({ params }) {
                       isLink={true}
                     />
                   )}
+                  {seriesData.last_episode_to_air && (
+                    <DetailItem
+                      icon={PlayCircle}
+                      label="Last Aired"
+                      value={`${
+                        seriesData.last_episode_to_air.name ||
+                        "Episode " +
+                          seriesData.last_episode_to_air.episode_number
+                      } (S${seriesData.last_episode_to_air.season_number}E${
+                        seriesData.last_episode_to_air.episode_number
+                      }) - ${new Date(
+                        seriesData.last_episode_to_air.air_date
+                      ).toLocaleDateString()}`}
+                    />
+                  )}
+                  {seriesData.next_episode_to_air && (
+                    <DetailItem
+                      icon={PlayCircle}
+                      label="Next Episode"
+                      value={`${
+                        seriesData.next_episode_to_air.name ||
+                        "Episode " +
+                          seriesData.next_episode_to_air.episode_number
+                      } (S${seriesData.next_episode_to_air.season_number}E${
+                        seriesData.next_episode_to_air.episode_number
+                      }) - ${new Date(
+                        seriesData.next_episode_to_air.air_date
+                      ).toLocaleDateString()}`}
+                    />
+                  )}
                 </div>
+
+                <TvSeasonsDisplay
+                  seasons={seriesData.seasons}
+                  seriesTmdbId={id}
+                />
 
                 <div className="pt-4 border-t border-border/30 mt-auto min-w-0">
                   <InteractiveFeatures
-                    itemType="MOVIE"
-                    item={movie}
+                    itemType="TV"
+                    item={seriesData}
                     trailerKey={trailerKey}
                     cast={cast}
-                    itemFound={isFound}
+                    itemFound={true}
                     recommendations={recommendationsData}
                   />
                 </div>
@@ -311,14 +371,14 @@ export default async function MoviePage({ params }) {
     );
   } catch (error) {
     console.error(
-      `Error fetching movie page (id: ${id}): ${error.message}`,
+      `Error fetching TV show page (id: ${id}): ${error.message}`,
       error.stack
     );
     const errorQueryParam =
       error.message.includes("No data returned") ||
       error.message.includes("not found for metadata")
-        ? `?error=movie_not_found&id=${id}`
-        : "?error=movie_load_failed";
+        ? `?error=tv_not_found&id=${id}`
+        : "?error=tv_load_failed";
     redirect(`/not-found${errorQueryParam}`);
   }
 }

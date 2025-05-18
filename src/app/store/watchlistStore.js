@@ -2,18 +2,32 @@
 import { create } from "zustand";
 
 const useWatchlistStore = create((set) => ({
+  // Watchlist now stores objects: { id: itemId, type: itemType }
   watchlist: [],
-  addToWatchlist: (movieId) =>
+  addToWatchlist: (
+    itemToAdd // itemToAdd is { id, type }
+  ) =>
+    set((state) => {
+      const exists = state.watchlist.some(
+        (item) => item.id === itemToAdd.id && item.type === itemToAdd.type
+      );
+      if (exists) {
+        return { watchlist: state.watchlist };
+      }
+      return { watchlist: [...state.watchlist, itemToAdd] };
+    }),
+  removeFromWatchlist: (
+    itemToRemove // itemToRemove is { id, type }
+  ) =>
     set((state) => ({
-      watchlist: state.watchlist.includes(movieId)
-        ? state.watchlist
-        : [...state.watchlist, movieId],
+      watchlist: state.watchlist.filter(
+        (item) =>
+          !(item.id === itemToRemove.id && item.type === itemToRemove.type)
+      ),
     })),
-  removeFromWatchlist: (movieId) =>
-    set((state) => ({
-      watchlist: state.watchlist.filter((id) => id !== movieId),
-    })),
-  syncWatchlist: (movieIds) => set({ watchlist: movieIds }),
+  // syncWatchlist now expects an array of objects { id, type }
+  syncWatchlist: (items) =>
+    set({ watchlist: Array.isArray(items) ? items : [] }),
 }));
 
 export const useWatchlist = () => useWatchlistStore((state) => state.watchlist);
