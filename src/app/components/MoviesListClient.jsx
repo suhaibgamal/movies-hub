@@ -420,6 +420,7 @@ export default function MoviesListClient() {
         mediaType === "movie" ? item.release_date : item.first_air_date,
       vote_average: voteAverage,
       genre_ids: item.genre_ids || [],
+      adult: item.adult === true, // Added adult field
     };
   }, []);
 
@@ -486,6 +487,11 @@ export default function MoviesListClient() {
           titleForDisplay += ` ${
             activeApiItemType === API_ITEM_TYPES.MOVIE ? "Movies" : "TV Shows"
           }`;
+
+          // Append certification parameters for Discover calls
+          apiParams.append("certification_country", "US");
+          apiParams.append("certification.lte", "NC-17");
+
           if (
             selectedGenre !== "All" &&
             !isGenreFilterDisabled &&
@@ -585,6 +591,7 @@ export default function MoviesListClient() {
                 : effectiveItemTypeForNormalization.toLowerCase()
             )
           )
+          .filter((item) => item && item.adult !== true) // Filter out adult items
           .filter(Boolean);
 
         setApiFetchedItems((prev) => {
@@ -606,7 +613,7 @@ export default function MoviesListClient() {
           pageToFetch < (data.total_pages || 0) && normalizedNewItems.length > 0
         );
         // DEBUG LOG
-        // console.log(`fetchItems (page ${pageToFetch}): total_pages=${data.total_pages}, newItemsCount=${normalizedNewItems.length}, hasMore set to: ${pageToFetch < (data.total_pages || 0) && normalizedNewItems.length > 0}`);
+        // console.log(`WorkspaceItems (page ${pageToFetch}): total_pages=${data.total_pages}, newItemsCount=${normalizedNewItems.length}, hasMore set to: ${pageToFetch < (data.total_pages || 0) && normalizedNewItems.length > 0}`);
 
         if (isNewPrimaryFilterSet || pageToFetch === 1)
           previousPrimaryFiltersKey.current = primaryFiltersKey;
@@ -1076,14 +1083,14 @@ export default function MoviesListClient() {
                   let prefix = "";
                   if (cat.icon) {
                     // Simple emoji prefixes
-                    if (cat.value === "discover") prefix = "✨ ";
+                    if (cat.value === "discover") prefix = "тЬи ";
                     else if (
                       cat.value === "popular" ||
                       cat.value === "trending_week"
                     )
-                      prefix = "🔥 ";
-                    else if (cat.value === "top_rated") prefix = "⭐ ";
-                    else if (cat.value === "upcoming") prefix = "📅 ";
+                      prefix = "ЁЯФе ";
+                    else if (cat.value === "top_rated") prefix = "тнР ";
+                    else if (cat.value === "upcoming") prefix = "ЁЯУЕ ";
                   }
                   return (
                     <option key={cat.value} value={cat.value}>
