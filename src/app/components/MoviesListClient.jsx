@@ -612,8 +612,6 @@ export default function MoviesListClient() {
         setHasMore(
           pageToFetch < (data.total_pages || 0) && normalizedNewItems.length > 0
         );
-        // DEBUG LOG
-        // console.log(`WorkspaceItems (page ${pageToFetch}): total_pages=${data.total_pages}, newItemsCount=${normalizedNewItems.length}, hasMore set to: ${pageToFetch < (data.total_pages || 0) && normalizedNewItems.length > 0}`);
 
         if (isNewPrimaryFilterSet || pageToFetch === 1)
           previousPrimaryFiltersKey.current = primaryFiltersKey;
@@ -1083,14 +1081,14 @@ export default function MoviesListClient() {
                   let prefix = "";
                   if (cat.icon) {
                     // Simple emoji prefixes
-                    if (cat.value === "discover") prefix = "тЬи ";
+                    if (cat.value === "discover") prefix = "✨ ";
                     else if (
                       cat.value === "popular" ||
                       cat.value === "trending_week"
                     )
-                      prefix = "ЁЯФе ";
-                    else if (cat.value === "top_rated") prefix = "тнР ";
-                    else if (cat.value === "upcoming") prefix = "ЁЯУЕ ";
+                      prefix = "🔥 ";
+                    else if (cat.value === "top_rated") prefix = "⭐ ";
+                    else if (cat.value === "upcoming") prefix = "📅 ";
                   }
                   return (
                     <option key={cat.value} value={cat.value}>
