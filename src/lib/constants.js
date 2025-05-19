@@ -12,7 +12,7 @@ export const GENRES = {
   27: "Horror",
   10402: "Music",
   9648: "Mystery",
-  10749: "Romance",
+  // 10749: "Romance",
   878: "Science Fiction",
   10770: "TV Movie",
   53: "Thriller",
@@ -43,7 +43,7 @@ export const TV_GENRES = {
   27: "Horror",
   36: "History",
   10402: "Music",
-  10749: "Romance",
+  // 10749: "Romance",
   53: "Thriller",
   10769: "Foreign", // Rare but possible
 };
