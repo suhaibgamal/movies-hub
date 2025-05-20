@@ -11,7 +11,7 @@ const REVALIDATE_LINK_CHECK = 259200; // 3 days (for vidsrc check)
 const REVALIDATE_HOMEPAGE_DYNAMIC = 21600; // 6 hours (Popular, Trending)
 const REVALIDATE_HOMEPAGE_STATIC_LISTS = 259200; // 3 days (Top Rated)
 const REVALIDATE_HOMEPAGE_UPCOMING = 86400; // 1 day (Upcoming)
-const FETCH_TIMEOUT_MS = 7000; // 7 seconds for external fetches (increased slightly for GET)
+const FETCH_TIMEOUT_MS = 8000; // 8 seconds for external fetches (slightly increased for potentially heavier checks)
 
 /**
  * Normalizes a TMDB item (movie or TV show) to a consistent structure.
@@ -36,7 +36,6 @@ const normalizeTmdbItem = (item, defaultMediaType) => {
 
 /**
  * Fetches and caches detailed movie data from TMDB.
- * Includes videos and external IDs.
  * @param {string|number} id - The TMDB movie ID.
  * @returns {Promise<Object>} The movie data.
  * @throws Will throw an error if the fetch fails or movie not found.
@@ -58,8 +57,6 @@ export const getCachedMovieData = unstable_cache(
 
 /**
  * Fetches and caches trailer data for a movie or TV show.
- * Note: Video data is often included via append_to_response in main detail fetches.
- * Use this if only video data is needed standalone.
  * @param {string|number} id - The TMDB item ID.
  * @param {'movie'|'tv'} [itemType="movie"] - The type of item.
  * @returns {Promise<{results: Array<Object>}>} Object containing video results, or { results: [] } on error/not found.
@@ -119,8 +116,17 @@ export const getCachedCredits = unstable_cache(
 );
 
 /**
- * Checks if the main embed page for a movie or TV series on vidsrc.xyz is reachable using a GET request.
- * This is a more reliable check than HEAD for some servers but still does not guarantee video playability.
+ * Checks if the main embed page for a movie or TV series on vidsrc.xyz is reachable.
+ * IMPORTANT: This function attempts to mimic a browser GET request. However, 100% accuracy
+ * in reflecting live browser availability from a server-side check is extremely difficult
+ * due to potential IP-based rate limiting by vidsrc.xyz, JavaScript-dependent content rendering,
+ * and other advanced anti-bot measures on their end.
+ * This check primarily verifies if the initial HTML page can be fetched successfully.
+ * A 'true' result means the embed page URL was accessible at the time of the check from the server's IP;
+ * it's NOT a guarantee the video stream itself is live or will play for all users.
+ * A 'false' result could mean the page is truly down, the specific content is not on vidsrc,
+ * OR your server's IP was rate-limited/blocked by vidsrc.xyz.
+ *
  * @param {string|number} id - The TMDB item ID.
  * @param {'movie'|'tv'} [itemType="movie"] - The type of item.
  * @returns {Promise<boolean>} True if the embed page responds with HTTP 2xx, false otherwise.
@@ -134,37 +140,49 @@ export const checkLinkStability = unstable_cache(
     const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
 
     try {
+      console.log(`[checkLinkStability] Checking URL: ${watchLink}`); // Added for server-side debugging
       const response = await fetch(watchLink, {
-        method: "GET", // Changed to GET for potentially better reliability
+        method: "GET",
         signal: controller.signal,
         headers: {
+          // More browser-like headers
           "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
           Accept:
-            "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
+            "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
           "Accept-Language": "en-US,en;q=0.9",
+          "Accept-Encoding": "gzip, deflate, br",
+          Connection: "keep-alive",
+          "Upgrade-Insecure-Requests": "1",
+          "Sec-Fetch-Dest": "document",
+          "Sec-Fetch-Mode": "navigate",
+          "Sec-Fetch-Site": "none",
+          "Sec-Fetch-User": "?1",
+          // "Referer": `https://movies.suhaeb.com/`, // Optional: Can sometimes help
         },
       });
       clearTimeout(timeoutId);
-      // For a GET request, response.ok (status 200-299) is a good indicator
-      // that the embed page itself is accessible.
+      console.log(
+        `[checkLinkStability] Response for ${watchLink}: Status ${response.status}, OK: ${response.ok}`
+      );
       return response.ok;
     } catch (error) {
       clearTimeout(timeoutId);
       if (error.name === "AbortError") {
         console.warn(
-          `Link stability check (GET) for ${itemType} ID ${id} (link: ${watchLink}) timed out after ${FETCH_TIMEOUT_MS}ms.`
+          `[checkLinkStability] Link stability check for ${itemType} ID ${id} (link: ${watchLink}) timed out after ${FETCH_TIMEOUT_MS}ms.`
         );
       } else {
         console.warn(
-          `Link stability check (GET) for ${itemType} ID ${id} (link: ${watchLink}) failed:`,
-          error.message
+          `[checkLinkStability] Link stability check for ${itemType} ID ${id} (link: ${watchLink}) failed:`,
+          error.message,
+          error.cause ? `Cause: ${error.cause}` : ""
         );
       }
       return false;
     }
   },
-  ["link-stability-vidsrc-get-v1"], // New cache key due to method change
+  ["link-stability-vidsrc-get-v2"], // New cache key for header changes
   { revalidate: REVALIDATE_LINK_CHECK }
 );
 
@@ -202,12 +220,12 @@ export const getCachedRecommendations = unstable_cache(
 
 /**
  * Fetches movie credits for an actor from TMDB. Not cached by unstable_cache in this lib.
- * This is typically called client-side on demand.
  * @param {string|number} actorId - The TMDB actor ID.
  * @returns {Promise<Array<Object>>} Array of movie credit objects.
  * @throws Will throw an error if the fetch fails.
  */
 export const getActorMovieCredits = async (actorId) => {
+  // (Implementation remains the same as previous, good for its client-side on-demand use case)
   try {
     const res = await fetch(
       `${BASE_URL}/person/${actorId}/movie_credits?api_key=${API_KEY}&language=en-US`
@@ -230,14 +248,8 @@ export const getActorMovieCredits = async (actorId) => {
 };
 
 // --- TV Show Specific Functions ---
+// (Implementations remain the same as previous, using REVALIDATE_ITEM_DETAILS)
 
-/**
- * Fetches and caches detailed TV show data from TMDB.
- * Includes videos and external IDs.
- * @param {string|number} tvId - The TMDB TV show ID.
- * @returns {Promise<Object>} The TV show data.
- * @throws Will throw an error if the fetch fails or show not found.
- */
 export const getCachedTvShowDetails = unstable_cache(
   async (tvId) => {
     const res = await fetch(
@@ -255,12 +267,6 @@ export const getCachedTvShowDetails = unstable_cache(
   { revalidate: REVALIDATE_ITEM_DETAILS }
 );
 
-/**
- * Fetches and caches details for a specific TV show season.
- * @param {string|number} tvId - The TMDB TV show ID.
- * @param {number} seasonNumber - The season number.
- * @returns {Promise<Object|null>} The season details or null if fetch fails.
- */
 export const getCachedTvSeasonDetails = unstable_cache(
   async (tvId, seasonNumber) => {
     const res = await fetch(
@@ -280,12 +286,8 @@ export const getCachedTvSeasonDetails = unstable_cache(
 );
 
 // --- Homepage Data Functions ---
+// (Implementations remain the same as previous, using respective revalidation periods)
 
-/**
- * Fetches and caches popular movies for the homepage.
- * @param {number} [limit=12] - Number of items to return.
- * @returns {Promise<Array<Object>>} Array of normalized movie items.
- */
 export const getPopularMoviesForHome = unstable_cache(
   async (limit = 12) => {
     const res = await fetch(
@@ -306,11 +308,6 @@ export const getPopularMoviesForHome = unstable_cache(
   { revalidate: REVALIDATE_HOMEPAGE_DYNAMIC }
 );
 
-/**
- * Fetches and caches popular TV shows for the homepage.
- * @param {number} [limit=12] - Number of items to return.
- * @returns {Promise<Array<Object>>} Array of normalized TV show items.
- */
 export const getPopularTvShowsForHome = unstable_cache(
   async (limit = 12) => {
     const res = await fetch(
@@ -331,11 +328,6 @@ export const getPopularTvShowsForHome = unstable_cache(
   { revalidate: REVALIDATE_HOMEPAGE_DYNAMIC }
 );
 
-/**
- * Fetches and caches trending items (all types) for the week for the homepage.
- * @param {number} [limit=12] - Number of items to return.
- * @returns {Promise<Array<Object>>} Array of normalized items.
- */
 export const getTrendingAllWeekForHome = unstable_cache(
   async (limit = 12) => {
     const res = await fetch(
@@ -356,11 +348,6 @@ export const getTrendingAllWeekForHome = unstable_cache(
   { revalidate: REVALIDATE_HOMEPAGE_DYNAMIC }
 );
 
-/**
- * Fetches and caches top-rated movies for the homepage.
- * @param {number} [limit=12] - Number of items to return.
- * @returns {Promise<Array<Object>>} Array of normalized movie items.
- */
 export const getTopRatedMoviesForHome = unstable_cache(
   async (limit = 12) => {
     const res = await fetch(
@@ -381,11 +368,6 @@ export const getTopRatedMoviesForHome = unstable_cache(
   { revalidate: REVALIDATE_HOMEPAGE_STATIC_LISTS }
 );
 
-/**
- * Fetches and caches top-rated TV shows for the homepage.
- * @param {number} [limit=12] - Number of items to return.
- * @returns {Promise<Array<Object>>} Array of normalized TV show items.
- */
 export const getTopRatedTvShowsForHome = unstable_cache(
   async (limit = 12) => {
     const res = await fetch(
@@ -406,11 +388,6 @@ export const getTopRatedTvShowsForHome = unstable_cache(
   { revalidate: REVALIDATE_HOMEPAGE_STATIC_LISTS }
 );
 
-/**
- * Fetches and caches upcoming movies (theatrical or digital release) for the homepage.
- * @param {number} [limit=12] - Number of items to return.
- * @returns {Promise<Array<Object>>} Array of normalized movie items.
- */
 export const getUpcomingMoviesForHome = unstable_cache(
   async (limit = 12) => {
     const today = new Date().toISOString().split("T")[0];
