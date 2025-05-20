@@ -36,7 +36,7 @@ const ITEM_TYPES_ENUM = {
 export const metadata = {
   title: "Movies Hub - Discover Movies & TV Shows",
   description:
-    "Explore a vast collection of movies and TV shows. Get details, watch trailers, manage your watchlist, and find your next favorite on Movies Hub.",
+    "Explore a vast collection of movies and TV shows. Get details, watch trailers, manage your watchlist, read reviews, rate favorites, and easily discover your next favorite on Movies Hub today.",
   alternates: {
     canonical: "https://movies.suhaeb.com/",
   },
