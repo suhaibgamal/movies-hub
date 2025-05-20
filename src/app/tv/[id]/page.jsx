@@ -145,11 +145,12 @@ function generateTvSeriesStructuredData(
 export const revalidate = 3600;
 
 export async function generateMetadata({ params }) {
-  const canonicalUrl = `https://movies.suhaeb.com/tv/${params.id}`;
+  const { id } = await params; // Await params before destructuring
+  const canonicalUrl = `https://movies.suhaeb.com/tv/${id}`;
   try {
-    const series = await getCachedTvShowDetails(params.id);
+    const series = await getCachedTvShowDetails(id);
     if (!series || Object.keys(series).length === 0) {
-      console.warn(`No series data found for metadata, ID: ${params.id}`);
+      console.warn(`No series data found for metadata, ID: ${id}`);
       throw new Error("Series not found for metadata");
     }
     const title = `${series.name || "TV Series"} - Movies Hub`;
@@ -189,10 +190,7 @@ export async function generateMetadata({ params }) {
       },
     };
   } catch (error) {
-    console.error(
-      `Error generating metadata for TV ID ${params.id}:`,
-      error.message
-    );
+    console.error(`Error generating metadata for TV ID ${id}:`, error.message);
     return {
       title: "TV Series Not Found - Movies Hub",
       description: "Details for this TV series could not be loaded.",
@@ -202,25 +200,26 @@ export async function generateMetadata({ params }) {
 }
 
 export default async function TvShowPage({ params }) {
-  const canonicalUrl = `https://movies.suhaeb.com/tv/${params.id}`;
+  const { id } = await params; // Await params before destructuring
+  const canonicalUrl = `https://movies.suhaeb.com/tv/${id}`;
   // const session = await getServerSession(authOptions); // Fetched but not used to gate content
 
-  if (!params.id || !/^\d+$/.test(params.id)) {
+  if (!id || !/^\d+$/.test(id)) {
     notFound();
   }
 
   try {
-    const seriesData = await getCachedTvShowDetails(params.id);
+    const seriesData = await getCachedTvShowDetails(id);
     if (!seriesData || Object.keys(seriesData).length === 0) {
       console.warn(
-        `No data returned for TV show ID ${params.id}. It might not exist or TMDB fetch failed.`
+        `No data returned for TV show ID ${id}. It might not exist or TMDB fetch failed.`
       );
       notFound();
     }
 
     const [creditsData, recommendationsData] = await Promise.all([
-      getCachedCredits(params.id, "tv"),
-      getCachedRecommendations(params.id, "tv"),
+      getCachedCredits(id, "tv"),
+      getCachedRecommendations(id, "tv"),
       // Potentially add checkLinkStability(id, "tv") if you have a generic "Watch Series" button
     ]);
 
@@ -503,7 +502,7 @@ export default async function TvShowPage({ params }) {
 
                   <TvSeasonsDisplay
                     seasons={seriesData.seasons}
-                    seriesTmdbId={params.id}
+                    seriesTmdbId={id}
                   />
 
                   <div className="pt-4 border-t border-border/30 mt-auto min-w-0">
@@ -524,7 +523,7 @@ export default async function TvShowPage({ params }) {
       </>
     );
   } catch (error) {
-    console.error(`TvShowPage Error (id: ${params.id}): ${error.message}`);
+    console.error(`TvShowPage Error (id: ${id}): ${error.message}`);
     notFound();
   }
 }
