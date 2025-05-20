@@ -14,8 +14,7 @@ import SkeletonLoader from "@/app/components/SkeletonLoader";
 import InteractiveFeatures from "@/app/components/InteractiveFeatures";
 import WatchlistButton from "@/app/components/WatchlistButton";
 import TvSeasonsDisplay from "@/app/components/TvSeasonsDisplay";
-import DetailItem from "@/app/components/DetailItem"; // <<< IMPORT SHARED COMPONENT
-// Icons used in this page for DetailItem
+import DetailItem from "@/app/components/DetailItem";
 import {
   CalendarDays,
   Tv as TvIcon,
@@ -28,6 +27,94 @@ import {
 } from "lucide-react";
 
 const BASE_URL_FOR_STATIC_PARAMS = "https://api.themoviedb.org/3";
+
+// Function to generate TVSeries JSON-LD structured data
+function generateTvSeriesStructuredData(
+  seriesData,
+  canonicalUrl,
+  cast,
+  creators
+) {
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "TVSeries",
+    name: seriesData.name,
+    description: seriesData.overview,
+    datePublished: seriesData.first_air_date, // YYYY-MM-DD format
+    url: canonicalUrl,
+    image: seriesData.poster_path
+      ? `https://image.tmdb.org/t/p/original${seriesData.poster_path}`
+      : undefined,
+  };
+
+  if (creators && creators.length > 0) {
+    structuredData.creator = creators.map((c) => ({
+      "@type": "Person",
+      name: c.name,
+    }));
+  }
+
+  if (cast && cast.length > 0) {
+    structuredData.actor = cast
+      .slice(0, 5)
+      .map((a) => ({ "@type": "Person", name: a.name })); // First 5 actors
+  }
+
+  if (seriesData.genres && seriesData.genres.length > 0) {
+    structuredData.genre = seriesData.genres.map((g) => g.name);
+  }
+
+  if (seriesData.vote_average && seriesData.vote_count) {
+    structuredData.aggregateRating = {
+      "@type": "AggregateRating",
+      ratingValue: seriesData.vote_average.toFixed(1),
+      bestRating: "10", // TMDB scale
+      ratingCount: seriesData.vote_count,
+    };
+  }
+
+  if (typeof seriesData.number_of_seasons === "number") {
+    structuredData.numberOfSeasons = seriesData.number_of_seasons;
+  }
+  if (typeof seriesData.number_of_episodes === "number") {
+    structuredData.numberOfEpisodes = seriesData.number_of_episodes;
+  }
+
+  // Optionally, add basic season information if readily available and simple
+  if (seriesData.seasons && seriesData.seasons.length > 0) {
+    structuredData.containsSeason = seriesData.seasons
+      .filter((s) => s.season_number > 0) // Exclude "Specials" if season_number is 0
+      .map((s) => ({
+        "@type": "TVSeason",
+        name: s.name || `Season ${s.season_number}`,
+        seasonNumber: s.season_number,
+        numberOfEpisodes: s.episode_count,
+        datePublished: s.air_date,
+        // "url": `${canonicalUrl}/season/${s.season_number}` // If you have season-specific pages
+      }));
+  }
+
+  if (seriesData.external_ids?.imdb_id) {
+    structuredData.sameAs = `https://www.imdb.com/title/${seriesData.external_ids.imdb_id}`;
+  }
+
+  // Remove undefined fields
+  Object.keys(structuredData).forEach((key) => {
+    if (
+      structuredData[key] === undefined ||
+      (Array.isArray(structuredData[key]) && structuredData[key].length === 0)
+    ) {
+      delete structuredData[key];
+    }
+  });
+  if (
+    structuredData.containsSeason &&
+    structuredData.containsSeason.length === 0
+  )
+    delete structuredData.containsSeason;
+
+  return structuredData;
+}
 
 export async function generateStaticParams() {
   try {
@@ -55,31 +142,51 @@ export const revalidate = 3600;
 
 export async function generateMetadata({ params }) {
   const { id } = params;
+  const canonicalUrl = `https://movies.suhaeb.com/tv/${id}`;
   try {
     const series = await getCachedTvShowDetails(id);
     if (!series || Object.keys(series).length === 0) {
       console.warn(`No series data found for metadata, ID: ${id}`);
       throw new Error("Series not found for metadata");
     }
+
+    const title = `${series.name || "TV Series"} - Movies Hub`;
+    const description =
+      series.overview ||
+      `Details about the TV series ${
+        series.name || ""
+      }, including seasons, episodes, cast, and ratings.`;
+    const imageUrl = series.poster_path
+      ? `https://image.tmdb.org/t/p/w780${series.poster_path}`
+      : "https://movies.suhaeb.com/images/default-og.png";
+
     return {
-      title: `${series.name || "TV Series"} - Movies Hub`,
-      description:
-        series.overview ||
-        `Details about the TV series ${
-          series.name || ""
-        }, including seasons, episodes, cast, and ratings.`,
+      title: title,
+      description: description,
       alternates: {
-        canonical: `https://movies.suhaeb.com/tv/${id}`,
+        canonical: canonicalUrl,
       },
       openGraph: {
-        title: `${series.name || "TV Series"} - Movies Hub`,
-        description:
-          series.overview ||
-          `Detailed information about the TV series ${series.name || ""}.`,
-        images: series.poster_path
-          ? [`https://image.tmdb.org/t/p/w780${series.poster_path}`]
-          : ["/images/default-og.png"],
+        title: title,
+        description: description,
+        url: canonicalUrl,
+        images: [
+          {
+            url: imageUrl,
+            width: 780,
+            height: 1170,
+            alt: `${series.name} Poster`,
+          },
+        ],
         type: "video.tv_show",
+        // OG TV specific tags if needed, e.g., number of episodes/seasons
+        // "video:series": canonicalUrl, // Could point to itself or a series hub page
+      },
+      twitter: {
+        card: "summary_large_image",
+        title: title,
+        description: description,
+        images: [imageUrl],
       },
     };
   } catch (error) {
@@ -87,16 +194,18 @@ export async function generateMetadata({ params }) {
     return {
       title: "TV Series Not Found - Movies Hub",
       description: "Details for this TV series could not be loaded.",
+      alternates: { canonical: canonicalUrl },
     };
   }
 }
 
 export default async function TvShowPage({ params }) {
   const { id } = params;
+  const canonicalUrl = `https://movies.suhaeb.com/tv/${id}`;
 
   const session = await getServerSession(authOptions);
   if (!session) {
-    redirect(`/login?callbackUrl=${encodeURIComponent(`/tv/${id}`)}`);
+    redirect(`/login?callbackUrl=${encodeURIComponent(canonicalUrl)}`);
   }
 
   if (!id || !/^\d+$/.test(id)) {
@@ -110,7 +219,7 @@ export default async function TvShowPage({ params }) {
   }
 
   try {
-    const seriesData = await getCachedTvShowDetails(id); // Fetches details, videos, external_ids
+    const seriesData = await getCachedTvShowDetails(id);
 
     if (!seriesData || Object.keys(seriesData).length === 0) {
       console.error(
@@ -126,7 +235,6 @@ export default async function TvShowPage({ params }) {
       getCachedRecommendations(id, "tv"),
     ]);
 
-    // Use videos from seriesData as it's appended
     const trailerKey =
       seriesData.videos?.results?.find(
         (v) => v.type === "Trailer" && v.site === "YouTube" && v.official
@@ -135,7 +243,7 @@ export default async function TvShowPage({ params }) {
         (v) => v.type === "Trailer" && v.site === "YouTube"
       )?.key;
 
-    const cast = creditsData.cast?.slice(0, 12) || [];
+    const cast = creditsData.cast?.slice(0, 10) || []; // Slice to 10 for structured data/display
     const creators = seriesData.created_by || [];
     const firstAirYear = seriesData.first_air_date
       ? new Date(seriesData.first_air_date).getFullYear()
@@ -154,228 +262,279 @@ export default async function TvShowPage({ params }) {
     const homepageLink = seriesData.homepage;
     const imdbId = seriesData.external_ids?.imdb_id;
 
-    return (
-      <div className="min-h-screen bg-background py-6 px-2 sm:px-4 lg:px-6">
-        <div className="max-w-7xl mx-auto">
-          <Suspense fallback={<SkeletonLoader />}>
-            <article className="flex flex-col rounded-xl bg-card shadow-xl lg:flex-row min-w-0 overflow-hidden">
-              <div className="min-w-0 lg:w-[300px] xl:w-[380px] flex-shrink-0 bg-muted">
-                <Image
-                  unoptimized
-                  src={
-                    seriesData.poster_path
-                      ? `https://image.tmdb.org/t/p/w780${seriesData.poster_path}`
-                      : "/images/default.webp"
-                  }
-                  alt={`${seriesData.name || "Series"} poster`}
-                  width={780}
-                  height={1170}
-                  className="aspect-[2/3] w-full object-cover lg:rounded-l-xl lg:rounded-r-none"
-                  placeholder="blur"
-                  blurDataURL="/images/default-blur.webp"
-                  quality={80}
-                  priority
-                  sizes="(max-width: 639px) 100vw, (max-width: 1023px) 300px, 380px"
-                />
-              </div>
+    // Generate JSON-LD structured data for TVSeries
+    const tvSeriesStructuredData = generateTvSeriesStructuredData(
+      seriesData,
+      canonicalUrl,
+      cast,
+      creators
+    );
 
-              <div className="min-w-0 flex-1 p-4 py-5 sm:p-5 lg:p-6 flex flex-col">
-                <div className="flex justify-between items-start mb-2 sm:mb-3">
-                  <div className="pr-10 flex-grow min-w-0">
-                    <h1 className="text-2xl font-bold text-card-foreground sm:text-3xl xl:text-4xl break-words leading-tight">
-                      {seriesData.name}
-                    </h1>
-                    {seriesData.tagline && (
-                      <p className="text-sm text-muted-foreground italic mt-1">
-                        "{seriesData.tagline}"
-                      </p>
+    return (
+      <>
+        {/* Inject JSON-LD structured data */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(tvSeriesStructuredData),
+          }}
+        />
+        <div className="min-h-screen bg-background py-6 px-2 sm:px-4 lg:px-6">
+          <div className="max-w-7xl mx-auto">
+            <Suspense fallback={<SkeletonLoader />}>
+              <article className="flex flex-col rounded-xl bg-card shadow-xl lg:flex-row min-w-0 overflow-hidden">
+                <div className="min-w-0 lg:w-[300px] xl:w-[380px] flex-shrink-0 bg-muted">
+                  <Image
+                    unoptimized
+                    src={
+                      seriesData.poster_path
+                        ? `https://image.tmdb.org/t/p/w780${seriesData.poster_path}`
+                        : "/images/default.webp"
+                    }
+                    alt={`${seriesData.name || "Series"} poster`}
+                    width={780}
+                    height={1170}
+                    className="aspect-[2/3] w-full object-cover lg:rounded-l-xl lg:rounded-r-none"
+                    placeholder="blur"
+                    blurDataURL="/images/default-blur.webp"
+                    quality={80}
+                    priority
+                    sizes="(max-width: 639px) 100vw, (max-width: 1023px) 300px, 380px"
+                  />
+                </div>
+
+                <div className="min-w-0 flex-1 p-4 py-5 sm:p-5 lg:p-6 flex flex-col">
+                  <div className="flex justify-between items-start mb-2 sm:mb-3">
+                    <div className="pr-10 flex-grow min-w-0">
+                      <h1 className="text-2xl font-bold text-card-foreground sm:text-3xl xl:text-4xl break-words leading-tight">
+                        {seriesData.name}
+                      </h1>
+                      {seriesData.tagline && (
+                        <p className="text-sm text-muted-foreground italic mt-1">
+                          "{seriesData.tagline}"
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex-shrink-0 z-10">
+                      <WatchlistButton
+                        item={{ ...seriesData, title: seriesData.name }} // Ensure title is passed for button if it relies on it
+                        itemType="TV"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 sm:gap-3 mt-1 mb-4 flex-wrap text-xs">
+                    {parseFloat(rating) > 0 && (
+                      <span
+                        className={`${ratingColor} px-2 py-0.5 rounded-full font-bold text-white flex items-center gap-1`}
+                      >
+                        <StarIcon size={12} /> {rating}
+                      </span>
+                    )}
+                    <span className="text-muted-foreground bg-muted px-2 py-0.5 rounded-full font-medium">
+                      {firstAirYear}
+                    </span>
+                    {seriesData.number_of_seasons && (
+                      <span className="text-muted-foreground bg-muted px-2 py-0.5 rounded-full font-medium">
+                        {seriesData.number_of_seasons} Season
+                        {seriesData.number_of_seasons !== 1 ? "s" : ""}
+                      </span>
+                    )}
+                    {seriesData.type && (
+                      <span className="text-muted-foreground bg-muted px-2 py-0.5 rounded-full font-medium">
+                        {seriesData.type}
+                      </span>
+                    )}
+                    {genres.slice(0, 2).map((genre) => (
+                      <span
+                        key={genre}
+                        className="text-muted-foreground font-medium bg-muted px-2 py-0.5 rounded-full truncate"
+                      >
+                        {genre}
+                      </span>
+                    ))}
+                  </div>
+
+                  <section className="mb-4 sm:mb-5">
+                    <h2 className="mb-1.5 text-lg sm:text-xl font-semibold text-card-foreground">
+                      Overview
+                    </h2>
+                    <p className="text-muted-foreground text-sm leading-relaxed line-clamp-4 hover:line-clamp-none transition-all duration-300 ease-in-out">
+                      {seriesData.overview ||
+                        "No overview available for this series."}
+                    </p>
+                  </section>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 text-sm mb-4 sm:mb-5">
+                    <DetailItem
+                      icon={
+                        <TvIcon
+                          size={16}
+                          className="text-primary mt-0.5 sm:mt-1 flex-shrink-0 opacity-80"
+                        />
+                      }
+                      label="Status"
+                      value={seriesData.status}
+                    />
+                    {seriesData.number_of_episodes > 0 && (
+                      <DetailItem
+                        icon={
+                          <CalendarDays
+                            size={16}
+                            className="text-primary mt-0.5 sm:mt-1 flex-shrink-0 opacity-80"
+                          />
+                        }
+                        label="Total Episodes"
+                        value={seriesData.number_of_episodes}
+                      />
+                    )}
+                    {seriesData.networks && seriesData.networks.length > 0 && (
+                      <DetailItem
+                        icon={
+                          <Info
+                            size={16}
+                            className="text-primary mt-0.5 sm:mt-1 flex-shrink-0 opacity-80"
+                          />
+                        }
+                        label="Network"
+                        value={seriesData.networks
+                          .map((n) => n.name)
+                          .join(", ")}
+                      />
+                    )}
+                    {creators.length > 0 && (
+                      <DetailItem
+                        icon={
+                          <Users
+                            size={16}
+                            className="text-primary mt-0.5 sm:mt-1 flex-shrink-0 opacity-80"
+                          />
+                        }
+                        label="Created by"
+                        value={creators.map((c) => c.name).join(", ")}
+                      />
+                    )}
+                    {homepageLink && (
+                      <DetailItem
+                        icon={
+                          <ExternalLinkIcon
+                            size={16}
+                            className="text-primary mt-0.5 sm:mt-1 flex-shrink-0 opacity-80"
+                          />
+                        }
+                        label="Homepage"
+                        value={homepageLink}
+                        isLink={true}
+                      />
+                    )}
+                    {imdbId && (
+                      <DetailItem
+                        icon={
+                          <Info
+                            size={16}
+                            className="text-primary mt-0.5 sm:mt-1 flex-shrink-0 opacity-80"
+                          />
+                        }
+                        label="IMDb"
+                        value={`https://www.imdb.com/title/${imdbId}`}
+                        isLink={true}
+                      />
+                    )}
+                    {seriesData.first_air_date && (
+                      <DetailItem
+                        icon={
+                          <CalendarDays
+                            size={16}
+                            className="text-primary mt-0.5 sm:mt-1 flex-shrink-0 opacity-80"
+                          />
+                        }
+                        label="First Aired"
+                        value={new Date(
+                          seriesData.first_air_date
+                        ).toLocaleDateString("en-US", {
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        })}
+                      />
+                    )}
+                    {seriesData.last_air_date && (
+                      <DetailItem
+                        icon={
+                          <CalendarDays
+                            size={16}
+                            className="text-primary mt-0.5 sm:mt-1 flex-shrink-0 opacity-80"
+                          />
+                        }
+                        label="Last Aired"
+                        value={new Date(
+                          seriesData.last_air_date
+                        ).toLocaleDateString("en-US", {
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        })}
+                      />
+                    )}
+                    {seriesData.last_episode_to_air && (
+                      <DetailItem
+                        icon={
+                          <PlayCircle
+                            size={16}
+                            className="text-primary mt-0.5 sm:mt-1 flex-shrink-0 opacity-80"
+                          />
+                        }
+                        label="Last Episode"
+                        value={`${
+                          seriesData.last_episode_to_air.name ||
+                          "Ep. " + seriesData.last_episode_to_air.episode_number
+                        } (S${seriesData.last_episode_to_air.season_number}E${
+                          seriesData.last_episode_to_air.episode_number
+                        })`}
+                      />
+                    )}
+                    {seriesData.next_episode_to_air && (
+                      <DetailItem
+                        icon={
+                          <PlayCircle
+                            size={16}
+                            className="text-primary mt-0.5 sm:mt-1 flex-shrink-0 opacity-80"
+                          />
+                        }
+                        label="Next Episode"
+                        value={`${
+                          seriesData.next_episode_to_air.name ||
+                          "Ep. " + seriesData.next_episode_to_air.episode_number
+                        } (S${seriesData.next_episode_to_air.season_number}E${
+                          seriesData.next_episode_to_air.episode_number
+                        }) - Airs: ${new Date(
+                          seriesData.next_episode_to_air.air_date
+                        ).toLocaleDateString()}`}
+                      />
                     )}
                   </div>
-                  <div className="flex-shrink-0 z-10">
-                    <WatchlistButton
-                      item={{ ...seriesData, title: seriesData.name }}
+
+                  <TvSeasonsDisplay
+                    seasons={seriesData.seasons}
+                    seriesTmdbId={id}
+                  />
+
+                  <div className="pt-4 border-t border-border/30 mt-auto min-w-0">
+                    <InteractiveFeatures
                       itemType="TV"
+                      item={seriesData}
+                      trailerKey={trailerKey}
+                      cast={cast} // First 10 cast members
+                      itemFound={true}
+                      recommendations={recommendationsData}
                     />
                   </div>
                 </div>
-
-                <div className="flex items-center gap-2 sm:gap-3 mt-1 mb-4 flex-wrap text-xs">
-                  {parseFloat(rating) > 0 && (
-                    <span
-                      className={`${ratingColor} px-2 py-0.5 rounded-full font-bold text-white flex items-center gap-1`}
-                    >
-                      <StarIcon size={12} /> {rating}
-                    </span>
-                  )}
-                  <span className="text-muted-foreground bg-muted px-2 py-0.5 rounded-full font-medium">
-                    {firstAirYear}
-                  </span>
-                  {seriesData.number_of_seasons && (
-                    <span className="text-muted-foreground bg-muted px-2 py-0.5 rounded-full font-medium">
-                      {seriesData.number_of_seasons} Season
-                      {seriesData.number_of_seasons !== 1 ? "s" : ""}
-                    </span>
-                  )}
-                  {seriesData.type && (
-                    <span className="text-muted-foreground bg-muted px-2 py-0.5 rounded-full font-medium">
-                      {seriesData.type}
-                    </span>
-                  )}
-                  {genres.slice(0, 2).map((genre) => (
-                    <span
-                      key={genre}
-                      className="text-muted-foreground font-medium bg-muted px-2 py-0.5 rounded-full truncate"
-                    >
-                      {genre}
-                    </span>
-                  ))}
-                </div>
-
-                <section className="mb-4 sm:mb-5">
-                  <h2 className="mb-1.5 text-lg sm:text-xl font-semibold text-card-foreground">
-                    Overview
-                  </h2>
-                  <p className="text-muted-foreground text-sm leading-relaxed line-clamp-4 hover:line-clamp-none transition-all duration-300 ease-in-out">
-                    {seriesData.overview ||
-                      "No overview available for this series."}
-                  </p>
-                </section>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 text-sm mb-4 sm:mb-5">
-                  <DetailItem
-                    icon={
-                      <TvIcon
-                        size={16}
-                        className="text-primary mt-0.5 sm:mt-1 flex-shrink-0 opacity-80"
-                      />
-                    }
-                    label="Status"
-                    value={seriesData.status}
-                  />
-                  {seriesData.number_of_episodes > 0 && (
-                    <DetailItem
-                      icon={
-                        <CalendarDays
-                          size={16}
-                          className="text-primary mt-0.5 sm:mt-1 flex-shrink-0 opacity-80"
-                        />
-                      }
-                      label="Total Episodes"
-                      value={seriesData.number_of_episodes}
-                    />
-                  )}
-                  {seriesData.networks && seriesData.networks.length > 0 && (
-                    <DetailItem
-                      icon={
-                        <Info
-                          size={16}
-                          className="text-primary mt-0.5 sm:mt-1 flex-shrink-0 opacity-80"
-                        />
-                      }
-                      label="Network"
-                      value={seriesData.networks.map((n) => n.name).join(", ")}
-                    />
-                  )}
-                  {creators.length > 0 && (
-                    <DetailItem
-                      icon={
-                        <Users
-                          size={16}
-                          className="text-primary mt-0.5 sm:mt-1 flex-shrink-0 opacity-80"
-                        />
-                      }
-                      label="Created by"
-                      value={creators.map((c) => c.name).join(", ")}
-                    />
-                  )}
-                  {homepageLink && (
-                    <DetailItem
-                      icon={
-                        <ExternalLinkIcon
-                          size={16}
-                          className="text-primary mt-0.5 sm:mt-1 flex-shrink-0 opacity-80"
-                        />
-                      }
-                      label="Homepage"
-                      value={homepageLink}
-                      isLink={true}
-                    />
-                  )}
-                  {imdbId && (
-                    <DetailItem
-                      icon={
-                        <Info
-                          size={16}
-                          className="text-primary mt-0.5 sm:mt-1 flex-shrink-0 opacity-80"
-                        />
-                      }
-                      label="IMDb"
-                      value={`https://www.imdb.com/title/${imdbId}`}
-                      isLink={true}
-                    />
-                  )}
-                  {seriesData.last_episode_to_air && (
-                    <DetailItem
-                      icon={
-                        <PlayCircle
-                          size={16}
-                          className="text-primary mt-0.5 sm:mt-1 flex-shrink-0 opacity-80"
-                        />
-                      }
-                      label="Last Aired"
-                      value={`${
-                        seriesData.last_episode_to_air.name ||
-                        "Episode " +
-                          seriesData.last_episode_to_air.episode_number
-                      } (S${seriesData.last_episode_to_air.season_number}E${
-                        seriesData.last_episode_to_air.episode_number
-                      }) - ${new Date(
-                        seriesData.last_episode_to_air.air_date
-                      ).toLocaleDateString()}`}
-                    />
-                  )}
-                  {seriesData.next_episode_to_air && (
-                    <DetailItem
-                      icon={
-                        <PlayCircle
-                          size={16}
-                          className="text-primary mt-0.5 sm:mt-1 flex-shrink-0 opacity-80"
-                        />
-                      }
-                      label="Next Episode"
-                      value={`${
-                        seriesData.next_episode_to_air.name ||
-                        "Episode " +
-                          seriesData.next_episode_to_air.episode_number
-                      } (S${seriesData.next_episode_to_air.season_number}E${
-                        seriesData.next_episode_to_air.episode_number
-                      }) - ${new Date(
-                        seriesData.next_episode_to_air.air_date
-                      ).toLocaleDateString()}`}
-                    />
-                  )}
-                </div>
-
-                <TvSeasonsDisplay
-                  seasons={seriesData.seasons}
-                  seriesTmdbId={id}
-                />
-
-                <div className="pt-4 border-t border-border/30 mt-auto min-w-0">
-                  <InteractiveFeatures
-                    itemType="TV"
-                    item={seriesData}
-                    trailerKey={trailerKey}
-                    cast={cast}
-                    itemFound={true}
-                    recommendations={recommendationsData}
-                  />
-                </div>
-              </div>
-            </article>
-          </Suspense>
+              </article>
+            </Suspense>
+          </div>
         </div>
-      </div>
+      </>
     );
   } catch (error) {
     console.error(
