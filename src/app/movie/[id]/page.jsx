@@ -120,12 +120,11 @@ export async function generateStaticParams() {
 export const revalidate = 3600;
 
 export async function generateMetadata({ params }) {
-  const { id } = params;
-  const canonicalUrl = `https://movies.suhaeb.com/movie/${id}`;
+  const canonicalUrl = `https://movies.suhaeb.com/movie/${params.id}`;
   try {
-    const movie = await getCachedMovieData(id);
+    const movie = await getCachedMovieData(params.id);
     if (!movie || Object.keys(movie).length === 0) {
-      console.warn(`No movie data found for metadata, ID: ${id}`);
+      console.warn(`No movie data found for metadata, ID: ${params.id}`);
       throw new Error("Movie not found for metadata");
     }
     const title = `${movie.title || "Movie"} - Movies Hub`;
@@ -168,7 +167,7 @@ export async function generateMetadata({ params }) {
     };
   } catch (error) {
     console.error(
-      `Error generating metadata for Movie ID ${id}:`,
+      `Error generating metadata for Movie ID ${params.id}:`,
       error.message
     );
     return {
@@ -180,34 +179,33 @@ export async function generateMetadata({ params }) {
 }
 
 export default async function MoviePage({ params }) {
-  const { id } = params;
-  const canonicalUrl = `https://movies.suhaeb.com/movie/${id}`;
+  const canonicalUrl = `https://movies.suhaeb.com/movie/${params.id}`;
 
   // Session is fetched but NOT used to gate the entire page content.
   // It can be passed to components if they need to render differently for logged-in users.
   // const session = await getServerSession(authOptions); // You can uncomment if needed by sub-components
 
-  if (!id || !/^\d+$/.test(id)) {
+  if (!params.id || !/^\d+$/.test(params.id)) {
     // For invalid ID format, trigger notFound.
     // For a non-existent but validly formatted ID, getCachedMovieData will throw, caught below.
     notFound();
   }
 
   try {
-    const movie = await getCachedMovieData(id);
+    const movie = await getCachedMovieData(params.id);
     if (!movie || Object.keys(movie).length === 0) {
       // This case should ideally be caught by getCachedMovieData throwing an error if res.ok is false.
       // If it returns an empty object for a 404, this check is also valid.
       console.warn(
-        `No data returned for movie ID ${id}. It might not exist or TMDB fetch failed.`
+        `No data returned for movie ID ${params.id}. It might not exist or TMDB fetch failed.`
       );
       notFound();
     }
 
     const [creditsData, isFound, recommendationsData] = await Promise.all([
-      getCachedCredits(id, "movie"),
-      checkLinkStability(id, "movie"),
-      getCachedRecommendations(id, "movie"),
+      getCachedCredits(params.id, "movie"),
+      checkLinkStability(params.id, "movie"),
+      getCachedRecommendations(params.id, "movie"),
     ]);
 
     const trailerKey =
@@ -430,7 +428,7 @@ export default async function MoviePage({ params }) {
       </>
     );
   } catch (error) {
-    console.error(`MoviePage Error (id: ${id}): ${error.message}`);
+    console.error(`MoviePage Error (id: ${params.id}): ${error.message}`);
     // If data fetching fails (e.g., movie not found in TMDB), trigger a 404.
     // This is better than redirecting to a generic error page if the resource truly doesn't exist.
     notFound();
