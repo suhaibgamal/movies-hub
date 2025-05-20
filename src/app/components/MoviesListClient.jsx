@@ -3,7 +3,7 @@
 
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link"; //
+import Link from "next/link";
 import { useMoviesListContext } from "@/app/context/MoviesListContext";
 import MoviesGrid from "@/app/components/MoviesGrid";
 import { GENRES, TV_GENRES } from "@/lib/constants";
@@ -32,7 +32,7 @@ const RATING_OPTIONS = {
     label: "Recommended",
     shortLabel: "9+",
     icon: ThumbsUp,
-  }, //
+  },
   Good: {
     value: "Good",
     min: 7,
@@ -48,7 +48,7 @@ const RATING_OPTIONS = {
     label: "Okay",
     shortLabel: "5-6.9",
     icon: Star,
-  }, //
+  },
   Bad: {
     value: "Bad",
     min: 0,
@@ -67,7 +67,7 @@ const YEAR_GROUPS = [
     from: "2020-01-01",
     to: "2025-12-31",
     icon: CalendarDays,
-  }, //
+  },
   {
     value: "2010-2019",
     label: "2010-2019",
@@ -81,7 +81,7 @@ const YEAR_GROUPS = [
     from: "2000-01-01",
     to: "2009-12-31",
     icon: CalendarDays,
-  }, //
+  },
   {
     value: "1970-1999",
     label: "1970-1999",
@@ -142,7 +142,7 @@ const BLOCKLIST = [
   "sperm",
   "ejaculation",
   "fuck",
-]; //
+];
 
 const USER_SELECTABLE_ITEM_TYPES = { MOVIE: "MOVIE", TV: "TV" };
 const DEFAULT_USER_ITEM_TYPE = USER_SELECTABLE_ITEM_TYPES.MOVIE;
@@ -157,7 +157,7 @@ const CATEGORY_OPTIONS_CONFIG = {
     defaultSort: "popularity.desc",
     allowsSecondaryFiltersInAPI: true,
     disablesSearch: false,
-  }, //
+  },
   popular: {
     value: "popular",
     label: "Popular",
@@ -177,7 +177,7 @@ const CATEGORY_OPTIONS_CONFIG = {
     apiPathTv: "tv/top_rated",
     disablesSearch: true,
     allowsSecondaryFiltersInAPI: false,
-  }, //
+  },
   upcoming: {
     value: "upcoming",
     label: "Upcoming",
@@ -190,7 +190,7 @@ const CATEGORY_OPTIONS_CONFIG = {
     disablesRatingFilter: true,
     disablesSearch: true,
     allowsSecondaryFiltersInAPI: false,
-  }, //
+  },
   trending_week: {
     value: "trending_week",
     label: "Trending",
@@ -202,7 +202,7 @@ const CATEGORY_OPTIONS_CONFIG = {
     allowsSecondaryFiltersInAPI: false,
   },
 };
-const DEFAULT_CATEGORY_VALUE = CATEGORY_OPTIONS_CONFIG.discover.value; //
+const DEFAULT_CATEGORY_VALUE = CATEGORY_OPTIONS_CONFIG.discover.value;
 
 const MAX_AUTO_FETCH_ATTEMPTS = 3;
 const API_KEY = process.env.NEXT_PUBLIC_TMDB_KEY;
@@ -231,7 +231,7 @@ const ToggleButton = ({
           ? "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90"
           : "bg-card text-muted-foreground hover:bg-muted/80 dark:hover:bg-muted/50"
       }
-    `} //
+    `}
   >
     {Icon && <Icon size={14} className="shrink-0" />}
     <span className="truncate">{label}</span>
@@ -244,7 +244,6 @@ export default function MoviesListClient() {
   const { moviesState, setMoviesState } = useMoviesListContext();
 
   const [selectedUserItemType, setSelectedUserItemType] = useState(() => {
-    /* ... existing logic ... */ //
     const urlItemType = searchParams.get("itemType")?.toUpperCase();
     if (urlItemType && USER_SELECTABLE_ITEM_TYPES[urlItemType])
       return urlItemType;
@@ -261,7 +260,7 @@ export default function MoviesListClient() {
       searchParams.get("listCategory") ||
       moviesState.selectedListCategory ||
       DEFAULT_CATEGORY_VALUE
-  ); //
+  );
   const [searchTerm, setSearchTerm] = useState(
     () => searchParams.get("search") || ""
   );
@@ -271,7 +270,7 @@ export default function MoviesListClient() {
   );
   const [selectedRating, setSelectedRating] = useState(
     () => searchParams.get("rating") || RATING_OPTIONS.All.value
-  ); //
+  );
   const [selectedYear, setSelectedYear] = useState(
     () => searchParams.get("year") || "All"
   );
@@ -284,14 +283,15 @@ export default function MoviesListClient() {
   const [hasMore, setHasMore] = useState(true);
   const [showScrollButton, setShowScrollButton] = useState(false);
   const [currentDisplayTitle, setCurrentDisplayTitle] = useState(<> </>);
-  const [initialLoadComplete, setInitialLoadComplete] = useState(false); // <--- NEW State
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
 
   const [autoFetchState, setAutoFetchState] = useState({
     isActive: false,
     attemptsDone: 0,
-  }); //
+  });
   const isMounted = useRef(false);
   const previousPrimaryFiltersKey = useRef(null);
+  const isLoadingFetchRef = useRef(false); // <--- Fix: Ref to track fetch status
 
   // --- Derived States ---
   const isSearching = useMemo(
@@ -303,9 +303,8 @@ export default function MoviesListClient() {
       CATEGORY_OPTIONS_CONFIG[selectedListCategory] ||
       CATEGORY_OPTIONS_CONFIG.discover,
     [selectedListCategory]
-  ); //
+  );
   const activeApiItemType = useMemo(() => {
-    /* ... existing logic ... */ // [cite: 1218]
     if (isSearching) return selectedUserItemType;
     if (activeCategoryDef?.itemTypeLock) return activeCategoryDef.itemTypeLock;
     if (
@@ -316,28 +315,23 @@ export default function MoviesListClient() {
   }, [activeCategoryDef, selectedUserItemType, isSearching]);
 
   const isSearchInputDisabled = useMemo(() => {
-    /* ... existing logic ... */ //
     if (isSearching) return false;
     return !!activeCategoryDef?.disablesSearch;
   }, [isSearching, activeCategoryDef]);
   const isGenreFilterDisabled = useMemo(() => {
-    /* ... existing logic ... */ // [cite: 1219]
     if (isSearching) return false;
     return !!activeCategoryDef?.disablesGenreFilter;
   }, [isSearching, activeCategoryDef]);
   const isRatingFilterDisabled = useMemo(() => {
-    /* ... existing logic ... */
     if (isSearching) return false;
     return !!activeCategoryDef?.disablesRatingFilter;
   }, [isSearching, activeCategoryDef]);
   const isYearFilterDisabled = useMemo(() => {
-    /* ... existing logic ... */ //
     if (isSearching) return false;
     return !!activeCategoryDef?.disablesYearFilter;
   }, [isSearching, activeCategoryDef]);
 
   const currentGenresForFilterDropdown = useMemo(() => {
-    /* ... existing logic ... */ //
     let typeForDeterminingGenres = selectedUserItemType;
     if (!isSearching && activeCategoryDef?.itemTypeLock)
       typeForDeterminingGenres = activeCategoryDef.itemTypeLock;
@@ -345,33 +339,31 @@ export default function MoviesListClient() {
     else if (
       activeCategoryDef?.value === CATEGORY_OPTIONS_CONFIG.trending_week.value
     )
-      typeForDeterminingGenres = selectedUserItemType;
+      typeForDeterminingGenres = selectedUserItemType; // Use toggle for trending all
     if (typeForDeterminingGenres === USER_SELECTABLE_ITEM_TYPES.MOVIE)
       return GENRES;
     if (typeForDeterminingGenres === USER_SELECTABLE_ITEM_TYPES.TV)
       return TV_GENRES;
-    return {};
+    return {}; // Should not happen if type is locked or user selected
   }, [selectedUserItemType, activeCategoryDef, isSearching]);
 
   const primaryFiltersKey = useMemo(
     () =>
       JSON.stringify(
         (() => {
-          /* ... existing logic ... */ //
           const baseKey = {
             search: debouncedSearchTerm,
             listCategory: isSearching ? "" : selectedListCategory,
-            itemTypeForAPI: activeApiItemType,
-          }; //
+            itemTypeForAPI: activeApiItemType, // This determines the API endpoint
+          };
           if (
             !isSearching &&
             selectedListCategory === CATEGORY_OPTIONS_CONFIG.discover.value &&
             activeCategoryDef.allowsSecondaryFiltersInAPI
           ) {
-            //
             baseKey.genre = selectedGenre;
             baseKey.rating = selectedRating;
-            baseKey.year = selectedYear; //
+            baseKey.year = selectedYear;
           }
           return baseKey;
         })()
@@ -381,15 +373,14 @@ export default function MoviesListClient() {
       selectedListCategory,
       activeApiItemType,
       debouncedSearchTerm,
-      activeCategoryDef,
+      activeCategoryDef, // activeCategoryDef depends on selectedListCategory
       selectedGenre,
       selectedRating,
       selectedYear,
     ]
-  ); //
+  );
 
   const normalizeItemData = useCallback((item, fetchedItemTypeOverride) => {
-    /* ... existing logic ... */ //
     const mediaType = item.media_type || fetchedItemTypeOverride;
     if (
       !item ||
@@ -397,12 +388,12 @@ export default function MoviesListClient() {
       !mediaType ||
       (mediaType !== "movie" && mediaType !== "tv")
     )
-      return null; // [cite: 1228]
+      return null;
     const normalizedId = Number(item.id);
     const voteAverage =
       typeof item.vote_average === "number"
         ? Number(item.vote_average.toFixed(1))
-        : 0; //
+        : 0;
     return {
       ...item,
       id: normalizedId,
@@ -412,38 +403,45 @@ export default function MoviesListClient() {
         mediaType === "movie" ? item.release_date : item.first_air_date,
       vote_average: voteAverage,
       genre_ids: item.genre_ids || [],
-      adult: item.adult === true,
-    }; //
+      adult: item.adult === true, // Ensure it's a boolean
+    };
   }, []);
 
   const filterBlockedContent = useCallback((rawItems) => {
-    /* ... existing logic ... */ // [cite: 1231]
     if (!Array.isArray(rawItems)) return [];
     return rawItems.filter((item) => {
-      if (!item) return false;
+      if (!item) return false; // Should have been filtered by normalizeItemData
       const title = (item.displayTitle || "").toLowerCase();
       const overview = (item.overview || "").toLowerCase();
       return !BLOCKLIST.some(
         (keyword) => title.includes(keyword) || overview.includes(keyword)
       );
     });
-  }, []);
+  }, []); // BLOCKLIST is constant
 
   const fetchItems = useCallback(
     async (pageToFetch, isNewPrimaryFilterSet) => {
-      //
-      if (isLoading && !isNewPrimaryFilterSet && pageToFetch > 1) return;
+      // Guard against re-entrant pagination calls if a fetch is already in progress
+      if (
+        !isNewPrimaryFilterSet &&
+        pageToFetch > 1 &&
+        isLoadingFetchRef.current
+      ) {
+        return;
+      }
+
+      isLoadingFetchRef.current = true;
       setIsLoading(true);
       if (isNewPrimaryFilterSet) setError(null);
 
-      let endpoint = ""; //
+      let endpoint = "";
       let apiParams = new URLSearchParams({
         api_key: API_KEY,
         page: pageToFetch.toString(),
         language: "en-US",
-        include_adult: "false",
-      }); // [cite: 1233]
-      let effectiveItemTypeForNormalization = activeApiItemType;
+        include_adult: "false", // Explicitly false
+      });
+      let effectiveItemTypeForNormalization = activeApiItemType; // Used to help normalizeItemData
       let titleForDisplay = "";
       let TitleIcon = ListFilter;
       const currentCategoryDef =
@@ -451,87 +449,91 @@ export default function MoviesListClient() {
         CATEGORY_OPTIONS_CONFIG.discover;
 
       if (isSearching) {
-        /* ... existing search logic ... */ //
         titleForDisplay = `"${debouncedSearchTerm}"`;
         TitleIcon = SearchIcon;
-        endpoint = "search/"; //
+        endpoint = "search/";
         if (activeApiItemType === API_ITEM_TYPES.MOVIE) endpoint += "movie";
         else if (activeApiItemType === API_ITEM_TYPES.TV) endpoint += "tv";
         else {
+          // This case should ideally not be hit if search locks itemType to MOVIE/TV
+          // Or if 'ALL' for search implies 'multi' endpoint
           endpoint += "multi";
-          effectiveItemTypeForNormalization = API_ITEM_TYPES.ALL;
-        } //
+          effectiveItemTypeForNormalization = API_ITEM_TYPES.ALL; // Search multi gives mixed types
+        }
         apiParams.append("query", debouncedSearchTerm);
       } else {
-        /* ... existing category logic ... */ //
+        // Category-based Browse
         titleForDisplay = currentCategoryDef.label;
         if (currentCategoryDef.subLabel)
           titleForDisplay += ` ${currentCategoryDef.subLabel}`;
-        TitleIcon = currentCategoryDef.icon || ListFilter; // [cite: 1236]
+        TitleIcon = currentCategoryDef.icon || ListFilter;
+
         if (
           currentCategoryDef.value === CATEGORY_OPTIONS_CONFIG.discover.value
         ) {
-          // [cite: 1237]
           endpoint =
-            activeApiItemType === API_ITEM_TYPES.TV
+            activeApiItemType === API_ITEM_TYPES.TV // discover is always type-specific
               ? "discover/tv"
-              : "discover/movie"; //
+              : "discover/movie";
           titleForDisplay += ` ${
             activeApiItemType === API_ITEM_TYPES.MOVIE ? "Movies" : "TV Shows"
           }`;
-          apiParams.append("certification_country", "US");
-          apiParams.append("certification.lte", "NC-17"); // [cite: 1238]
+          // Add common discover parameters
+          apiParams.append("certification_country", "US"); // Example: Filter by US certs
+          apiParams.append("certification.lte", "NC-17"); // Max cert
+
           if (
             selectedGenre !== "All" &&
-            !isGenreFilterDisabled &&
-            currentGenresForFilterDropdown[selectedGenre]
+            !isGenreFilterDisabled && // This check might be redundant if discover always allows
+            currentGenresForFilterDropdown[selectedGenre] // Ensure genre is valid for type
           )
-            apiParams.append("with_genres", selectedGenre); // [cite: 1239]
+            apiParams.append("with_genres", selectedGenre);
+
           if (
             selectedRating !== RATING_OPTIONS.All.value &&
             !isRatingFilterDisabled
           ) {
-            //
             const ratingOpt =
               Object.values(RATING_OPTIONS).find(
                 (opt) => opt.value === selectedRating
-              ) || RATING_OPTIONS.All; //
+              ) || RATING_OPTIONS.All;
             apiParams.append("vote_average.gte", ratingOpt.min.toString());
             if (ratingOpt.max < 10.1)
+              // Max 10, but API uses lte
               apiParams.append("vote_average.lte", ratingOpt.max.toString());
           }
           if (selectedYear !== "All" && !isYearFilterDisabled) {
-            //
-            const yearGroup = YEAR_GROUPS.find((g) => g.value === selectedYear); // [cite: 1242]
+            const yearGroup = YEAR_GROUPS.find((g) => g.value === selectedYear);
             if (yearGroup?.from && yearGroup?.to) {
               const dateGteKey =
                 activeApiItemType === API_ITEM_TYPES.TV
                   ? "first_air_date.gte"
-                  : "primary_release_date.gte"; //
+                  : "primary_release_date.gte";
               const dateLteKey =
                 activeApiItemType === API_ITEM_TYPES.TV
                   ? "first_air_date.lte"
-                  : "primary_release_date.lte"; //
+                  : "primary_release_date.lte";
               apiParams.append(dateGteKey, yearGroup.from);
               apiParams.append(dateLteKey, yearGroup.to);
             }
           }
-          apiParams.append("sort_by", currentCategoryDef.defaultSort);
+          apiParams.append("sort_by", currentCategoryDef.defaultSort); // Default sort for discover
         } else {
+          // Pre-defined categories like popular, top_rated, upcoming, trending
           if (currentCategoryDef.apiPathAll) {
             endpoint = currentCategoryDef.apiPathAll;
-            effectiveItemTypeForNormalization = API_ITEM_TYPES.ALL; //
+            effectiveItemTypeForNormalization = API_ITEM_TYPES.ALL; // e.g., trending/all/week
+            // Add type to title if user has selected a specific type for trending
             if (
-              selectedUserItemType !== API_ITEM_TYPES.ALL &&
+              selectedUserItemType !== API_ITEM_TYPES.ALL && // User has toggled to Movie or TV
               currentCategoryDef.value ===
                 CATEGORY_OPTIONS_CONFIG.trending_week.value
             ) {
-              //
               titleForDisplay += ` (${
                 selectedUserItemType === USER_SELECTABLE_ITEM_TYPES.MOVIE
                   ? "Movies"
                   : "TV Shows"
-              })`; //
+              })`;
             }
           } else if (
             activeApiItemType === API_ITEM_TYPES.MOVIE &&
@@ -539,14 +541,15 @@ export default function MoviesListClient() {
           ) {
             endpoint = currentCategoryDef.apiPathMovie;
             titleForDisplay += " Movies";
-          } //
-          else if (
+          } else if (
             activeApiItemType === API_ITEM_TYPES.TV &&
             currentCategoryDef.apiPathTv
           ) {
             endpoint = currentCategoryDef.apiPathTv;
             titleForDisplay += " TV Shows";
-          } //
+          }
+          // else if no path, endpoint remains empty, will be handled
+
           if (currentCategoryDef.defaultSort)
             apiParams.append("sort_by", currentCategoryDef.defaultSort);
         }
@@ -556,14 +559,16 @@ export default function MoviesListClient() {
           <TitleIcon size={26} className="inline mr-2 opacity-90" />{" "}
           {titleForDisplay}
         </>
-      ); //
+      );
 
       if (!endpoint) {
-        setApiFetchedItems([]);
+        // console.warn("No API endpoint determined for current filters.");
+        setApiFetchedItems([]); // Clear items if no endpoint
         setHasMore(false);
         setIsLoading(false);
+        isLoadingFetchRef.current = false;
         return;
-      } //
+      }
 
       try {
         const res = await fetch(
@@ -571,56 +576,55 @@ export default function MoviesListClient() {
         );
         const data = await res.json();
         if (!res.ok)
-          throw new Error(data.status_message || `API Error ${res.status}`); //
+          throw new Error(data.status_message || `API Error ${res.status}`);
 
         const normalizedNewItems = (data.results || [])
           .map((item) =>
             normalizeItemData(
               item,
               effectiveItemTypeForNormalization === API_ITEM_TYPES.ALL
-                ? null
-                : effectiveItemTypeForNormalization.toLowerCase()
+                ? null // Let normalizeItemData use item.media_type
+                : effectiveItemTypeForNormalization.toLowerCase() // movie or tv
             )
           )
-          .filter((item) => item && item.adult !== true)
-          .filter(Boolean); //
+          .filter((item) => item && item.adult !== true) // Ensure adult items are filtered
+          .filter(Boolean); // Remove any nulls from normalization
 
         setApiFetchedItems((prev) => {
-          /* ... existing unique merge logic ... */ //
           const combined =
             isNewPrimaryFilterSet || pageToFetch === 1
-              ? normalizedNewItems
-              : [...prev, ...normalizedNewItems]; //
+              ? normalizedNewItems // Replace for new search/filter or first page
+              : [...prev, ...normalizedNewItems]; // Append for pagination
+          // Deduplicate
           const uniqueKeys = new Set();
           return combined.filter((item) => {
-            const key = `${item.media_type}-${item.id}`;
+            const key = `${item.media_type}-${item.id}`; // Unique key by type and ID
             if (!uniqueKeys.has(key)) {
               uniqueKeys.add(key);
               return true;
             }
             return false;
-          }); //
+          });
         });
         setHasMore(
           pageToFetch < (data.total_pages || 0) && normalizedNewItems.length > 0
-        ); // [cite: 1257]
+        );
         if (isNewPrimaryFilterSet || pageToFetch === 1)
           previousPrimaryFiltersKey.current = primaryFiltersKey;
 
-        // --- MODIFIED: Set initialLoadComplete after first successful fetch ---
         if (
           pageToFetch === 1 &&
-          (isNewPrimaryFilterSet || !initialLoadComplete)
+          (isNewPrimaryFilterSet || !initialLoadComplete) // Reading initialLoadComplete from closure
         ) {
           setInitialLoadComplete(true);
         }
-        // --- END MODIFICATION ---
       } catch (err) {
         console.error("Error fetching items:", err);
         setError(err.message || "Failed to load data.");
         setHasMore(false);
       } finally {
-        setIsLoading(false); // [cite: 1258]
+        isLoadingFetchRef.current = false;
+        setIsLoading(false);
       }
     },
     [
@@ -639,13 +643,18 @@ export default function MoviesListClient() {
       isRatingFilterDisabled,
       isYearFilterDisabled,
       activeCategoryDef,
-      isLoading,
-      initialLoadComplete,
+      // API_KEY, BASE_API_URL, etc. are constants from outer scope
+      // State setters (setIsLoading, setError, etc.) are stable
+      // initialLoadComplete (state) is read from closure, not listed as dep
+      setCurrentDisplayTitle,
+      setApiFetchedItems,
+      setHasMore,
+      setError,
+      setInitialLoadComplete, // these are stable setters
     ]
-  ); // <--- MODIFIED: added isLoading and initialLoadComplete to deps of fetchItems
+  );
 
   useEffect(() => {
-    /* ... Debounce search ... */ // [cite: 1260]
     const timer = setTimeout(() => {
       if (searchTerm !== debouncedSearchTerm)
         setDebouncedSearchTerm(searchTerm);
@@ -654,33 +663,37 @@ export default function MoviesListClient() {
   }, [searchTerm, debouncedSearchTerm]);
 
   useEffect(() => {
-    /* ... Update URL ... */ //
     const newParams = new URLSearchParams();
     if (isSearching) {
-      // [cite: 1261]
       newParams.set("search", debouncedSearchTerm);
+      // For search, always include item type if not default, and secondary filters
       if (selectedUserItemType !== DEFAULT_USER_ITEM_TYPE)
         newParams.set("itemType", selectedUserItemType);
       if (selectedGenre !== "All") newParams.set("genre", selectedGenre);
       if (selectedRating !== RATING_OPTIONS.All.value)
         newParams.set("rating", selectedRating);
-      if (selectedYear !== "All") newParams.set("year", selectedYear); //
+      if (selectedYear !== "All") newParams.set("year", selectedYear);
     } else {
+      // For category Browse
       if (
         selectedListCategory &&
         selectedListCategory !== DEFAULT_CATEGORY_VALUE
       )
         newParams.set("listCategory", selectedListCategory);
+
       const categoryDef = CATEGORY_OPTIONS_CONFIG[selectedListCategory];
-      const typeForURL = categoryDef?.itemTypeLock || selectedUserItemType; //
+      const typeForURL = categoryDef?.itemTypeLock || selectedUserItemType;
       if (typeForURL !== DEFAULT_USER_ITEM_TYPE)
         newParams.set("itemType", typeForURL);
+
+      // Only add secondary filters to URL if category allows them OR if it's discover
+      // or if there's no item type lock (implying user can filter further)
       if (
-        (categoryDef && categoryDef.allowsSecondaryFiltersInAPI) ||
-        !categoryDef?.itemTypeLock
+        (categoryDef && categoryDef.allowsSecondaryFiltersInAPI) || // Discover allows
+        !categoryDef?.itemTypeLock // If not locked, user choice for secondary filters is relevant
       ) {
         if (selectedGenre !== "All" && !isGenreFilterDisabled)
-          newParams.set("genre", selectedGenre); //
+          newParams.set("genre", selectedGenre);
         if (
           selectedRating !== RATING_OPTIONS.All.value &&
           !isRatingFilterDisabled
@@ -691,7 +704,7 @@ export default function MoviesListClient() {
       }
     }
     if (searchParams.toString() !== newParams.toString())
-      router.replace(`/browse?${newParams.toString()}`, { scroll: false }); // [cite: 1265]
+      router.replace(`/browse?${newParams.toString()}`, { scroll: false });
   }, [
     isSearching,
     selectedListCategory,
@@ -700,15 +713,14 @@ export default function MoviesListClient() {
     selectedGenre,
     selectedRating,
     selectedYear,
-    isGenreFilterDisabled,
+    isGenreFilterDisabled, // These disabled states are important for URL update logic
     isRatingFilterDisabled,
     isYearFilterDisabled,
     router,
-    searchParams,
-  ]); //
+    searchParams, // To compare against current URL state
+  ]);
 
   useEffect(() => {
-    /* ... Main data fetching trigger ... */ // [cite: 1266]
     const isInitialMount = !isMounted.current;
     if (isInitialMount) isMounted.current = true;
 
@@ -718,106 +730,119 @@ export default function MoviesListClient() {
       moviesState.items?.length > 0 &&
       moviesState.page > 0
     ) {
-      //
       setApiFetchedItems(moviesState.items);
       setPage(moviesState.page || 1);
       setCurrentDisplayTitle(moviesState.currentDisplayTitle || <> </>);
-      setHasMore(true);
+      // TODO: Restore hasMore from context if saved, or re-evaluate
+      setHasMore(
+        moviesState.hasMore !== undefined ? moviesState.hasMore : true
+      );
       setIsLoading(false);
-      setInitialLoadComplete(true); // <--- MODIFIED: Ensure this is set on context restore
+      setInitialLoadComplete(true);
       previousPrimaryFiltersKey.current = primaryFiltersKey;
-      return; //
+      return;
     }
+
     if (
       isInitialMount ||
       previousPrimaryFiltersKey.current !== primaryFiltersKey
     ) {
-      //
       if (!isInitialMount) {
+        // Reset for new primary filter set
         setPage(1);
         setApiFetchedItems([]);
-        setDisplayItems([]);
-        setHasMore(true);
-        setInitialLoadComplete(false); // <--- MODIFIED: Reset on filter change
+        setDisplayItems([]); // Clear derived display items
+        setHasMore(true); // Assume there's more for new filters
+        setInitialLoadComplete(false); // Critical: reset for new data set
         window.scrollTo({ top: 0, behavior: "smooth" });
       }
-      fetchItems(1, true); //
+      fetchItems(1, true); // Fetch first page for new key
     }
-  }, [primaryFiltersKey, fetchItems, moviesState]);
+  }, [primaryFiltersKey, fetchItems, moviesState]); // fetchItems is now stable
 
   useEffect(() => {
-    /* ... Pagination ... */ // [cite: 1270]
-    if (!isMounted.current || page === 1 || !initialLoadComplete) return; // <--- MODIFIED: Wait for initialLoadComplete
+    // Pagination: Fetch more items when page changes, but only if filters are the same
+    if (!isMounted.current || page === 1 || !initialLoadComplete) return; // Guard initial or reset states
     if (previousPrimaryFiltersKey.current === primaryFiltersKey) {
-      fetchItems(page, false);
-    } //
-  }, [page, primaryFiltersKey, fetchItems, initialLoadComplete]); // <--- MODIFIED: Add initialLoadComplete
+      fetchItems(page, false); // 'false' indicates not a new primary filter set
+    }
+  }, [page, primaryFiltersKey, fetchItems, initialLoadComplete]);
 
   useEffect(() => {
-    /* ... Reset auto-fetch ... */ setAutoFetchState({
-      isActive: false,
-      attemptsDone: 0,
-    });
+    // Reset auto-fetch attempts when primary filters or client-side secondary filters change
+    setAutoFetchState({ isActive: false, attemptsDone: 0 });
   }, [
-    primaryFiltersKey,
-    selectedUserItemType,
-    selectedGenre,
-    selectedRating,
-    selectedYear,
-  ]); //
+    primaryFiltersKey, // If API-level filters change
+    selectedUserItemType, // If client-side type filter changes (for 'ALL' API type)
+    selectedGenre, // If client-side genre filter changes
+    selectedRating, // If client-side rating filter changes
+    selectedYear, // If client-side year filter changes
+  ]);
 
   useEffect(() => {
-    /* ... Derive displayItems ... */ //
     let itemsToProcess = [...apiFetchedItems];
+
+    // If API returns 'ALL' types (e.g., trending/all), but user has toggled Movie/TV
     if (
       activeApiItemType === API_ITEM_TYPES.ALL &&
-      selectedUserItemType !== API_ITEM_TYPES.ALL
+      selectedUserItemType !== API_ITEM_TYPES.ALL // User selected Movie or TV
     ) {
-      // [cite: 1273]
       itemsToProcess = itemsToProcess.filter(
         (item) => item.media_type === selectedUserItemType.toLowerCase()
       );
     }
+
+    // Determine if client-side secondary filtering is needed
     const needsClientSideSecondaryFiltering =
-      isSearching ||
-      (activeCategoryDef && !activeCategoryDef.allowsSecondaryFiltersInAPI); //
+      isSearching || // Always apply secondary filters client-side for search results
+      (activeCategoryDef && !activeCategoryDef.allowsSecondaryFiltersInAPI); // Or if category doesn't support API-level secondary filters
+
     if (needsClientSideSecondaryFiltering) {
       itemsToProcess = itemsToProcess.filter((item) => {
-        /* ... client-side filter logic ... */ //
-        if (!item) return false;
+        if (!item) return false; // Should be filtered by normalize
         let match = true;
+        // Genre filter (client-side)
         if (!isGenreFilterDisabled && selectedGenre !== "All" && item.genre_ids)
-          match = match && item.genre_ids.includes(Number(selectedGenre)); //
+          match = match && item.genre_ids.includes(Number(selectedGenre));
+        // Rating filter (client-side)
         if (
           !isRatingFilterDisabled &&
           selectedRating !== RATING_OPTIONS.All.value &&
           typeof item.vote_average === "number"
         ) {
-          // [cite: 1276]
           const opt =
             Object.values(RATING_OPTIONS).find(
               (o) => o.value === selectedRating
-            ) || RATING_OPTIONS.All; //
+            ) || RATING_OPTIONS.All;
           match =
             match &&
             item.vote_average >= opt.min &&
-            item.vote_average < opt.max; //
+            item.vote_average < opt.max;
         }
+        // Year filter (client-side)
         if (
           !isYearFilterDisabled &&
           selectedYear !== "All" &&
-          item.displayDate
+          item.displayDate // Ensure item has a date
         ) {
-          // [cite: 1278]
           const itemYear = new Date(item.displayDate).getFullYear();
-          const group = YEAR_GROUPS.find((g) => g.value === selectedYear); //
-          if (group?.from && group?.to) {
-            const from = new Date(group.from).getFullYear(),
-              to = new Date(group.to).getFullYear();
-            match = match && itemYear >= from && itemYear <= to;
-          } else if (group?.value !== "All") match = false;
+          if (!isNaN(itemYear)) {
+            // Check if year is valid
+            const group = YEAR_GROUPS.find((g) => g.value === selectedYear);
+            if (group?.from && group?.to) {
+              // Range group
+              const from = new Date(group.from).getFullYear();
+              const to = new Date(group.to).getFullYear();
+              match = match && itemYear >= from && itemYear <= to;
+            } else if (group?.value !== "All") {
+              // Specific year or invalid group
+              match = false; // If group not found or not 'All', and no range, no match
+            }
+          } else {
+            match = false; // Invalid item date
+          }
         }
-        return match; //
+        return match;
       });
     }
     setDisplayItems(filterBlockedContent(itemsToProcess));
@@ -825,58 +850,69 @@ export default function MoviesListClient() {
     apiFetchedItems,
     isSearching,
     activeCategoryDef,
-    selectedUserItemType,
+    selectedUserItemType, // For 'ALL' API type filtering
     selectedGenre,
     selectedRating,
     selectedYear,
-    isGenreFilterDisabled,
+    isGenreFilterDisabled, // To know if filter should be applied
     isRatingFilterDisabled,
     isYearFilterDisabled,
     filterBlockedContent,
-    activeApiItemType,
-  ]); //
+    activeApiItemType, // To know if API returned 'ALL'
+  ]);
 
   useEffect(() => {
-    /* ... Manage auto-fetching ... */ // [cite: 1281]
+    // Manage auto-fetching if displayItems becomes empty after filtering
     if (isLoading) {
+      // If currently loading new data from API, don't trigger auto-fetch yet
       return;
-    } //
+    }
     if (autoFetchState.isActive) {
+      // If auto-fetch was active and presumably just finished (isLoading became false), reset it
       setAutoFetchState((prev) => ({ ...prev, isActive: false }));
       return;
-    } //
+    }
+
     const shouldStartAutoFetch =
-      displayItems.length === 0 &&
-      apiFetchedItems.length > 0 &&
-      hasMore &&
-      autoFetchState.attemptsDone < MAX_AUTO_FETCH_ATTEMPTS; //
+      displayItems.length === 0 && // No items currently displayable
+      apiFetchedItems.length > 0 && // But we have fetched some items from API
+      hasMore && // And there are more pages to fetch from API
+      autoFetchState.attemptsDone < MAX_AUTO_FETCH_ATTEMPTS; // And we haven't tried too many times
+
     if (shouldStartAutoFetch) {
       setAutoFetchState((prev) => ({
-        isActive: true,
+        isActive: true, // Activate auto-fetch
         attemptsDone: prev.attemptsDone + 1,
       }));
-    } //
-  }, [displayItems, apiFetchedItems, hasMore, isLoading, autoFetchState]); // [cite: 1286]
+    }
+  }, [
+    displayItems.length,
+    apiFetchedItems.length,
+    hasMore,
+    isLoading,
+    autoFetchState.isActive,
+    autoFetchState.attemptsDone,
+  ]);
 
   const loadMoreItems = useCallback(() => {
+    // Only load more if not already loading, there are more items, and initial load is complete
     if (!isLoading && hasMore && initialLoadComplete)
       setPage((prev) => prev + 1);
-  }, [isLoading, hasMore, initialLoadComplete]); // <--- MODIFIED: Add initialLoadComplete
+  }, [isLoading, hasMore, initialLoadComplete]); // initialLoadComplete ensures we don't paginate prematurely
 
   useEffect(() => {
-    /* ... Trigger auto-fetch loadMoreItems ... */ if (
-      autoFetchState.isActive &&
-      !isLoading
-    ) {
+    // Trigger actual loadMoreItems if auto-fetch is active and not currently loading
+    if (autoFetchState.isActive && !isLoading) {
       loadMoreItems();
     }
-  }, [autoFetchState.isActive, isLoading, loadMoreItems]); //
+  }, [autoFetchState.isActive, isLoading, loadMoreItems]);
 
   useEffect(() => {
-    /* ... Update context ... */ //
+    // Update context with current state if filters haven't changed since last API fetch
     if (
       previousPrimaryFiltersKey.current === primaryFiltersKey &&
-      isMounted.current
+      isMounted.current &&
+      !isLoading // Only update context when not actively loading new primary set
     ) {
       setMoviesState({
         items: apiFetchedItems,
@@ -884,11 +920,12 @@ export default function MoviesListClient() {
         filtersKey: primaryFiltersKey,
         selectedUserItemType,
         selectedListCategory,
-        currentDisplayTitle,
-        selectedGenre,
+        currentDisplayTitle, // Save the title too
+        selectedGenre, // Save secondary filters
         selectedRating,
         selectedYear,
-      }); //
+        hasMore, // Save hasMore state
+      });
     }
   }, [
     apiFetchedItems,
@@ -900,57 +937,89 @@ export default function MoviesListClient() {
     selectedGenre,
     selectedRating,
     selectedYear,
+    hasMore,
     setMoviesState,
-  ]); // [cite: 1290]
+    isLoading, // Prevent context update while loading new primary set
+  ]);
 
   useEffect(() => {
-    /* ... Scroll handling ... */ //
     const handleScroll = () => {
+      // Infinite scroll logic
       if (
-        initialLoadComplete &&
-        !isLoading &&
-        hasMore &&
+        initialLoadComplete && // Ensure initial content has loaded
+        !isLoading && // Not already loading
+        hasMore && // More items are available
         window.innerHeight + document.documentElement.scrollTop >=
-          document.documentElement.offsetHeight - 300
+          document.documentElement.offsetHeight - 300 // Near bottom
       ) {
-        // <--- MODIFIED: Add initialLoadComplete
         loadMoreItems();
       }
+      // Show scroll-to-top button
       setShowScrollButton(window.scrollY > 300);
     };
     window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll); //
-  }, [initialLoadComplete, isLoading, hasMore, loadMoreItems]); // <--- MODIFIED: Add initialLoadComplete
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [initialLoadComplete, isLoading, hasMore, loadMoreItems]);
 
   useEffect(() => {
-    /* ... Proactive check on load ... */ // [cite: 1292]
+    // Proactive check: if already at bottom after initial load/filter, fetch more
     if (initialLoadComplete && !isLoading && hasMore) {
-      // <--- MODIFIED: Add initialLoadComplete
       const scrollThresholdMet =
         window.innerHeight + document.documentElement.scrollTop >=
-        document.documentElement.offsetHeight - 300; // [cite: 1293]
-      if (scrollThresholdMet) {
-        loadMoreItems();
-      } //
+        document.documentElement.offsetHeight - 300;
+      if (scrollThresholdMet && displayItems.length > 0) {
+        // also check if there are items to prevent loops if first page is empty
+        // And if the viewport is not already full (content is shorter than viewport)
+        if (
+          document.documentElement.scrollHeight <= window.innerHeight &&
+          displayItems.length < 10 &&
+          displayItems.length > 0
+        ) {
+          // Heuristic: if few items and scrollbar not active
+          loadMoreItems();
+        } else if (scrollThresholdMet) {
+          loadMoreItems();
+        }
+      } else if (
+        document.documentElement.scrollHeight <= window.innerHeight &&
+        displayItems.length < 10 &&
+        displayItems.length > 0 &&
+        !autoFetchState.isActive
+      ) {
+        loadMoreItems(); // For cases where initial load is very small
+      }
     }
-  }, [initialLoadComplete, isLoading, hasMore, loadMoreItems]); // <--- MODIFIED: Add initialLoadComplete
+  }, [
+    initialLoadComplete,
+    isLoading,
+    hasMore,
+    loadMoreItems,
+    displayItems.length,
+    autoFetchState.isActive,
+  ]);
 
   const handleUserItemTypeChange = (newType) => {
-    /* ... existing logic ... */ //
     setSelectedUserItemType(newType);
     const categoryDef = CATEGORY_OPTIONS_CONFIG[selectedListCategory];
+
+    // If current category locks item type and newType conflicts, reset category & secondary filters
     if (
-      !isSearching &&
+      !isSearching && // Only relevant if not searching
       categoryDef?.itemTypeLock &&
       categoryDef.itemTypeLock !== newType
     ) {
-      setSelectedListCategory(DEFAULT_CATEGORY_VALUE);
+      setSelectedListCategory(DEFAULT_CATEGORY_VALUE); // Reset to discover
       setSelectedGenre("All");
       setSelectedRating(RATING_OPTIONS.All.value);
       setSelectedYear("All");
-    } // [cite: 1295]
+    }
+    // If type changed, and it affects what genres/years/ratings are relevant (e.g. for discover)
+    // reset secondary filters to avoid mismatches, unless it's a category that locks them anyway
     else if (newType !== activeApiItemType) {
-      setSelectedGenre("All");
+      // Check against current API type context
+      setSelectedGenre("All"); // Always reset genre on type change
+      // For Discover, also reset rating/year as they are type-specific.
+      // For other categories, they might not use these filters or are locked.
       if (
         !isSearching &&
         selectedListCategory === CATEGORY_OPTIONS_CONFIG.discover.value
@@ -958,17 +1027,19 @@ export default function MoviesListClient() {
         setSelectedRating(RATING_OPTIONS.All.value);
         setSelectedYear("All");
       }
-    } //
+    }
   };
   const handleCategoryChange = (e) => {
-    /* ... existing logic ... */ //
     const newCategoryValue = e.target.value;
     setSelectedListCategory(newCategoryValue);
-    setSearchTerm("");
+    setSearchTerm(""); // Clear search when category changes
     setDebouncedSearchTerm("");
+
     const categoryDef = CATEGORY_OPTIONS_CONFIG[newCategoryValue];
-    if (categoryDef?.itemTypeLock)
-      setSelectedUserItemType(categoryDef.itemTypeLock);
+    if (categoryDef?.itemTypeLock) {
+      setSelectedUserItemType(categoryDef.itemTypeLock); // Lock item type if category demands
+    }
+    // Reset secondary filters as they might not apply or behave differently for new category
     setSelectedGenre("All");
     setSelectedRating(RATING_OPTIONS.All.value);
     setSelectedYear("All");
@@ -976,10 +1047,11 @@ export default function MoviesListClient() {
   const handleSecondaryFilterChange = (setter) => (e) => setter(e.target.value);
   const handleSearchChange = (e) => setSearchTerm(e.target.value);
   const handleClearSearch = () => {
-    /* ... existing logic ... */ setSearchTerm("");
-    setDebouncedSearchTerm("");
+    setSearchTerm("");
+    setDebouncedSearchTerm(""); // This will trigger primaryFiltersKey change
+    // Optionally reset to a default Browse state:
     setSelectedListCategory(DEFAULT_CATEGORY_VALUE);
-    setSelectedUserItemType(DEFAULT_USER_ITEM_TYPE);
+    setSelectedUserItemType(DEFAULT_USER_ITEM_TYPE); // Reset to default type
     setSelectedGenre("All");
     setSelectedRating(RATING_OPTIONS.All.value);
     setSelectedYear("All");
@@ -988,24 +1060,19 @@ export default function MoviesListClient() {
 
   return (
     <div className="space-y-4 md:space-y-6 pb-8">
-      {" "}
-      {/* [cite: 1298] */}
       <div className="container mx-auto px-3 sm:px-4 md:px-0 pt-6 pb-2 text-center">
         <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-primary flex items-center justify-center gap-x-2.5">
           {currentDisplayTitle}
         </div>
       </div>
+
       <div className="py-4 bg-transparent border-y border-border/60 dark:border-border/30">
-        {" "}
-        {/* */}
         <div className="container mx-auto px-3 sm:px-4 md:px-0">
+          {/* Search Input */}
           <div className="relative mb-4">
-            {" "}
-            {/* [cite: 1299] */}
             <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground z-10">
               <SearchIcon size={18} />
-            </span>{" "}
-            {/* */}
+            </span>
             <input
               type="text"
               placeholder="Search titles..."
@@ -1016,8 +1083,7 @@ export default function MoviesListClient() {
                 isSearchInputDisabled ? "opacity-50 cursor-not-allowed" : ""
               }`}
               aria-label="Search content"
-            />{" "}
-            {/* */}
+            />
             {searchTerm && (
               <button
                 onClick={handleClearSearch}
@@ -1026,42 +1092,49 @@ export default function MoviesListClient() {
               >
                 <XCircle size={18} />
               </button>
-            )}{" "}
-            {/* */}
+            )}
           </div>
 
+          {/* Category and Type Filters */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 mb-4 items-center">
-            {" "}
-            {/* [cite: 1305] */}
             <div
               className={`relative w-full md:col-span-2 ${
-                isSearching ? "opacity-50 pointer-events-none" : ""
+                isSearching ? "opacity-50 pointer-events-none" : "" // Disable category when searching
               }`}
             >
-              {" "}
-              {/* */}
               <label htmlFor="category-filter" className="sr-only">
                 Category
-              </label>{" "}
-              {/* [cite: 1306] */}
+              </label>
               <select
                 id="category-filter"
                 value={selectedListCategory}
                 onChange={handleCategoryChange}
-                disabled={isSearching}
+                disabled={isSearching} // Disable category select when actively searching
                 className="w-full appearance-none bg-card border-input rounded-md py-2 px-3 pr-8 leading-tight focus:outline-none focus:ring-1 focus:ring-ring focus:border-primary text-sm text-card-foreground h-[42px]"
                 aria-label="Select category"
               >
-                {" "}
-                {/* */}
                 {Object.values(CATEGORY_OPTIONS_CONFIG).map((cat) => {
-                  /* ... options rendering ... */ //
+                  // Do not show categories that are locked to a different item type
+                  // than the currently selected one, unless user is searching (then all are available conceptually)
                   if (
                     cat.itemTypeLock &&
                     cat.itemTypeLock !== selectedUserItemType &&
-                    !isSearching
-                  )
-                    return null; //
+                    !isSearching // During search, this condition is ignored, category disabled anyway
+                  ) {
+                    // If category is locked to MOVIE, and user has TV selected, don't show it
+                    if (
+                      cat.itemTypeLock === USER_SELECTABLE_ITEM_TYPES.MOVIE &&
+                      selectedUserItemType === USER_SELECTABLE_ITEM_TYPES.TV
+                    )
+                      return null;
+                    // If category is locked to TV, and user has MOVIE selected, don't show it
+                    if (
+                      cat.itemTypeLock === USER_SELECTABLE_ITEM_TYPES.TV &&
+                      selectedUserItemType === USER_SELECTABLE_ITEM_TYPES.MOVIE
+                    )
+                      return null;
+                  }
+
                   let prefix = "";
                   if (cat.icon) {
                     if (cat.value === "discover") prefix = "✨ ";
@@ -1072,31 +1145,27 @@ export default function MoviesListClient() {
                       prefix = "🔥 ";
                     else if (cat.value === "top_rated") prefix = "⭐ ";
                     else if (cat.value === "upcoming") prefix = "📅 ";
-                  } //
+                  }
                   return (
                     <option key={cat.value} value={cat.value}>
                       {prefix}
                       {cat.label} {cat.subLabel || ""}
                     </option>
-                  ); //
+                  );
                 })}
               </select>
               <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-muted-foreground">
                 <ChevronDown size={18} />
-              </div>{" "}
-              {/* */}
+              </div>
             </div>
-            <div
+            <div // Item Type Toggle (Movie/TV)
               className={`flex space-x-1 rounded-md bg-muted dark:bg-card/50 p-0.5 h-[42px] items-stretch ${
-                isSearching
-                  ? ""
-                  : activeCategoryDef?.itemTypeLock
+                // Disable toggle if current category locks item type (unless searching)
+                !isSearching && activeCategoryDef?.itemTypeLock
                   ? "opacity-50 pointer-events-none"
                   : ""
               }`}
             >
-              {" "}
-              {/* */}
               <ToggleButton
                 label="Movies"
                 icon={Film}
@@ -1106,18 +1175,12 @@ export default function MoviesListClient() {
                 onClick={handleUserItemTypeChange}
                 value={USER_SELECTABLE_ITEM_TYPES.MOVIE}
                 disabled={
-                  isSearching ||
-                  activeCategoryDef?.value ===
-                    CATEGORY_OPTIONS_CONFIG.trending_week.value
-                    ? false
-                    : !!(
-                        activeCategoryDef?.itemTypeLock &&
-                        activeCategoryDef.itemTypeLock !==
-                          USER_SELECTABLE_ITEM_TYPES.MOVIE
-                      )
+                  !isSearching &&
+                  !!activeCategoryDef?.itemTypeLock &&
+                  activeCategoryDef.itemTypeLock !==
+                    USER_SELECTABLE_ITEM_TYPES.MOVIE
                 }
-              />{" "}
-              {/* */}
+              />
               <ToggleButton
                 label="TV"
                 icon={Tv}
@@ -1127,34 +1190,26 @@ export default function MoviesListClient() {
                 onClick={handleUserItemTypeChange}
                 value={USER_SELECTABLE_ITEM_TYPES.TV}
                 disabled={
-                  isSearching ||
-                  activeCategoryDef?.value ===
-                    CATEGORY_OPTIONS_CONFIG.trending_week.value
-                    ? false
-                    : !!(
-                        activeCategoryDef?.itemTypeLock &&
-                        activeCategoryDef.itemTypeLock !==
-                          USER_SELECTABLE_ITEM_TYPES.TV
-                      )
+                  !isSearching &&
+                  !!activeCategoryDef?.itemTypeLock &&
+                  activeCategoryDef.itemTypeLock !==
+                    USER_SELECTABLE_ITEM_TYPES.TV
                 }
-              />{" "}
-              {/* */}
-            </div>{" "}
-            {/* [cite: 1330] */}
+              />
+            </div>
           </div>
 
+          {/* Secondary Filters: Genre, Rating, Year */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+            {/* Genre Filter */}
             <div
               className={`relative w-full ${
                 isGenreFilterDisabled ? "opacity-50 pointer-events-none" : ""
               }`}
             >
-              {" "}
-              {/* */}
               <label htmlFor="genre-filter" className="sr-only">
                 Genre
-              </label>{" "}
-              {/* */}
+              </label>
               <select
                 id="genre-filter"
                 value={selectedGenre}
@@ -1162,34 +1217,28 @@ export default function MoviesListClient() {
                 disabled={isGenreFilterDisabled}
                 className="w-full appearance-none bg-card border-input rounded-md py-2.5 px-3 pr-8 leading-tight focus:outline-none focus:ring-1 focus:ring-ring focus:border-primary text-sm text-card-foreground h-[42px]"
               >
-                {" "}
-                {/* */}
-                <option value="All">All Genres</option> {/* [cite: 1334] */}
+                <option value="All">All Genres</option>
                 {Object.entries(currentGenresForFilterDropdown).map(
                   ([id, name]) => (
                     <option key={id} value={id}>
                       {name}
                     </option>
                   )
-                )}{" "}
-                {/* */}
+                )}
               </select>
               <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-muted-foreground">
                 <ChevronDown size={18} />
-              </div>{" "}
-              {/* */}
+              </div>
             </div>
+            {/* Rating Filter */}
             <div
               className={`relative w-full ${
                 isRatingFilterDisabled ? "opacity-50 pointer-events-none" : ""
               }`}
             >
-              {" "}
-              {/* */}
               <label htmlFor="rating-filter" className="sr-only">
                 Rating
-              </label>{" "}
-              {/* */}
+              </label>
               <select
                 id="rating-filter"
                 value={selectedRating}
@@ -1197,31 +1246,25 @@ export default function MoviesListClient() {
                 disabled={isRatingFilterDisabled}
                 className="w-full appearance-none bg-card border-input rounded-md py-2.5 px-3 pr-8 leading-tight focus:outline-none focus:ring-1 focus:ring-ring focus:border-primary text-sm text-card-foreground h-[42px]"
               >
-                {" "}
-                {/* */}
                 {Object.values(RATING_OPTIONS).map((opt) => (
                   <option key={opt.value} value={opt.value}>
                     {opt.label}
                   </option>
-                ))}{" "}
-                {/* */}
+                ))}
               </select>
               <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-muted-foreground">
                 <ChevronDown size={18} />
-              </div>{" "}
-              {/* */}
+              </div>
             </div>
+            {/* Year Filter */}
             <div
               className={`relative w-full ${
                 isYearFilterDisabled ? "opacity-50 pointer-events-none" : ""
               }`}
             >
-              {" "}
-              {/* */}
               <label htmlFor="year-filter" className="sr-only">
                 Year
-              </label>{" "}
-              {/* */}
+              </label>
               <select
                 id="year-filter"
                 value={selectedYear}
@@ -1229,27 +1272,25 @@ export default function MoviesListClient() {
                 disabled={isYearFilterDisabled}
                 className="w-full appearance-none bg-card border-input rounded-md py-2.5 px-3 pr-8 leading-tight focus:outline-none focus:ring-1 focus:ring-ring focus:border-primary text-sm text-card-foreground h-[42px]"
               >
-                {" "}
-                {/* */}
                 {YEAR_GROUPS.map((group) => (
                   <option key={group.value} value={group.value}>
                     {group.label}
                   </option>
-                ))}{" "}
-                {/* */}
+                ))}
               </select>
               <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-muted-foreground">
                 <ChevronDown size={18} />
-              </div>{" "}
-              {/* */}
+              </div>
             </div>
           </div>
         </div>
-      </div>{" "}
-      {/* [cite: 1350] */}
+      </div>
+
+      {/* Content Display Area */}
+      {/* Error Display - Full Page */}
       {error &&
-        !isLoading &&
-        displayItems.length === 0 /* ... error display ... */ && ( //
+        !isLoading && // Only show if not loading something else
+        displayItems.length === 0 && ( // And no items are currently shown
           <div className="text-center py-10 container mx-auto">
             <p className="text-destructive text-lg mb-2">Error: {error}</p>
             <p className="text-muted-foreground">
@@ -1257,26 +1298,25 @@ export default function MoviesListClient() {
             </p>
           </div>
         )}
-      {error &&
-        !isLoading &&
-        displayItems.length > 0 /* ... error display for pagination ... */ && ( //
-          <div className="text-center py-2 text-destructive text-sm container mx-auto">
-            <p>
-              Error loading more items: {error}. Previously loaded items are
-              shown.
-            </p>
-          </div>
-        )}
+      {/* Error Display - Pagination (when some items are already shown) */}
+      {error && !isLoading && displayItems.length > 0 && (
+        <div className="text-center py-2 text-destructive text-sm container mx-auto">
+          <p>
+            Error loading more items: {error}. Previously loaded items are
+            shown.
+          </p>
+        </div>
+      )}
+
+      {/* Shimmer Loading Skeleton */}
       {((isLoading &&
-        apiFetchedItems.length === 0 &&
-        page === 1 &&
-        !autoFetchState.isActive) ||
-        (autoFetchState.isActive && displayItems.length === 0)) &&
-        !error /* ... shimmer loading ... */ && ( //
+        apiFetchedItems.length === 0 && // Show shimmer if loading initial batch
+        page === 1 && // and it's the first page
+        !autoFetchState.isActive) || // and not in an auto-fetch cycle due to empty displayItems
+        (autoFetchState.isActive && displayItems.length === 0)) && // Or if auto-fetching but still no displayable items
+        !error && ( // And no error is present
           <div className="container mx-auto mt-6">
             <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
-              {" "}
-              {/* */}
               {Array.from({ length: 18 }).map((_, index) => (
                 <GridCardSkeleton key={`skeleton-${index}`} />
               ))}
@@ -1285,35 +1325,41 @@ export default function MoviesListClient() {
               <p className="text-center text-muted-foreground mt-4 text-sm">
                 Searching for items matching your filters...
               </p>
-            )}{" "}
-            {/* */}
+            )}
           </div>
         )}
-      {displayItems.length > 0 /* ... MoviesGrid display ... */ && ( // [cite: 1357]
-        <div className="container mx-auto mt-6 min-h-[50vh]">
-          <MoviesGrid movies={displayItems} />
-        </div> //
-      )}
+
+      {/* Movies Grid */}
+      {displayItems.length > 0 &&
+        !error && ( // Only show grid if there are items and no critical error
+          <div className="container mx-auto mt-6 min-h-[50vh]">
+            <MoviesGrid movies={displayItems} />
+          </div>
+        )}
+
+      {/* Loading More Indicator (Spinner) */}
       {isLoading &&
-        displayItems.length > 0 &&
-        page > 1 &&
-        !autoFetchState.isActive &&
-        !error /* ... loading more indicator ... */ && ( //
+        displayItems.length > 0 && // Show if loading more pages
+        page > 1 && // And not the first page (shimmer handles first page)
+        !autoFetchState.isActive && // And not during an auto-fetch that might be showing shimmer
+        !error && ( // And no error
           <div className="text-center py-10">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-primary dark:border-primary/70 border-t-transparent"></div>
             <p className="text-muted-foreground mt-2 text-sm">
               Loading more...
             </p>
-          </div> //
+          </div>
         )}
-      {!isLoading &&
-        !autoFetchState.isActive &&
-        displayItems.length === 0 &&
-        !error &&
-        isMounted.current /* ... no results message ... */ && ( //
+
+      {/* No Results Message */}
+      {!isLoading && // Not currently loading
+        !autoFetchState.isActive && // Not in an auto-fetch cycle
+        displayItems.length === 0 && // No items to display
+        !error && // No error occurred
+        initialLoadComplete && // Initial load attempt has completed
+        isMounted.current && ( // Ensure component is mounted to avoid flash
           <div className="text-center py-20 container mx-auto">
-            <SearchX className="mx-auto h-16 w-16 text-muted-foreground/50 mb-4" />{" "}
-            {/* */}
+            <SearchX className="mx-auto h-16 w-16 text-muted-foreground/50 mb-4" />
             <h2 className="text-xl sm:text-2xl text-foreground font-semibold">
               No{" "}
               {activeApiItemType === API_ITEM_TYPES.MOVIE
@@ -1321,13 +1367,12 @@ export default function MoviesListClient() {
                 : activeApiItemType === API_ITEM_TYPES.TV
                 ? "TV shows"
                 : "content"}{" "}
-              found {/* */}
-              {activeCategoryDef &&
-              !isSearching &&
+              found
+              {!isSearching &&
+              activeCategoryDef &&
               activeCategoryDef.value !== CATEGORY_OPTIONS_CONFIG.discover.value
                 ? ` in "${activeCategoryDef.label}"`
-                : ""}{" "}
-              {/* */}
+                : ""}
               {isSearching ? ` for "${debouncedSearchTerm}"` : ""}
             </h2>
             <p className="mt-2 text-muted-foreground text-sm">
@@ -1336,18 +1381,17 @@ export default function MoviesListClient() {
                 home page
               </Link>
               .
-            </p>{" "}
-            {/* */}
+            </p>
           </div>
         )}
-      {showScrollButton /* ... scroll to top button ... */ && ( //
+
+      {/* Scroll to Top Button */}
+      {showScrollButton && (
         <button
           onClick={scrollToTop}
           className="fixed bottom-6 right-6 sm:bottom-8 sm:right-8 bg-primary text-primary-foreground p-3 rounded-full shadow-xl hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background active:scale-95 z-50 transition-opacity hover:opacity-90"
           aria-label="Scroll to top"
         >
-          {" "}
-          {/* */}
           <svg
             xmlns="http://www.w3.org/2000/svg"
             width="20"
@@ -1362,8 +1406,7 @@ export default function MoviesListClient() {
               d="M10 17a.75.75 0 01-.75-.75V5.56l-2.22 2.22a.75.75 0 11-1.06-1.06l3.5-3.5a.75.75 0 011.06 0l3.5 3.5a.75.75 0 01-1.06 1.06L10.75 5.56v10.69a.75.75 0 01-.75-.75z"
               clipRule="evenodd"
             />
-          </svg>{" "}
-          {/* */}
+          </svg>
         </button>
       )}
     </div>
