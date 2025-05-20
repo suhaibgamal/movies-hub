@@ -46,9 +46,9 @@ function SeriesCard({
 
   const imageUrl = useMemo(() => {
     if (series.poster_path)
-      return `https://image.tmdb.org/t/p/w500${series.poster_path}`;
+      return `https://image.tmdb.org/t/p/w342${series.poster_path}`;
     if (series.backdrop_path)
-      return `https://image.tmdb.org/t/p/w500${series.backdrop_path}`;
+      return `https://image.tmdb.org/t/p/w342${series.backdrop_path}`;
     return "/images/default.webp";
   }, [series.poster_path, series.backdrop_path]);
 

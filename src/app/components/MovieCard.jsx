@@ -46,9 +46,9 @@ function MovieCard({
 
   const imageUrl = useMemo(() => {
     if (movie.poster_path)
-      return `https://image.tmdb.org/t/p/w500${movie.poster_path}`;
+      return `https://image.tmdb.org/t/p/w342${movie.poster_path}`;
     if (movie.backdrop_path)
-      return `https://image.tmdb.org/t/p/w500${movie.backdrop_path}`;
+      return `https://image.tmdb.org/t/p/w342${movie.backdrop_path}`;
     return "/images/default.webp";
   }, [movie.poster_path, movie.backdrop_path]);
 
