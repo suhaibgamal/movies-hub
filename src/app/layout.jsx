@@ -1,6 +1,5 @@
-// src/app/layout.jsx
-import { GeistSans } from "geist/font/sans";
-import { GeistMono } from "geist/font/mono";
+// layout.jsx
+import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
@@ -10,7 +9,7 @@ import { MoviesListProvider } from "@/app/context/MoviesListContext";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
-const geistSans = GeistSans({
+const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
   display: "swap", // Improves font display performance
@@ -95,11 +94,7 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} dark`}
-      style={{ colorScheme: "dark" }}
-    >
+    <html lang="en">
       <head>
         {/* Preconnect and DNS-prefetch hints for faster external connections */}
         <link rel="preconnect" href="https://api.themoviedb.org" />
