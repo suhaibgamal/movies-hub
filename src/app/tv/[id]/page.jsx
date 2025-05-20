@@ -26,37 +26,77 @@ import {
 
 const BASE_URL_FOR_STATIC_PARAMS = "https://api.themoviedb.org/3";
 
+// Function to generate TVSeries JSON-LD structured data
 function generateTvSeriesStructuredData(
   seriesData,
   canonicalUrl,
   cast,
   creators
 ) {
+  // --- VVVV --- TEST CODE FOR A SPECIFIC ID --- VVVV ---
+  // Replace "86831" with the actual ID of the TV show you want to test with a minimal schema.
+  const TEST_ID_FOR_MINIMAL_SCHEMA = "86831";
+
+  if (
+    seriesData &&
+    seriesData.id &&
+    seriesData.id.toString() === TEST_ID_FOR_MINIMAL_SCHEMA
+  ) {
+    console.log(
+      `SITEMAP DEBUG: Generating MINIMAL TVSeries schema for ID ${TEST_ID_FOR_MINIMAL_SCHEMA}`
+    );
+    const minimalStructuredData = {
+      "@context": "https://schema.org",
+      "@type": "TVSeries",
+      name:
+        seriesData.name ||
+        `Test TV Series Name for ${TEST_ID_FOR_MINIMAL_SCHEMA}`, // Fallback name
+      url: canonicalUrl,
+      // Optionally, add back one property at a time for testing:
+      // "image": seriesData.poster_path ? `https://image.tmdb.org/t/p/original${seriesData.poster_path}` : undefined,
+      // "description": seriesData.overview || `Test description for ${TEST_ID_FOR_MINIMAL_SCHEMA}.`,
+      // "datePublished": seriesData.first_air_date, // Make sure this is valid YYYY-MM-DD
+    };
+    // Remove undefined fields from the minimal object
+    Object.keys(minimalStructuredData).forEach(
+      (key) =>
+        minimalStructuredData[key] === undefined &&
+        delete minimalStructuredData[key]
+    );
+    return minimalStructuredData;
+  }
+  // --- ^^^^ --- END OF TEST CODE --- ^^^^ ---
+
+  // Original comprehensive structured data for all other TV shows:
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "TVSeries",
     name: seriesData.name,
     description: seriesData.overview,
-    datePublished: seriesData.first_air_date,
+    datePublished: seriesData.first_air_date, // YYYY-MM-DD format
     url: canonicalUrl,
     image: seriesData.poster_path
       ? `https://image.tmdb.org/t/p/original${seriesData.poster_path}`
       : undefined,
   };
+
   if (creators && creators.length > 0) {
     structuredData.creator = creators.map((c) => ({
       "@type": "Person",
       name: c.name,
     }));
   }
+
   if (cast && cast.length > 0) {
     structuredData.actor = cast
       .slice(0, 5)
       .map((a) => ({ "@type": "Person", name: a.name }));
   }
+
   if (seriesData.genres && seriesData.genres.length > 0) {
     structuredData.genre = seriesData.genres.map((g) => g.name);
   }
+
   if (seriesData.vote_average && seriesData.vote_count) {
     structuredData.aggregateRating = {
       "@type": "AggregateRating",
@@ -65,12 +105,14 @@ function generateTvSeriesStructuredData(
       ratingCount: seriesData.vote_count,
     };
   }
+
   if (typeof seriesData.number_of_seasons === "number") {
     structuredData.numberOfSeasons = seriesData.number_of_seasons;
   }
   if (typeof seriesData.number_of_episodes === "number") {
     structuredData.numberOfEpisodes = seriesData.number_of_episodes;
   }
+
   if (seriesData.seasons && seriesData.seasons.length > 0) {
     structuredData.containsSeason = seriesData.seasons
       .filter((s) => s.season_number > 0)
@@ -79,12 +121,15 @@ function generateTvSeriesStructuredData(
         name: s.name || `Season ${s.season_number}`,
         seasonNumber: s.season_number,
         numberOfEpisodes: s.episode_count,
-        datePublished: s.air_date,
+        datePublished: s.air_date, // Ensure this is YYYY-MM-DD
       }));
   }
+
   if (seriesData.external_ids?.imdb_id) {
     structuredData.sameAs = `https://www.imdb.com/title/${seriesData.external_ids.imdb_id}`;
   }
+
+  // Remove undefined or empty array fields from the comprehensive object
   Object.keys(structuredData).forEach((key) => {
     if (
       structuredData[key] === undefined ||
@@ -93,14 +138,16 @@ function generateTvSeriesStructuredData(
       delete structuredData[key];
     }
   });
+  // Ensure containsSeason is removed if it becomes an empty array after filtering
   if (
     structuredData.containsSeason &&
     structuredData.containsSeason.length === 0
-  )
+  ) {
     delete structuredData.containsSeason;
+  }
+
   return structuredData;
 }
-
 export async function generateStaticParams() {
   try {
     const res = await fetch(
