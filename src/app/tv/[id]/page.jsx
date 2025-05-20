@@ -34,7 +34,7 @@ function generateTvSeriesStructuredData(
   creators
 ) {
   // --- VVVV --- TEST CODE FOR A SPECIFIC ID --- VVVV ---
-  // Replace "86831" with the actual ID of the TV show you want to test with a minimal schema.
+  // Replace "86831" with the actual ID of the TV show you are testing.
   const TEST_ID_FOR_MINIMAL_SCHEMA = "86831";
 
   if (
@@ -43,26 +43,31 @@ function generateTvSeriesStructuredData(
     seriesData.id.toString() === TEST_ID_FOR_MINIMAL_SCHEMA
   ) {
     console.log(
-      `SITEMAP DEBUG: Generating MINIMAL TVSeries schema for ID ${TEST_ID_FOR_MINIMAL_SCHEMA}`
+      `SITEMAP DEBUG: Generating MODIFIED MINIMAL TVSeries schema for ID ${TEST_ID_FOR_MINIMAL_SCHEMA}`
     );
     const minimalStructuredData = {
       "@context": "https://schema.org",
       "@type": "TVSeries",
       name:
         seriesData.name ||
-        `Test TV Series Name for ${TEST_ID_FOR_MINIMAL_SCHEMA}`, // Fallback name
+        `Test TV Series Name for ${TEST_ID_FOR_MINIMAL_SCHEMA}`,
       url: canonicalUrl,
-      // Optionally, add back one property at a time for testing:
-      // "image": seriesData.poster_path ? `https://image.tmdb.org/t/p/original${seriesData.poster_path}` : undefined,
-      // "description": seriesData.overview || `Test description for ${TEST_ID_FOR_MINIMAL_SCHEMA}.`,
-      // "datePublished": seriesData.first_air_date, // Make sure this is valid YYYY-MM-DD
+      description:
+        seriesData.overview ||
+        `A brief description of the TV series ${
+          seriesData.name || TEST_ID_FOR_MINIMAL_SCHEMA
+        }.`, // Added description
+      image: seriesData.poster_path
+        ? `https://image.tmdb.org/t/p/original${seriesData.poster_path}`
+        : undefined, // Added image
+      // "datePublished": seriesData.first_air_date, // Still optional for this specific test, add if needed
     };
     // Remove undefined fields from the minimal object
-    Object.keys(minimalStructuredData).forEach(
-      (key) =>
-        minimalStructuredData[key] === undefined &&
-        delete minimalStructuredData[key]
-    );
+    Object.keys(minimalStructuredData).forEach((key) => {
+      if (minimalStructuredData[key] === undefined) {
+        delete minimalStructuredData[key];
+      }
+    });
     return minimalStructuredData;
   }
   // --- ^^^^ --- END OF TEST CODE --- ^^^^ ---
@@ -73,7 +78,7 @@ function generateTvSeriesStructuredData(
     "@type": "TVSeries",
     name: seriesData.name,
     description: seriesData.overview,
-    datePublished: seriesData.first_air_date, // YYYY-MM-DD format
+    datePublished: seriesData.first_air_date,
     url: canonicalUrl,
     image: seriesData.poster_path
       ? `https://image.tmdb.org/t/p/original${seriesData.poster_path}`
@@ -121,7 +126,7 @@ function generateTvSeriesStructuredData(
         name: s.name || `Season ${s.season_number}`,
         seasonNumber: s.season_number,
         numberOfEpisodes: s.episode_count,
-        datePublished: s.air_date, // Ensure this is YYYY-MM-DD
+        datePublished: s.air_date,
       }));
   }
 
@@ -129,7 +134,6 @@ function generateTvSeriesStructuredData(
     structuredData.sameAs = `https://www.imdb.com/title/${seriesData.external_ids.imdb_id}`;
   }
 
-  // Remove undefined or empty array fields from the comprehensive object
   Object.keys(structuredData).forEach((key) => {
     if (
       structuredData[key] === undefined ||
@@ -138,7 +142,6 @@ function generateTvSeriesStructuredData(
       delete structuredData[key];
     }
   });
-  // Ensure containsSeason is removed if it becomes an empty array after filtering
   if (
     structuredData.containsSeason &&
     structuredData.containsSeason.length === 0
@@ -147,27 +150,6 @@ function generateTvSeriesStructuredData(
   }
 
   return structuredData;
-}
-export async function generateStaticParams() {
-  try {
-    const res = await fetch(
-      `${BASE_URL_FOR_STATIC_PARAMS}/tv/popular?api_key=${process.env.NEXT_PUBLIC_TMDB_KEY}&language=en-US&page=1`
-    );
-    if (!res.ok) {
-      console.error(
-        "Failed to fetch popular TV for static params:",
-        res.status
-      );
-      return [];
-    }
-    const popular = await res.json();
-    return (popular.results || [])
-      .slice(0, 20)
-      .map((series) => ({ id: series.id.toString() }));
-  } catch (error) {
-    console.error("Error in generateStaticParams for TV:", error);
-    return [];
-  }
 }
 
 export const revalidate = 3600;
