@@ -75,7 +75,7 @@ export const metadata = {
     title: "Movies Hub - Discover Movies & TV Shows",
     description:
       "Explore movies & TV shows, watch trailers, manage watchlists, and find your next favorite on Movies Hub.",
-    creator: "@YourTwitterHandle",
+    creator: "@Suhaibgmal",
     images: ["/images/default-og.png"],
   },
   robots: {
