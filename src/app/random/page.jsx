@@ -1,5 +1,5 @@
 // src/app/random/page.jsx
-import RandomClient from "@/app/random/RandomMovieClient"; // Assuming RandomMovieClient is the correct component name
+import RandomClient from "@/app/random/RandomMovieClient";
 
 export const metadata = {
   title: "Random Movie & TV Show Picker - Movies Hub",

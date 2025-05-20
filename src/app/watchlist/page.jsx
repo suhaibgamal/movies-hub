@@ -9,10 +9,8 @@ export const metadata = {
   alternates: {
     canonical: "https://movies.suhaeb.com/watchlist",
   },
-  // As discussed, for a login-required page, you might want to noindex it.
-  // Or, allow indexing but understand Google will likely see a login prompt or empty state if it can't log in.
   robots: {
-    index: false, // Change to false if you prefer it not to be indexed
+    index: false,
     follow: true,
   },
   openGraph: {

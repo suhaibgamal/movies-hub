@@ -1,6 +1,5 @@
 // src/app/about/page.jsx
 import Image from "next/image";
-// No need for Link from 'next/link' here as all links are external <a> tags
 
 export const metadata = {
   title: "About Movies Hub",
@@ -132,7 +131,9 @@ const AboutPage = () => {
               View Project on GitHub
             </a>
             <a
-              href="mailto:contact@suhaeb.com" // Replace with your actual contact email if different
+              href="mailto:contact@suhaeb.com"
+              target="_blank"
+              rel="noopener noreferrer"
               className="inline-block px-5 py-2.5 rounded-md bg-primary hover:bg-primary/90 text-primary-foreground font-medium transition-colors"
             >
               Email Me

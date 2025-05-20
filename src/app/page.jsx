@@ -1,15 +1,37 @@
 // src/app/page.jsx
 import { Suspense } from "react";
+import Link from "next/link";
+import MediaRow from "@/app/components/MediaRow"; // Ensure this path is correct
+import {
+  TrendingUp,
+  ThumbsUp,
+  CalendarDays,
+  LayoutGrid,
+  Loader2,
+} from "lucide-react";
 import {
   getPopularMoviesForHome,
   getPopularTvShowsForHome,
+  getTrendingAllWeekForHome,
   getTopRatedMoviesForHome,
   getTopRatedTvShowsForHome,
-  getTrendingAllWeekForHome,
   getUpcomingMoviesForHome,
-} from "@/lib/tmdb"; // Ensure these are your actual functions
-import MediaRow from "@/app/components/MediaRow";
-import MediaRowSkeleton from "@/app/components/MediaRowSkeleton"; // A skeleton for the row
+} from "@/lib/tmdb"; // Ensure this path is correct
+
+// These should align with the keys in CATEGORY_OPTIONS in MoviesListClient.jsx
+// and the 'value' property of those options.
+const HOME_PAGE_CATEGORY_SLUGS = {
+  POPULAR: "popular",
+  TOP_RATED: "top_rated",
+  UPCOMING: "upcoming",
+  TRENDING_WEEK: "trending_week",
+};
+
+// Defined user-selectable item types, must match ITEM_TYPES in MoviesListClient
+const ITEM_TYPES_ENUM = {
+  MOVIE: "MOVIE",
+  TV: "TV",
+};
 
 export const metadata = {
   title: "Movies Hub - Discover Movies & TV Shows",
@@ -42,117 +64,171 @@ export const metadata = {
   },
 };
 
-const HOME_PAGE_CATEGORY_SLUGS = {
-  TRENDING_WEEK: "trending",
-  POPULAR_MOVIES: "popular-movies",
-  POPULAR_TV: "popular-tv",
-  TOP_RATED_MOVIES: "top-rated-movies",
-  TOP_RATED_TV: "top-rated-tv",
-  UPCOMING_MOVIES: "upcoming-movies",
-};
-
-const ITEM_TYPES_ENUM = {
-  MOVIE: "MOVIE",
-  TV: "TV",
-  PERSON: "PERSON",
-  ALL: "ALL",
-};
-
-async function SectionLoader({
-  fetchData,
-  title,
-  viewAllLink,
-  itemTypeForCards,
-  sectionSlug,
-}) {
-  const items = await fetchData();
-  return (
-    <section id={sectionSlug} className="mb-6 sm:mb-8 md:mb-10">
-      <div className="flex items-center justify-between mb-3 sm:mb-4">
-        <h2 className="text-xl sm:text-2xl font-bold text-card-foreground">
-          {title}
-        </h2>
-        {viewAllLink && (
-          <a
-            href={viewAllLink}
-            className="text-sm font-medium text-primary hover:text-primary/80 transition-colors"
-          >
-            View All
-          </a>
-        )}
-      </div>
-      <MediaRow items={items} itemType={itemTypeForCards} />
-    </section>
-  );
-}
-
 export default async function HomePage() {
-  const sectionLimit = 12; // How many items per row
+  let popularMoviesData = [];
+  let popularTvShowsData = [];
+  let trendingItemsData = [];
+  let topRatedMoviesData = [];
+  let topRatedTvShowsData = [];
+  let upcomingMoviesData = [];
+  let fetchError = null;
 
-  // Define sections to display on the homepage
-  const sectionsConfig = [
-    {
-      id: "trending",
-      title: "Trending This Week",
-      fetchData: () => getTrendingAllWeekForHome(sectionLimit),
-      viewAllLink: `/browse?listCategory=${HOME_PAGE_CATEGORY_SLUGS.TRENDING_WEEK}&itemType=${ITEM_TYPES_ENUM.ALL}`,
-      itemTypeForCards: ITEM_TYPES_ENUM.ALL, // MediaRow will handle mixed types if 'ALL'
-    },
-    {
-      id: "popular-movies",
-      title: "Popular Movies",
-      fetchData: () => getPopularMoviesForHome(sectionLimit),
-      viewAllLink: `/browse?listCategory=${HOME_PAGE_CATEGORY_SLUGS.POPULAR_MOVIES}&itemType=${ITEM_TYPES_ENUM.MOVIE}`,
-      itemTypeForCards: ITEM_TYPES_ENUM.MOVIE,
-    },
-    {
-      id: "popular-tv",
-      title: "Popular TV Shows",
-      fetchData: () => getPopularTvShowsForHome(sectionLimit),
-      viewAllLink: `/browse?listCategory=${HOME_PAGE_CATEGORY_SLUGS.POPULAR_TV}&itemType=${ITEM_TYPES_ENUM.TV}`,
-      itemTypeForCards: ITEM_TYPES_ENUM.TV,
-    },
-    {
-      id: "top-rated-movies",
-      title: "Top Rated Movies",
-      fetchData: () => getTopRatedMoviesForHome(sectionLimit),
-      viewAllLink: `/browse?listCategory=${HOME_PAGE_CATEGORY_SLUGS.TOP_RATED_MOVIES}&itemType=${ITEM_TYPES_ENUM.MOVIE}`,
-      itemTypeForCards: ITEM_TYPES_ENUM.MOVIE,
-    },
-    {
-      id: "top-rated-tv",
-      title: "Top Rated TV Shows",
-      fetchData: () => getTopRatedTvShowsForHome(sectionLimit),
-      viewAllLink: `/browse?listCategory=${HOME_PAGE_CATEGORY_SLUGS.TOP_RATED_TV}&itemType=${ITEM_TYPES_ENUM.TV}`,
-      itemTypeForCards: ITEM_TYPES_ENUM.TV,
-    },
-    {
-      id: "upcoming-movies",
-      title: "Upcoming Movies",
-      fetchData: () => getUpcomingMoviesForHome(sectionLimit),
-      viewAllLink: `/browse?listCategory=${HOME_PAGE_CATEGORY_SLUGS.UPCOMING_MOVIES}&itemType=${ITEM_TYPES_ENUM.MOVIE}`,
-      itemTypeForCards: ITEM_TYPES_ENUM.MOVIE,
-    },
-  ];
+  try {
+    [
+      trendingItemsData, // Fetch trending first as it might be a good hero candidate
+      popularMoviesData,
+      upcomingMoviesData,
+      topRatedMoviesData,
+      popularTvShowsData,
+      topRatedTvShowsData,
+    ] = await Promise.all([
+      getTrendingAllWeekForHome(12).catch((e) => {
+        console.error("HomePage: Error fetching trending:", e.message);
+        return [];
+      }),
+      getPopularMoviesForHome(12).catch((e) => {
+        console.error("HomePage: Error fetching popular movies:", e.message);
+        return [];
+      }),
+      getUpcomingMoviesForHome(12).catch((e) => {
+        console.error("HomePage: Error fetching upcoming movies:", e.message);
+        return [];
+      }),
+      getTopRatedMoviesForHome(12).catch((e) => {
+        console.error("HomePage: Error fetching top rated movies:", e.message);
+        return [];
+      }),
+      getPopularTvShowsForHome(12).catch((e) => {
+        console.error("HomePage: Error fetching popular TV:", e.message);
+        return [];
+      }),
+      getTopRatedTvShowsForHome(12).catch((e) => {
+        console.error("HomePage: Error fetching top rated TV:", e.message);
+        return [];
+      }),
+    ]);
+  } catch (error) {
+    // This catch is less likely to be hit due to individual catches, but good as a fallback.
+    console.error(
+      "HomePage: Error fetching one or more page sections:",
+      error.message
+    );
+    fetchError =
+      "Could not load all content sections. Some data may be missing.";
+  }
+
+  // Example: const heroItem = trendingItemsData[0] || popularMoviesData[0];
+  // You would then pass heroItem to a <HeroSection item={heroItem} /> component.
 
   return (
-    <main className="min-h-screen bg-background text-foreground">
-      <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-6">
-        {sectionsConfig.map((section) => (
-          <Suspense
-            key={section.id}
-            fallback={<MediaRowSkeleton title={section.title} />}
-          >
-            <SectionLoader
-              fetchData={section.fetchData}
-              title={section.title}
-              viewAllLink={section.viewAllLink}
-              itemTypeForCards={section.itemTypeForCards}
-              sectionSlug={section.id}
-            />
-          </Suspense>
-        ))}
+    <div className="container mx-auto py-6 sm:py-8 px-2 sm:px-4 md:px-0 space-y-8 md:space-y-10">
+      {" "}
+      {/* Added md:px-0 to remove padding on md+ for full-width feel of rows within container */}
+      {/* Placeholder for a Hero Banner component */}
+      {/* {heroItem && <HeroSection item={heroItem} />} */}
+      {fetchError && (
+        <div className="text-center py-4 text-destructive bg-destructive/10 rounded-md">
+          <p>{fetchError}</p>
+        </div>
+      )}
+      <Suspense
+        fallback={
+          <div className="flex flex-col items-center justify-center py-20 space-y-3 min-h-[300px]">
+            <Loader2 className="h-10 w-10 animate-spin text-primary" />
+            <p className="text-muted-foreground text-lg">
+              Loading content sections...
+            </p>
+          </div>
+        }
+      >
+        {trendingItemsData.length > 0 && (
+          <MediaRow
+            title={
+              <span className="inline-flex items-center">
+                <TrendingUp className="mr-2 h-6 w-6 text-primary/90" />
+                Trending This Week
+              </span>
+            }
+            items={trendingItemsData}
+            viewAllLink={`/browse?listCategory=${HOME_PAGE_CATEGORY_SLUGS.TRENDING_WEEK}`}
+            isPriorityRow={true} // Mark as high priority for image loading
+          />
+        )}
+
+        {popularMoviesData.length > 0 && (
+          <MediaRow
+            title={
+              <span className="inline-flex items-center">
+                <TrendingUp className="mr-2 h-6 w-6 text-primary/90" />
+                Popular Movies
+              </span>
+            }
+            items={popularMoviesData}
+            viewAllLink={`/browse?listCategory=${HOME_PAGE_CATEGORY_SLUGS.POPULAR}&itemType=${ITEM_TYPES_ENUM.MOVIE}`}
+          />
+        )}
+
+        {upcomingMoviesData.length > 0 && (
+          <MediaRow
+            title={
+              <span className="inline-flex items-center">
+                <CalendarDays className="mr-2 h-6 w-6 text-primary/90" />
+                Upcoming Movies
+              </span>
+            }
+            items={upcomingMoviesData}
+            viewAllLink={`/browse?listCategory=${HOME_PAGE_CATEGORY_SLUGS.UPCOMING}&itemType=${ITEM_TYPES_ENUM.MOVIE}`}
+          />
+        )}
+
+        {topRatedMoviesData.length > 0 && (
+          <MediaRow
+            title={
+              <span className="inline-flex items-center">
+                <ThumbsUp className="mr-2 h-6 w-6 text-primary/90" />
+                Top Rated Movies
+              </span>
+            }
+            items={topRatedMoviesData}
+            viewAllLink={`/browse?listCategory=${HOME_PAGE_CATEGORY_SLUGS.TOP_RATED}&itemType=${ITEM_TYPES_ENUM.MOVIE}`}
+          />
+        )}
+
+        {popularTvShowsData.length > 0 && (
+          <MediaRow
+            title={
+              <span className="inline-flex items-center">
+                <TrendingUp className="mr-2 h-6 w-6 text-primary/90" />
+                Popular TV Shows
+              </span>
+            }
+            items={popularTvShowsData}
+            viewAllLink={`/browse?listCategory=${HOME_PAGE_CATEGORY_SLUGS.POPULAR}&itemType=${ITEM_TYPES_ENUM.TV}`}
+          />
+        )}
+
+        {topRatedTvShowsData.length > 0 && (
+          <MediaRow
+            title={
+              <span className="inline-flex items-center">
+                <ThumbsUp className="mr-2 h-6 w-6 text-primary/90" />
+                Top Rated TV Shows
+              </span>
+            }
+            items={topRatedTvShowsData}
+            viewAllLink={`/browse?listCategory=${HOME_PAGE_CATEGORY_SLUGS.TOP_RATED}&itemType=${ITEM_TYPES_ENUM.TV}`}
+          />
+        )}
+      </Suspense>
+      <div className="mt-10 mb-4 text-center">
+        <Link
+          href="/browse" // Generic link to browse, will use default category (Popular Movies)
+          className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-primary text-primary-foreground font-semibold rounded-lg shadow-md hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background active:bg-primary/80 active:scale-95 transition-all text-sm sm:text-base"
+        >
+          <LayoutGrid size={18} />
+          Browse All & Filter
+        </Link>
       </div>
-    </main>
+    </div>
   );
 }

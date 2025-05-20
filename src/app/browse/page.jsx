@@ -1,8 +1,6 @@
 // src/app/browse/page.jsx
 import MoviesListClient from "@/app/components/MoviesListClient";
 import { Suspense } from "react";
-// If you were using SearchParamsProvider, ensure it's correctly set up or remove if not needed by MoviesListClient directly on server for initial state
-// import { SearchParamsProvider } from "@/app/context/SearchParamsContext";
 
 export const metadata = {
   title: "Browse All Movies & TV Shows - Movies Hub",
@@ -25,7 +23,7 @@ export const metadata = {
       },
     ],
     siteName: "Movies Hub",
-    type: "website", // Or 'list' / 'collection' if more appropriate
+    type: "website",
   },
   twitter: {
     card: "summary_large_image",
@@ -36,10 +34,7 @@ export const metadata = {
   },
 };
 
-export default function BrowsePage({ searchParams }) {
-  // The searchParams object is available to Server Components.
-  // MoviesListClient is a Client Component and will use `useSearchParams()` hook to get them.
-  // No need to pass searchParams as a prop if MoviesListClient uses the hook.
+export default function BrowsePage() {
   return (
     <Suspense
       fallback={
@@ -48,13 +43,7 @@ export default function BrowsePage({ searchParams }) {
         </div>
       }
     >
-      {/* If SearchParamsProvider was for passing initial server searchParams to client context, 
-          and MoviesListClient now uses useSearchParams(), it might not be needed.
-          For now, I'll assume MoviesListClient handles its own searchParams.
-      */}
-      {/* <SearchParamsProvider initialSearchParams={searchParams}> */}
       <MoviesListClient />
-      {/* </SearchParamsProvider> */}
     </Suspense>
   );
 }
