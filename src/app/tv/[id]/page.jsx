@@ -33,9 +33,7 @@ function generateTvSeriesStructuredData(
   cast,
   creators
 ) {
-  // --- VVVV --- TEST CODE FOR A SPECIFIC ID --- VVVV ---
-  // Replace "86831" with the actual ID of the TV show you are testing.
-  const TEST_ID_FOR_MINIMAL_SCHEMA = "86831";
+  const TEST_ID_FOR_MINIMAL_SCHEMA = "86831"; // Or your current test ID
 
   if (
     seriesData &&
@@ -43,7 +41,7 @@ function generateTvSeriesStructuredData(
     seriesData.id.toString() === TEST_ID_FOR_MINIMAL_SCHEMA
   ) {
     console.log(
-      `SITEMAP DEBUG: Generating MODIFIED MINIMAL TVSeries schema for ID ${TEST_ID_FOR_MINIMAL_SCHEMA}`
+      `SITEMAP DEBUG: Generating SLIGHTLY EXPANDED MINIMAL TVSeries schema for ID ${TEST_ID_FOR_MINIMAL_SCHEMA}`
     );
     const minimalStructuredData = {
       "@context": "https://schema.org",
@@ -52,17 +50,17 @@ function generateTvSeriesStructuredData(
         seriesData.name ||
         `Test TV Series Name for ${TEST_ID_FOR_MINIMAL_SCHEMA}`,
       url: canonicalUrl,
+      // ADDING BACK DESCRIPTION AND IMAGE
       description:
         seriesData.overview ||
-        `A brief description of the TV series ${
+        `A brief description for ${
           seriesData.name || TEST_ID_FOR_MINIMAL_SCHEMA
-        }.`, // Added description
+        }.`,
       image: seriesData.poster_path
         ? `https://image.tmdb.org/t/p/original${seriesData.poster_path}`
-        : undefined, // Added image
-      // "datePublished": seriesData.first_air_date, // Still optional for this specific test, add if needed
+        : undefined,
     };
-    // Remove undefined fields from the minimal object
+    // Remove undefined fields
     Object.keys(minimalStructuredData).forEach((key) => {
       if (minimalStructuredData[key] === undefined) {
         delete minimalStructuredData[key];
@@ -70,9 +68,9 @@ function generateTvSeriesStructuredData(
     });
     return minimalStructuredData;
   }
-  // --- ^^^^ --- END OF TEST CODE --- ^^^^ ---
 
-  // Original comprehensive structured data for all other TV shows:
+  // ... (Your original comprehensive structured data for all other TV shows remains here) ...
+  // (Make sure the rest of the function with your full schema is still present below this if block)
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "TVSeries",
@@ -84,24 +82,20 @@ function generateTvSeriesStructuredData(
       ? `https://image.tmdb.org/t/p/original${seriesData.poster_path}`
       : undefined,
   };
-
   if (creators && creators.length > 0) {
     structuredData.creator = creators.map((c) => ({
       "@type": "Person",
       name: c.name,
     }));
   }
-
   if (cast && cast.length > 0) {
     structuredData.actor = cast
       .slice(0, 5)
       .map((a) => ({ "@type": "Person", name: a.name }));
   }
-
   if (seriesData.genres && seriesData.genres.length > 0) {
     structuredData.genre = seriesData.genres.map((g) => g.name);
   }
-
   if (seriesData.vote_average && seriesData.vote_count) {
     structuredData.aggregateRating = {
       "@type": "AggregateRating",
@@ -110,14 +104,12 @@ function generateTvSeriesStructuredData(
       ratingCount: seriesData.vote_count,
     };
   }
-
   if (typeof seriesData.number_of_seasons === "number") {
     structuredData.numberOfSeasons = seriesData.number_of_seasons;
   }
   if (typeof seriesData.number_of_episodes === "number") {
     structuredData.numberOfEpisodes = seriesData.number_of_episodes;
   }
-
   if (seriesData.seasons && seriesData.seasons.length > 0) {
     structuredData.containsSeason = seriesData.seasons
       .filter((s) => s.season_number > 0)
@@ -129,7 +121,6 @@ function generateTvSeriesStructuredData(
         datePublished: s.air_date,
       }));
   }
-
   if (seriesData.external_ids?.imdb_id) {
     structuredData.sameAs = `https://www.imdb.com/title/${seriesData.external_ids.imdb_id}`;
   }
@@ -148,7 +139,6 @@ function generateTvSeriesStructuredData(
   ) {
     delete structuredData.containsSeason;
   }
-
   return structuredData;
 }
 
