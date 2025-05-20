@@ -75,7 +75,7 @@ export const metadata = {
     title: "Movies Hub - Discover Movies & TV Shows",
     description:
       "Explore movies & TV shows, watch trailers, manage watchlists, and find your next favorite on Movies Hub.",
-    creator: "@suhaibgmal",
+    creator: "@YourTwitterHandle",
     images: ["/images/default-og.png"],
   },
   robots: {
@@ -101,17 +101,11 @@ export default function RootLayout({ children }) {
       style={{ colorScheme: "dark" }}
     >
       <head>
-        {/* Preconnect to critical third-party domains */}
-        <link
-          rel="preconnect"
-          href="https://api.themoviedb.org"
-          crossOrigin="anonymous"
-        />
-        <link
-          rel="preconnect"
-          href="https://image.tmdb.org"
-          crossOrigin="anonymous"
-        />
+        {/* Preconnect and DNS-prefetch hints for faster external connections */}
+        <link rel="preconnect" href="https://api.themoviedb.org" />
+        <link rel="dns-prefetch" href="https://api.themoviedb.org" />
+        <link rel="preconnect" href="https://image.tmdb.org" />
+        <link rel="dns-prefetch" href="https://image.tmdb.org" />
 
         {/* Favicon & App Icons */}
         <link rel="icon" href="/favicon.ico" type="image/x-icon" />
@@ -141,19 +135,19 @@ export default function RootLayout({ children }) {
         />
         <link rel="manifest" href="/site.webmanifest" />
       </head>
-      <body className="bg-background text-foreground font-sans antialiased flex flex-col min-h-screen">
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased flex flex-col min-h-screen`}
+      >
         <ProgressBar />
         <AuthProvider>
-          <MoviesListProvider>
-            <Header />
-            <main className="flex-grow container mx-auto px-2 sm:px-4 py-6">
-              {children}
-            </main>
-            <Footer />
-          </MoviesListProvider>
+          <Header />
+          <main className="flex-grow">
+            <MoviesListProvider>{children}</MoviesListProvider>
+          </main>
+          <Footer />
         </AuthProvider>
-        <SpeedInsights />
         <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
