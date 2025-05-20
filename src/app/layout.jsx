@@ -15,10 +15,11 @@ const geistSans = Geist({
   display: "swap", // Improves font display performance
 });
 
-const geistMono = GeistMono({
+const geistMono = Geist_Mono({
+  // Corrected: Use Geist_Mono (with underscore)
   variable: "--font-geist-mono",
   subsets: ["latin"],
-  display: "swap", // Improves font display performance
+  display: "swap",
 });
 
 export const metadata = {
