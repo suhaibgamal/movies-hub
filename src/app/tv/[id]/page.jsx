@@ -1,12 +1,11 @@
 // src/app/tv/[id]/page.jsx
 import Image from "next/image";
 import { Suspense } from "react";
-import { notFound } from "next/navigation"; // Import notFound
+import { notFound } from "next/navigation";
 import {
   getCachedTvShowDetails,
   getCachedCredits,
   getCachedRecommendations,
-  // checkLinkStability might be useful here too if you have a general "Watch Series" button
 } from "@/lib/tmdb";
 import SkeletonLoader from "@/app/components/SkeletonLoader";
 import InteractiveFeatures from "@/app/components/InteractiveFeatures";
@@ -15,16 +14,14 @@ import TvSeasonsDisplay from "@/app/components/TvSeasonsDisplay";
 import DetailItem from "@/app/components/DetailItem";
 import {
   CalendarDays,
-  Tv as TvIconProp, // Renamed to avoid conflict with TvIcon component
+  Tv as TvIconProp,
   Info,
   Users,
   PlayCircle,
   Star as StarIcon,
-  // Film, // Not typically needed for TV page
   ExternalLink as ExternalLinkIcon,
 } from "lucide-react";
-
-const BASE_URL_FOR_STATIC_PARAMS = "https://api.themoviedb.org/3";
+import { format as formatDate } from "date-fns";
 
 // Function to generate TVSeries JSON-LD structured data
 function generateTvSeriesStructuredData(
@@ -33,16 +30,13 @@ function generateTvSeriesStructuredData(
   cast,
   creators
 ) {
-  const TEST_ID_FOR_MINIMAL_SCHEMA = "86831"; // Or your current test ID
+  const TEST_ID_FOR_MINIMAL_SCHEMA = "86831";
 
   if (
     seriesData &&
     seriesData.id &&
     seriesData.id.toString() === TEST_ID_FOR_MINIMAL_SCHEMA
   ) {
-    console.log(
-      `SITEMAP DEBUG: Generating SLIGHTLY EXPANDED MINIMAL TVSeries schema for ID ${TEST_ID_FOR_MINIMAL_SCHEMA}`
-    );
     const minimalStructuredData = {
       "@context": "https://schema.org",
       "@type": "TVSeries",
@@ -50,7 +44,6 @@ function generateTvSeriesStructuredData(
         seriesData.name ||
         `Test TV Series Name for ${TEST_ID_FOR_MINIMAL_SCHEMA}`,
       url: canonicalUrl,
-      // ADDING BACK DESCRIPTION AND IMAGE
       description:
         seriesData.overview ||
         `A brief description for ${
@@ -60,7 +53,6 @@ function generateTvSeriesStructuredData(
         ? `https://image.tmdb.org/t/p/original${seriesData.poster_path}`
         : undefined,
     };
-    // Remove undefined fields
     Object.keys(minimalStructuredData).forEach((key) => {
       if (minimalStructuredData[key] === undefined) {
         delete minimalStructuredData[key];
@@ -69,8 +61,6 @@ function generateTvSeriesStructuredData(
     return minimalStructuredData;
   }
 
-  // ... (Your original comprehensive structured data for all other TV shows remains here) ...
-  // (Make sure the rest of the function with your full schema is still present below this if block)
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "TVSeries",
@@ -202,7 +192,6 @@ export async function generateMetadata({ params }) {
 export default async function TvShowPage({ params }) {
   const { id } = await params; // Await params before destructuring
   const canonicalUrl = `https://movies.suhaeb.com/tv/${id}`;
-  // const session = await getServerSession(authOptions); // Fetched but not used to gate content
 
   if (!id || !/^\d+$/.test(id)) {
     notFound();
@@ -220,7 +209,6 @@ export default async function TvShowPage({ params }) {
     const [creditsData, recommendationsData] = await Promise.all([
       getCachedCredits(id, "tv"),
       getCachedRecommendations(id, "tv"),
-      // Potentially add checkLinkStability(id, "tv") if you have a generic "Watch Series" button
     ]);
 
     const trailerKey =
@@ -354,7 +342,7 @@ export default async function TvShowPage({ params }) {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 text-sm mb-4 sm:mb-5">
                     <DetailItem
                       icon={
-                        <TvIconProp // Using the renamed import
+                        <TvIconProp
                           size={16}
                           className="text-primary mt-0.5 sm:mt-1 flex-shrink-0 opacity-80"
                         />
@@ -435,13 +423,10 @@ export default async function TvShowPage({ params }) {
                           />
                         }
                         label="First Aired"
-                        value={new Date(
-                          seriesData.first_air_date
-                        ).toLocaleDateString("en-US", {
-                          year: "numeric",
-                          month: "long",
-                          day: "numeric",
-                        })}
+                        value={formatDate(
+                          new Date(seriesData.first_air_date),
+                          "MMMM d, yyyy"
+                        )}
                       />
                     )}
                     {seriesData.last_air_date && (
@@ -453,13 +438,10 @@ export default async function TvShowPage({ params }) {
                           />
                         }
                         label="Last Aired"
-                        value={new Date(
-                          seriesData.last_air_date
-                        ).toLocaleDateString("en-US", {
-                          year: "numeric",
-                          month: "long",
-                          day: "numeric",
-                        })}
+                        value={formatDate(
+                          new Date(seriesData.last_air_date),
+                          "MMMM d, yyyy"
+                        )}
                       />
                     )}
                     {seriesData.last_episode_to_air && (
@@ -493,9 +475,10 @@ export default async function TvShowPage({ params }) {
                           "Ep. " + seriesData.next_episode_to_air.episode_number
                         } (S${seriesData.next_episode_to_air.season_number}E${
                           seriesData.next_episode_to_air.episode_number
-                        }) - Airs: ${new Date(
-                          seriesData.next_episode_to_air.air_date
-                        ).toLocaleDateString()}`}
+                        }) - Airs: ${formatDate(
+                          new Date(seriesData.next_episode_to_air.air_date),
+                          "MMM d, yyyy"
+                        )}`}
                       />
                     )}
                   </div>
@@ -511,7 +494,7 @@ export default async function TvShowPage({ params }) {
                       item={seriesData}
                       trailerKey={trailerKey}
                       cast={cast}
-                      itemFound={true} // Assuming TV series link is generally findable via vidsrc
+                      itemFound={true}
                       recommendations={recommendationsData}
                     />
                   </div>

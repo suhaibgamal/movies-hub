@@ -1,19 +1,18 @@
 // src/app/components/TvSeasonsDisplay.jsx
 "use client";
 
-import { useState, useCallback, Fragment } from "react";
+import { useState, useCallback } from "react";
 import Image from "next/image";
 import {
   ChevronDown,
   ChevronRight,
-  PlayCircle,
   CalendarDays as CalendarIcon,
   MessageSquare as OverviewIcon,
   Tv as TvIcon,
   AlertTriangle,
 } from "lucide-react";
-// REMOVE: import { getCachedTvSeasonDetails } from "@/lib/tmdb"; // No longer directly called
-import { fetchSeasonDetailsAction } from "@/app/actions/tvActions"; // <<< IMPORT SERVER ACTION
+import { format as formatDate } from "date-fns"; // <<< IMPORT date-fns
+import { fetchSeasonDetailsAction } from "@/app/actions/tvActions";
 import WatchNowButton from "./WatchNowButton";
 
 const EpisodeItem = ({ episode, seriesTmdbId, seasonNumber }) => (
@@ -26,7 +25,7 @@ const EpisodeItem = ({ episode, seriesTmdbId, seasonNumber }) => (
         {episode.air_date && (
           <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
             <CalendarIcon size={12} />{" "}
-            {new Date(episode.air_date).toLocaleDateString()}
+            {formatDate(new Date(episode.air_date), "MMM d, yyyy")}
           </p>
         )}
       </div>
@@ -38,7 +37,7 @@ const EpisodeItem = ({ episode, seriesTmdbId, seasonNumber }) => (
           episodeNumber={episode.episode_number}
           itemAvailable={true}
           className="bg-primary/10 hover:bg-primary/20 text-primary dark:bg-primary/20 dark:hover:bg-primary/30 dark:text-primary-foreground/80 px-2 py-1 sm:px-2.5 sm:py-1 rounded-md text-xs"
-          buttonText={`Watch S${seasonNumber}E${episode.episode_number}`} // More descriptive
+          buttonText={`Watch S${seasonNumber}E${episode.episode_number}`}
         />
       </div>
     </div>
@@ -53,7 +52,7 @@ const EpisodeItem = ({ episode, seriesTmdbId, seasonNumber }) => (
 
 const SeasonAccordionItem = ({ season, seriesTmdbId }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [episodes, setEpisodes] = useState(season.episodes || []); // Use pre-loaded if TMDB season summary includes them
+  const [episodes, setEpisodes] = useState(season.episodes || []);
   const [isLoadingEpisodes, setIsLoadingEpisodes] = useState(false);
   const [error, setError] = useState(null);
 
@@ -61,26 +60,22 @@ const SeasonAccordionItem = ({ season, seriesTmdbId }) => {
     const shouldOpen = !isOpen;
     setIsOpen(shouldOpen);
 
-    // Fetch only if opening and episodes are not already loaded for this season.
     if (shouldOpen && episodes.length === 0) {
       setIsLoadingEpisodes(true);
       setError(null);
-
-      // Call the Server Action
       const result = await fetchSeasonDetailsAction(
         seriesTmdbId,
         season.season_number
       );
-
       if (result.data && result.data.episodes) {
         setEpisodes(result.data.episodes);
       } else {
         setError(result.error || "Could not load episodes for this season.");
-        setEpisodes([]); // Clear episodes on error
+        setEpisodes([]);
       }
       setIsLoadingEpisodes(false);
     }
-  }, [seriesTmdbId, season.season_number, episodes.length, isOpen]); // isOpen is important here
+  }, [seriesTmdbId, season.season_number, episodes.length, isOpen]);
 
   const AccordionIcon = isOpen ? ChevronDown : ChevronRight;
 
@@ -116,9 +111,9 @@ const SeasonAccordionItem = ({ season, seriesTmdbId }) => {
                 ? `${season.episode_count} episodes`
                 : "Episode count unavailable"}
               {season.air_date &&
-                ` • Aired ${new Date(season.air_date).toLocaleDateString(
-                  "en-US",
-                  { year: "numeric", month: "short", day: "numeric" }
+                ` • Aired ${formatDate(
+                  new Date(season.air_date),
+                  "MMM d, yyyy"
                 )}`}
             </p>
           </div>
