@@ -24,69 +24,50 @@ import {
 import { format as formatDate } from "date-fns";
 
 // Function to generate TVSeries JSON-LD structured data
+// src/app/tv/[id]/page.jsx
+
 function generateTvSeriesStructuredData(
   seriesData,
   canonicalUrl,
   cast,
   creators
 ) {
-  const TEST_ID_FOR_MINIMAL_SCHEMA = "86831";
+  // const TEST_ID_FOR_MINIMAL_SCHEMA = "86831"; // This line can be removed or commented out
 
-  if (
-    seriesData &&
-    seriesData.id &&
-    seriesData.id.toString() === TEST_ID_FOR_MINIMAL_SCHEMA
-  ) {
-    const minimalStructuredData = {
-      "@context": "https://schema.org",
-      "@type": "TVSeries",
-      name:
-        seriesData.name ||
-        `Test TV Series Name for ${TEST_ID_FOR_MINIMAL_SCHEMA}`,
-      url: canonicalUrl,
-      description:
-        seriesData.overview ||
-        `A brief description for ${
-          seriesData.name || TEST_ID_FOR_MINIMAL_SCHEMA
-        }.`,
-      image: seriesData.poster_path
-        ? `https://image.tmdb.org/t/p/original${seriesData.poster_path}`
-        : undefined,
-    };
-    Object.keys(minimalStructuredData).forEach((key) => {
-      if (minimalStructuredData[key] === undefined) {
-        delete minimalStructuredData[key];
-      }
-    });
-    return minimalStructuredData;
-  }
+  // The 'if' block that checked for TEST_ID_FOR_MINIMAL_SCHEMA has been removed.
+  // Now, the following comprehensive structured data logic will apply to all TV series.
 
   const structuredData = {
-    "@context": "https://schema.org",
-    "@type": "TVSeries",
-    name: seriesData.name,
-    description: seriesData.overview,
-    datePublished: seriesData.first_air_date,
-    url: canonicalUrl,
+    "@context": "https://schema.org", // [cite: 1760]
+    "@type": "TVSeries", // [cite: 1760]
+    name: seriesData.name, // [cite: 1760]
+    description: seriesData.overview, // [cite: 1760]
+    datePublished: seriesData.first_air_date, // [cite: 1760]
+    url: canonicalUrl, // [cite: 1760]
     image: seriesData.poster_path
       ? `https://image.tmdb.org/t/p/original${seriesData.poster_path}`
-      : undefined,
+      : undefined, //
   };
+
   if (creators && creators.length > 0) {
+    // [cite: 1761]
     structuredData.creator = creators.map((c) => ({
       "@type": "Person",
       name: c.name,
     }));
   }
   if (cast && cast.length > 0) {
+    //
     structuredData.actor = cast
       .slice(0, 5)
       .map((a) => ({ "@type": "Person", name: a.name }));
   }
   if (seriesData.genres && seriesData.genres.length > 0) {
+    // [cite: 1762]
     structuredData.genre = seriesData.genres.map((g) => g.name);
   }
   if (seriesData.vote_average && seriesData.vote_count) {
+    // [cite: 1762]
     structuredData.aggregateRating = {
       "@type": "AggregateRating",
       ratingValue: seriesData.vote_average.toFixed(1),
@@ -95,15 +76,19 @@ function generateTvSeriesStructuredData(
     };
   }
   if (typeof seriesData.number_of_seasons === "number") {
+    // [cite: 1763]
     structuredData.numberOfSeasons = seriesData.number_of_seasons;
   }
   if (typeof seriesData.number_of_episodes === "number") {
+    // [cite: 1763]
     structuredData.numberOfEpisodes = seriesData.number_of_episodes;
   }
   if (seriesData.seasons && seriesData.seasons.length > 0) {
+    // [cite: 1763]
     structuredData.containsSeason = seriesData.seasons
-      .filter((s) => s.season_number > 0)
+      .filter((s) => s.season_number > 0) // [cite: 1763]
       .map((s) => ({
+        //
         "@type": "TVSeason",
         name: s.name || `Season ${s.season_number}`,
         seasonNumber: s.season_number,
@@ -112,10 +97,13 @@ function generateTvSeriesStructuredData(
       }));
   }
   if (seriesData.external_ids?.imdb_id) {
+    // [cite: 1764]
     structuredData.sameAs = `https://www.imdb.com/title/${seriesData.external_ids.imdb_id}`;
   }
 
+  // Cleanup undefined or empty array fields
   Object.keys(structuredData).forEach((key) => {
+    //
     if (
       structuredData[key] === undefined ||
       (Array.isArray(structuredData[key]) && structuredData[key].length === 0)
@@ -124,12 +112,14 @@ function generateTvSeriesStructuredData(
     }
   });
   if (
+    // [cite: 1765]
     structuredData.containsSeason &&
     structuredData.containsSeason.length === 0
   ) {
     delete structuredData.containsSeason;
   }
-  return structuredData;
+
+  return structuredData; // [cite: 1765]
 }
 
 export const revalidate = 3600;
