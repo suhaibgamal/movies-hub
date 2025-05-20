@@ -61,35 +61,34 @@ export const metadata = {
     siteName: "Movies Hub",
     images: [
       {
-        url: "/images/default-og.png", // Relative to /public [cite: 49]
+        url: "/images/default-og.png",
         width: 1200,
         height: 630,
-        alt: "Movies Hub - Your Guide to Movies & TV Shows", // More descriptive alt
+        alt: "Movies Hub - Your Guide to Movies & TV Shows",
       },
-      // You can add more images here if needed
     ],
     locale: "en_US",
     type: "website",
   },
   twitter: {
-    card: "summary_large_image", // [cite: 50]
-    title: "Movies Hub - Discover Movies & TV Shows", // [cite: 50]
+    card: "summary_large_image",
+    title: "Movies Hub - Discover Movies & TV Shows",
     description:
       "Explore movies & TV shows, watch trailers, manage watchlists, and find your next favorite on Movies Hub.",
-    creator: "@YourTwitterHandle",
+    creator: "@suhaibgmal",
     images: ["/images/default-og.png"],
   },
   robots: {
     index: true,
     follow: true,
-    nocache: false, // Allow caching
+    nocache: false,
     googleBot: {
       index: true,
       follow: true,
-      noimageindex: false, // Allow image indexing
-      "max-video-preview": -1, // Allow any length for video preview
-      "max-image-preview": "large", // Show large image previews
-      "max-snippet": -1, // Allow any length for snippets
+      noimageindex: false,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
     },
   },
 };
@@ -98,8 +97,8 @@ export default function RootLayout({ children }) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} dark`} // Assuming dark is your default theme based on merged_project
-      style={{ colorScheme: "dark" }} // Helps browser adapt UI elements like scrollbars
+      className={`${geistSans.variable} ${geistMono.variable} dark`}
+      style={{ colorScheme: "dark" }}
     >
       <head>
         {/* Preconnect to critical third-party domains */}
@@ -113,18 +112,39 @@ export default function RootLayout({ children }) {
           href="https://image.tmdb.org"
           crossOrigin="anonymous"
         />
-        {/* DNS-prefetch as a fallback or for other less critical domains if needed */}
-        {/* <link rel="dns-prefetch" href="https://api.themoviedb.org" /> */}
-        {/* <link rel="dns-prefetch" href="https://image.tmdb.org" /> */}
-        {/* Consider preconnecting to Vercel's analytics/insights if they are always loaded */}
-        {/* <link rel="preconnect" href="https://vitals.vercel-insights.com" crossOrigin="anonymous" /> */}
+
+        {/* Favicon & App Icons */}
+        <link rel="icon" href="/favicon.ico" type="image/x-icon" />
+        <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon" />
+        <link
+          rel="icon"
+          type="image/png"
+          sizes="16x16"
+          href="/favicon-16x16.png"
+        />
+        <link
+          rel="icon"
+          type="image/png"
+          sizes="32x32"
+          href="/favicon-32x32.png"
+        />
+        <link
+          rel="icon"
+          type="image/png"
+          sizes="48x48"
+          href="/favicon-48x48.png"
+        />
+        <link
+          rel="apple-touch-icon"
+          sizes="180x180"
+          href="/favicon-180x180.png"
+        />
+        <link rel="manifest" href="/site.webmanifest" />
       </head>
       <body className="bg-background text-foreground font-sans antialiased flex flex-col min-h-screen">
         <ProgressBar />
         <AuthProvider>
           <MoviesListProvider>
-            {" "}
-            {/* Evaluate if this is needed globally or can be scoped tighter */}
             <Header />
             <main className="flex-grow container mx-auto px-2 sm:px-4 py-6">
               {children}
