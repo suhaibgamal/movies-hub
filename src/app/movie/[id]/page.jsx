@@ -1,20 +1,22 @@
 // src/app/movie/[id]/page.jsx
 
 import { getServerSession } from "next-auth/next";
-import { redirect } from "next/navigation";
+// No longer importing redirect for the entire page based on session
 import Image from "next/image";
 import { Suspense } from "react";
+import { notFound } from "next/navigation"; // Import notFound
+
 import { authOptions } from "@/app/api/auth/authOptions";
 import {
   getCachedMovieData,
-  getCachedTrailerData,
+  // getCachedTrailerData, // This data is part of getCachedMovieData now
   getCachedCredits,
   getCachedRecommendations,
   checkLinkStability,
 } from "@/lib/tmdb";
 import SkeletonLoader from "@/app/components/SkeletonLoader";
 import InteractiveFeatures from "@/app/components/InteractiveFeatures";
-import WatchlistButton from "@/app/components/WatchlistButton";
+// WatchlistButton is part of InteractiveFeatures, no direct import needed here if not used separately
 import DetailItem from "@/app/components/DetailItem";
 import {
   Star as StarIcon,
@@ -22,7 +24,7 @@ import {
   Info,
   ExternalLink as ExternalLinkIcon,
   CalendarDays,
-} from "lucide-react"; // Added CalendarDays for consistency
+} from "lucide-react";
 
 const BASE_URL_FOR_STATIC_PARAMS = "https://api.themoviedb.org/3";
 
@@ -40,60 +42,51 @@ function formatDuration(minutes) {
   if (remainingMinutes > 0) {
     duration += `${remainingMinutes}M`;
   }
-  if (duration === "PT") return null; // No hours or minutes
+  if (duration === "PT") return null;
   return duration;
 }
 
-// Function to generate Movie JSON-LD structured data
 function generateMovieStructuredData(movie, canonicalUrl, cast, directors) {
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "Movie",
     name: movie.title,
     description: movie.overview,
-    datePublished: movie.release_date, // YYYY-MM-DD format
+    datePublished: movie.release_date,
     url: canonicalUrl,
     image: movie.poster_path
       ? `https://image.tmdb.org/t/p/original${movie.poster_path}`
       : undefined,
   };
-
   if (directors && directors.length > 0) {
     structuredData.director = directors.map((d) => ({
       "@type": "Person",
       name: d.name,
     }));
   }
-
   if (cast && cast.length > 0) {
     structuredData.actor = cast
       .slice(0, 5)
-      .map((a) => ({ "@type": "Person", name: a.name })); // First 5 actors
+      .map((a) => ({ "@type": "Person", name: a.name }));
   }
-
   if (movie.genres && movie.genres.length > 0) {
     structuredData.genre = movie.genres.map((g) => g.name);
   }
-
   if (movie.vote_average && movie.vote_count) {
     structuredData.aggregateRating = {
       "@type": "AggregateRating",
       ratingValue: movie.vote_average.toFixed(1),
-      bestRating: "10", // TMDB scale
+      bestRating: "10",
       ratingCount: movie.vote_count,
     };
   }
-
   const isoDuration = formatDuration(movie.runtime);
   if (isoDuration) {
     structuredData.duration = isoDuration;
   }
-
   if (movie.external_ids?.imdb_id) {
     structuredData.sameAs = `https://www.imdb.com/title/${movie.external_ids.imdb_id}`;
   }
-
-  // Remove undefined fields
   Object.keys(structuredData).forEach(
     (key) => structuredData[key] === undefined && delete structuredData[key]
   );
@@ -103,7 +96,6 @@ function generateMovieStructuredData(movie, canonicalUrl, cast, directors) {
     delete structuredData.actor;
   if (structuredData.genre && structuredData.genre.length === 0)
     delete structuredData.genre;
-
   return structuredData;
 }
 
@@ -133,15 +125,13 @@ export const revalidate = 3600;
 
 export async function generateMetadata({ params }) {
   const { id } = params;
-  const canonicalUrl = `https://movies.suhaeb.com/movie/${id}`; // Define canonical URL once
+  const canonicalUrl = `https://movies.suhaeb.com/movie/${id}`;
   try {
-    const movie = await getCachedMovieData(id); // Fetches details, videos, external_ids
+    const movie = await getCachedMovieData(id);
     if (!movie || Object.keys(movie).length === 0) {
       console.warn(`No movie data found for metadata, ID: ${id}`);
       throw new Error("Movie not found for metadata");
     }
-
-    // Basic metadata
     const title = `${movie.title || "Movie"} - Movies Hub`;
     const description =
       movie.overview ||
@@ -150,7 +140,7 @@ export async function generateMetadata({ params }) {
       }, including cast, ratings, and trailers.`;
     const imageUrl = movie.poster_path
       ? `https://image.tmdb.org/t/p/w780${movie.poster_path}`
-      : "https://movies.suhaeb.com/images/default-og.png"; // Use your domain for fallback
+      : "https://movies.suhaeb.com/images/default-og.png";
 
     return {
       title: title,
@@ -167,18 +157,13 @@ export async function generateMetadata({ params }) {
             url: imageUrl,
             width: 780,
             height: 1170,
-            alt: `${movie.title} Poster`,
+            alt: `${movie.title || "Movie"} Poster`,
           },
-        ], // Example dimensions
+        ],
         type: "video.movie",
-        // OG Movie specific tags
         "video:release_date": movie.release_date,
-        // You can add actors and directors to OG tags too if desired
-        // "video:actor": cast.map(a => `https://movies.suhaeb.com/actor/${a.id}`), // Example, if you had actor pages
-        // "video:director": directors.map(d => `https://movies.suhaeb.com/director/${d.id}`), // Example
       },
       twitter: {
-        // Basic Twitter card
         card: "summary_large_image",
         title: title,
         description: description,
@@ -202,32 +187,28 @@ export default async function MoviePage({ params }) {
   const { id } = params;
   const canonicalUrl = `https://movies.suhaeb.com/movie/${id}`;
 
-  const session = await getServerSession(authOptions);
-  if (!session) {
-    redirect(`/login?callbackUrl=${encodeURIComponent(canonicalUrl)}`);
-  }
+  // Session is fetched but NOT used to gate the entire page content.
+  // It can be passed to components if they need to render differently for logged-in users.
+  // const session = await getServerSession(authOptions); // You can uncomment if needed by sub-components
 
   if (!id || !/^\d+$/.test(id)) {
-    return (
-      <main className="min-h-screen bg-background flex items-center justify-center p-4">
-        <p className="text-center text-xl font-semibold text-destructive">
-          Invalid Movie ID.
-        </p>
-      </main>
-    );
+    // For invalid ID format, trigger notFound.
+    // For a non-existent but validly formatted ID, getCachedMovieData will throw, caught below.
+    notFound();
   }
 
   try {
     const movie = await getCachedMovieData(id);
-
     if (!movie || Object.keys(movie).length === 0) {
-      throw new Error(
-        `No data returned for movie ID ${id}. It might not exist.`
+      // This case should ideally be caught by getCachedMovieData throwing an error if res.ok is false.
+      // If it returns an empty object for a 404, this check is also valid.
+      console.warn(
+        `No data returned for movie ID ${id}. It might not exist or TMDB fetch failed.`
       );
+      notFound();
     }
 
     const [creditsData, isFound, recommendationsData] = await Promise.all([
-      // getCachedTrailerData is now less critical if movie.videos exists from getCachedMovieData
       getCachedCredits(id, "movie"),
       checkLinkStability(id, "movie"),
       getCachedRecommendations(id, "movie"),
@@ -241,9 +222,9 @@ export default async function MoviePage({ params }) {
         (v) => v.type === "Trailer" && v.site === "YouTube"
       )?.key;
 
-    const cast = creditsData.cast?.slice(0, 10) || []; // Used for display and structured data
+    const cast = creditsData.cast?.slice(0, 10) || [];
     const directors =
-      creditsData.crew?.filter((c) => c.job === "Director") || []; // Used for structured data
+      creditsData.crew?.filter((c) => c.job === "Director") || [];
 
     const releaseYear = movie.release_date
       ? new Date(movie.release_date).getFullYear()
@@ -265,7 +246,6 @@ export default async function MoviePage({ params }) {
     const homepageLink = movie.homepage;
     const imdbId = movie.external_ids?.imdb_id;
 
-    // Generate JSON-LD structured data
     const movieStructuredData = generateMovieStructuredData(
       movie,
       canonicalUrl,
@@ -275,7 +255,6 @@ export default async function MoviePage({ params }) {
 
     return (
       <>
-        {/* Inject JSON-LD structured data */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -294,7 +273,7 @@ export default async function MoviePage({ params }) {
                         ? `https://image.tmdb.org/t/p/w780${movie.poster_path}`
                         : "/images/default.webp"
                     }
-                    alt={`${movie.title || "Movie"} poster`} // Alt text for structured data and accessibility
+                    alt={`${movie.title || "Movie"} poster`}
                     width={780}
                     height={1170}
                     className="aspect-[2/3] w-full object-cover lg:rounded-l-xl lg:rounded-r-none"
@@ -319,7 +298,8 @@ export default async function MoviePage({ params }) {
                       )}
                     </div>
                     <div className="flex-shrink-0 z-10">
-                      <WatchlistButton item={movie} itemType="MOVIE" />
+                      {/* WatchlistButton is inside InteractiveFeatures, or you can place it here if needed directly */}
+                      {/* For this example, assuming InteractiveFeatures handles it */}
                     </div>
                   </div>
 
@@ -443,7 +423,7 @@ export default async function MoviePage({ params }) {
                       item={movie}
                       trailerKey={trailerKey}
                       cast={cast}
-                      itemFound={isFound} // This indicates if the vidsrc link might be stable
+                      itemFound={isFound}
                       recommendations={recommendationsData}
                     />
                   </div>
@@ -455,15 +435,9 @@ export default async function MoviePage({ params }) {
       </>
     );
   } catch (error) {
-    console.error(
-      `Error fetching movie page (id: ${id}): ${error.message}`,
-      error.stack
-    );
-    const errorQueryParam =
-      error.message.includes("No data returned") ||
-      error.message.includes("not found for metadata")
-        ? `?error=movie_not_found&id=${id}`
-        : "?error=movie_load_failed";
-    redirect(`/not-found${errorQueryParam}`);
+    console.error(`MoviePage Error (id: ${id}): ${error.message}`);
+    // If data fetching fails (e.g., movie not found in TMDB), trigger a 404.
+    // This is better than redirecting to a generic error page if the resource truly doesn't exist.
+    notFound();
   }
 }

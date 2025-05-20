@@ -1,34 +1,36 @@
 // src/app/tv/[id]/page.jsx
 
 import { getServerSession } from "next-auth/next";
-import { redirect } from "next/navigation";
+// No longer importing redirect for the entire page based on session
 import Image from "next/image";
 import { Suspense } from "react";
+import { notFound } from "next/navigation"; // Import notFound
+
 import { authOptions } from "@/app/api/auth/authOptions";
 import {
   getCachedTvShowDetails,
   getCachedCredits,
   getCachedRecommendations,
+  // checkLinkStability might be useful here too if you have a general "Watch Series" button
 } from "@/lib/tmdb";
 import SkeletonLoader from "@/app/components/SkeletonLoader";
 import InteractiveFeatures from "@/app/components/InteractiveFeatures";
-import WatchlistButton from "@/app/components/WatchlistButton";
+// WatchlistButton is part of InteractiveFeatures
 import TvSeasonsDisplay from "@/app/components/TvSeasonsDisplay";
 import DetailItem from "@/app/components/DetailItem";
 import {
   CalendarDays,
-  Tv as TvIcon,
+  Tv as TvIconProp, // Renamed to avoid conflict with TvIcon component
   Info,
   Users,
   PlayCircle,
   Star as StarIcon,
-  Film,
+  // Film, // Not typically needed for TV page
   ExternalLink as ExternalLinkIcon,
 } from "lucide-react";
 
 const BASE_URL_FOR_STATIC_PARAMS = "https://api.themoviedb.org/3";
 
-// Function to generate TVSeries JSON-LD structured data
 function generateTvSeriesStructuredData(
   seriesData,
   canonicalUrl,
@@ -40,65 +42,54 @@ function generateTvSeriesStructuredData(
     "@type": "TVSeries",
     name: seriesData.name,
     description: seriesData.overview,
-    datePublished: seriesData.first_air_date, // YYYY-MM-DD format
+    datePublished: seriesData.first_air_date,
     url: canonicalUrl,
     image: seriesData.poster_path
       ? `https://image.tmdb.org/t/p/original${seriesData.poster_path}`
       : undefined,
   };
-
   if (creators && creators.length > 0) {
     structuredData.creator = creators.map((c) => ({
       "@type": "Person",
       name: c.name,
     }));
   }
-
   if (cast && cast.length > 0) {
     structuredData.actor = cast
       .slice(0, 5)
-      .map((a) => ({ "@type": "Person", name: a.name })); // First 5 actors
+      .map((a) => ({ "@type": "Person", name: a.name }));
   }
-
   if (seriesData.genres && seriesData.genres.length > 0) {
     structuredData.genre = seriesData.genres.map((g) => g.name);
   }
-
   if (seriesData.vote_average && seriesData.vote_count) {
     structuredData.aggregateRating = {
       "@type": "AggregateRating",
       ratingValue: seriesData.vote_average.toFixed(1),
-      bestRating: "10", // TMDB scale
+      bestRating: "10",
       ratingCount: seriesData.vote_count,
     };
   }
-
   if (typeof seriesData.number_of_seasons === "number") {
     structuredData.numberOfSeasons = seriesData.number_of_seasons;
   }
   if (typeof seriesData.number_of_episodes === "number") {
     structuredData.numberOfEpisodes = seriesData.number_of_episodes;
   }
-
-  // Optionally, add basic season information if readily available and simple
   if (seriesData.seasons && seriesData.seasons.length > 0) {
     structuredData.containsSeason = seriesData.seasons
-      .filter((s) => s.season_number > 0) // Exclude "Specials" if season_number is 0
+      .filter((s) => s.season_number > 0)
       .map((s) => ({
         "@type": "TVSeason",
         name: s.name || `Season ${s.season_number}`,
         seasonNumber: s.season_number,
         numberOfEpisodes: s.episode_count,
         datePublished: s.air_date,
-        // "url": `${canonicalUrl}/season/${s.season_number}` // If you have season-specific pages
       }));
   }
-
   if (seriesData.external_ids?.imdb_id) {
     structuredData.sameAs = `https://www.imdb.com/title/${seriesData.external_ids.imdb_id}`;
   }
-
-  // Remove undefined fields
   Object.keys(structuredData).forEach((key) => {
     if (
       structuredData[key] === undefined ||
@@ -112,7 +103,6 @@ function generateTvSeriesStructuredData(
     structuredData.containsSeason.length === 0
   )
     delete structuredData.containsSeason;
-
   return structuredData;
 }
 
@@ -149,7 +139,6 @@ export async function generateMetadata({ params }) {
       console.warn(`No series data found for metadata, ID: ${id}`);
       throw new Error("Series not found for metadata");
     }
-
     const title = `${series.name || "TV Series"} - Movies Hub`;
     const description =
       series.overview ||
@@ -159,7 +148,6 @@ export async function generateMetadata({ params }) {
     const imageUrl = series.poster_path
       ? `https://image.tmdb.org/t/p/w780${series.poster_path}`
       : "https://movies.suhaeb.com/images/default-og.png";
-
     return {
       title: title,
       description: description,
@@ -175,12 +163,10 @@ export async function generateMetadata({ params }) {
             url: imageUrl,
             width: 780,
             height: 1170,
-            alt: `${series.name} Poster`,
+            alt: `${series.name || "TV Series"} Poster`,
           },
         ],
         type: "video.tv_show",
-        // OG TV specific tags if needed, e.g., number of episodes/seasons
-        // "video:series": canonicalUrl, // Could point to itself or a series hub page
       },
       twitter: {
         card: "summary_large_image",
@@ -202,37 +188,25 @@ export async function generateMetadata({ params }) {
 export default async function TvShowPage({ params }) {
   const { id } = params;
   const canonicalUrl = `https://movies.suhaeb.com/tv/${id}`;
-
-  const session = await getServerSession(authOptions);
-  if (!session) {
-    redirect(`/login?callbackUrl=${encodeURIComponent(canonicalUrl)}`);
-  }
+  // const session = await getServerSession(authOptions); // Fetched but not used to gate content
 
   if (!id || !/^\d+$/.test(id)) {
-    return (
-      <main className="min-h-screen bg-background flex items-center justify-center p-4">
-        <p className="text-center text-xl font-semibold text-destructive">
-          Invalid TV Series ID.
-        </p>
-      </main>
-    );
+    notFound();
   }
 
   try {
     const seriesData = await getCachedTvShowDetails(id);
-
     if (!seriesData || Object.keys(seriesData).length === 0) {
-      console.error(
-        `No data returned from getCachedTvShowDetails for TV show ID ${id}.`
-      );
-      throw new Error(
+      console.warn(
         `No data returned for TV show ID ${id}. It might not exist or TMDB fetch failed.`
       );
+      notFound();
     }
 
     const [creditsData, recommendationsData] = await Promise.all([
       getCachedCredits(id, "tv"),
       getCachedRecommendations(id, "tv"),
+      // Potentially add checkLinkStability(id, "tv") if you have a generic "Watch Series" button
     ]);
 
     const trailerKey =
@@ -243,7 +217,7 @@ export default async function TvShowPage({ params }) {
         (v) => v.type === "Trailer" && v.site === "YouTube"
       )?.key;
 
-    const cast = creditsData.cast?.slice(0, 10) || []; // Slice to 10 for structured data/display
+    const cast = creditsData.cast?.slice(0, 10) || [];
     const creators = seriesData.created_by || [];
     const firstAirYear = seriesData.first_air_date
       ? new Date(seriesData.first_air_date).getFullYear()
@@ -262,7 +236,6 @@ export default async function TvShowPage({ params }) {
     const homepageLink = seriesData.homepage;
     const imdbId = seriesData.external_ids?.imdb_id;
 
-    // Generate JSON-LD structured data for TVSeries
     const tvSeriesStructuredData = generateTvSeriesStructuredData(
       seriesData,
       canonicalUrl,
@@ -272,7 +245,6 @@ export default async function TvShowPage({ params }) {
 
     return (
       <>
-        {/* Inject JSON-LD structured data */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -316,10 +288,7 @@ export default async function TvShowPage({ params }) {
                       )}
                     </div>
                     <div className="flex-shrink-0 z-10">
-                      <WatchlistButton
-                        item={{ ...seriesData, title: seriesData.name }} // Ensure title is passed for button if it relies on it
-                        itemType="TV"
-                      />
+                      {/* WatchlistButton is inside InteractiveFeatures */}
                     </div>
                   </div>
 
@@ -368,7 +337,7 @@ export default async function TvShowPage({ params }) {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 text-sm mb-4 sm:mb-5">
                     <DetailItem
                       icon={
-                        <TvIcon
+                        <TvIconProp // Using the renamed import
                           size={16}
                           className="text-primary mt-0.5 sm:mt-1 flex-shrink-0 opacity-80"
                         />
@@ -524,8 +493,8 @@ export default async function TvShowPage({ params }) {
                       itemType="TV"
                       item={seriesData}
                       trailerKey={trailerKey}
-                      cast={cast} // First 10 cast members
-                      itemFound={true}
+                      cast={cast}
+                      itemFound={true} // Assuming TV series link is generally findable via vidsrc
                       recommendations={recommendationsData}
                     />
                   </div>
@@ -537,15 +506,7 @@ export default async function TvShowPage({ params }) {
       </>
     );
   } catch (error) {
-    console.error(
-      `Error fetching TV show page (id: ${id}): ${error.message}`,
-      error.stack
-    );
-    const errorQueryParam =
-      error.message.includes("No data returned") ||
-      error.message.includes("not found for metadata")
-        ? `?error=tv_not_found&id=${id}`
-        : "?error=tv_load_failed";
-    redirect(`/not-found${errorQueryParam}`);
+    console.error(`TvShowPage Error (id: ${id}): ${error.message}`);
+    notFound();
   }
 }
