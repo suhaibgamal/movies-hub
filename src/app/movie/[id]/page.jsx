@@ -1,12 +1,8 @@
 // src/app/movie/[id]/page.jsx
-
-import { getServerSession } from "next-auth/next";
 // No longer importing redirect for the entire page based on session
 import Image from "next/image";
 import { Suspense } from "react";
 import { notFound } from "next/navigation"; // Import notFound
-
-import { authOptions } from "@/app/api/auth/authOptions";
 import {
   getCachedMovieData,
   // getCachedTrailerData, // This data is part of getCachedMovieData now
@@ -16,7 +12,7 @@ import {
 } from "@/lib/tmdb";
 import SkeletonLoader from "@/app/components/SkeletonLoader";
 import InteractiveFeatures from "@/app/components/InteractiveFeatures";
-// WatchlistButton is part of InteractiveFeatures, no direct import needed here if not used separately
+import WatchlistButton from "@/app/components/WatchlistButton";
 import DetailItem from "@/app/components/DetailItem";
 import {
   Star as StarIcon,
@@ -298,8 +294,7 @@ export default async function MoviePage({ params }) {
                       )}
                     </div>
                     <div className="flex-shrink-0 z-10">
-                      {/* WatchlistButton is inside InteractiveFeatures, or you can place it here if needed directly */}
-                      {/* For this example, assuming InteractiveFeatures handles it */}
+                      <WatchlistButton item={movie} itemType="MOVIE" />
                     </div>
                   </div>
 

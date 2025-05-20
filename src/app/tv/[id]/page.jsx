@@ -1,12 +1,7 @@
 // src/app/tv/[id]/page.jsx
-
-import { getServerSession } from "next-auth/next";
-// No longer importing redirect for the entire page based on session
 import Image from "next/image";
 import { Suspense } from "react";
 import { notFound } from "next/navigation"; // Import notFound
-
-import { authOptions } from "@/app/api/auth/authOptions";
 import {
   getCachedTvShowDetails,
   getCachedCredits,
@@ -15,7 +10,7 @@ import {
 } from "@/lib/tmdb";
 import SkeletonLoader from "@/app/components/SkeletonLoader";
 import InteractiveFeatures from "@/app/components/InteractiveFeatures";
-// WatchlistButton is part of InteractiveFeatures
+import WatchlistButton from "@/app/components/WatchlistButton";
 import TvSeasonsDisplay from "@/app/components/TvSeasonsDisplay";
 import DetailItem from "@/app/components/DetailItem";
 import {
@@ -288,7 +283,10 @@ export default async function TvShowPage({ params }) {
                       )}
                     </div>
                     <div className="flex-shrink-0 z-10">
-                      {/* WatchlistButton is inside InteractiveFeatures */}
+                      <WatchlistButton
+                        item={{ ...seriesData, title: seriesData.name }}
+                        itemType="TV"
+                      />
                     </div>
                   </div>
 
