@@ -1,26 +1,47 @@
 // src/app/about/page.jsx
-
 import Image from "next/image";
-import Link from "next/link"; // Import Link for internal navigation if needed
+// No need for Link from 'next/link' here as all links are external <a> tags
 
 export const metadata = {
-  title: "About Movies Hub", // Kept title concise
+  title: "About Movies Hub",
   description:
     "Learn more about Movies Hub, your go-to resource for discovering and tracking movies and TV shows, exploring detailed information, trailers, and managing your personal watchlist.",
-  alternates: { canonical: "https://movies.suhaeb.com/about" }, // Ensure this is your production URL
+  alternates: {
+    canonical: "https://movies.suhaeb.com/about",
+  },
+  openGraph: {
+    title: "About Movies Hub",
+    description:
+      "Learn more about the Movies Hub project, its features, development, and goals.",
+    url: "https://movies.suhaeb.com/about",
+    images: [
+      {
+        url: "https://movies.suhaeb.com/images/default-og.png",
+        width: 1200,
+        height: 630,
+        alt: "About Movies Hub",
+      },
+    ],
+    siteName: "Movies Hub",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "About Movies Hub",
+    description: "Learn more about the Movies Hub project.",
+    images: ["https://movies.suhaeb.com/images/default-og.png"],
+  },
 };
 
 const AboutPage = () => {
   return (
     <div className="bg-background text-foreground py-10 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto space-y-6 sm:space-y-8 text-center sm:text-left">
-        {" "}
-        {/* Allow left align on sm+ */}
         <header>
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-center mb-6 sm:mb-8 bg-gradient-to-r from-primary via-purple-500 to-pink-500 bg-clip-text text-transparent">
             About Movies Hub
           </h1>
         </header>
+
         <section className="space-y-4 text-base sm:text-lg leading-relaxed">
           <p>
             Welcome to Movies Hub! This platform is your comprehensive guide to
@@ -36,6 +57,7 @@ const AboutPage = () => {
             resource.
           </p>
         </section>
+
         <section className="space-y-4 text-base sm:text-lg leading-relaxed">
           <h2 className="text-xl sm:text-2xl font-semibold text-primary mb-3 text-center sm:text-left">
             Our Features
@@ -77,6 +99,7 @@ const AboutPage = () => {
             </li>
           </ul>
         </section>
+
         <section className="space-y-4 text-base sm:text-lg leading-relaxed">
           <h2 className="text-xl sm:text-2xl font-semibold text-primary mb-3 text-center sm:text-left">
             Our Goal
@@ -89,6 +112,7 @@ const AboutPage = () => {
             new features and improvements planned.
           </p>
         </section>
+
         <section className="space-y-4 text-base sm:text-lg leading-relaxed">
           <h2 className="text-xl sm:text-2xl font-semibold text-primary mb-3 text-center sm:text-left">
             Connect & Feedback
@@ -100,7 +124,7 @@ const AboutPage = () => {
           </p>
           <div className="flex flex-col sm:flex-row justify-center items-center gap-4 sm:gap-6 pt-2">
             <a
-              href="https://github.com/suhaibgamal/movies-hub" // Assuming this is the correct repo URL
+              href="https://github.com/suhaibgamal/movies-hub"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-block px-5 py-2.5 rounded-md bg-card hover:bg-muted border border-border font-medium text-foreground transition-colors"
@@ -108,13 +132,14 @@ const AboutPage = () => {
               View Project on GitHub
             </a>
             <a
-              href="mailto:contact@suhaeb.com" // Your contact email
+              href="mailto:contact@suhaeb.com" // Replace with your actual contact email if different
               className="inline-block px-5 py-2.5 rounded-md bg-primary hover:bg-primary/90 text-primary-foreground font-medium transition-colors"
             >
               Email Me
             </a>
           </div>
         </section>
+
         <section className="space-y-4 text-base sm:text-lg leading-relaxed border-t border-border/30 pt-6 sm:pt-8 mt-6 sm:mt-8">
           <h2 className="text-xl sm:text-2xl font-semibold text-primary mb-3 text-center sm:text-left">
             Disclaimers
@@ -136,12 +161,12 @@ const AboutPage = () => {
               aria-label="The Movie Database"
             >
               <Image
-                unoptimized // Keep if this is your project's default for TMDB assets
-                src="/images/tmdb_logo.svg" // Ensure this path is correct in your /public folder
+                unoptimized
+                src="/images/tmdb_logo.svg"
                 alt="The Movie Database (TMDb) Logo"
-                width={130} // Slightly larger for better visibility
-                height={30} // Adjust height proportionally or based on original aspect ratio
-                className="h-auto" // Maintain aspect ratio
+                width={130}
+                height={30}
+                className="h-auto"
               />
             </a>
             <p className="text-xs text-muted-foreground/80 mt-2">
