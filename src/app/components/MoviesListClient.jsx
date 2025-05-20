@@ -142,7 +142,7 @@ const BLOCKLIST = [
   "sperm",
   "ejaculation",
   "fuck",
-]; //
+];
 
 const USER_SELECTABLE_ITEM_TYPES = { MOVIE: "MOVIE", TV: "TV" };
 const DEFAULT_USER_ITEM_TYPE = USER_SELECTABLE_ITEM_TYPES.MOVIE;
@@ -208,10 +208,10 @@ const BASE_API_URL = "https://api.themoviedb.org/3/";
 
 // Performance & Safety constants
 const MAX_AUTO_FETCH_ATTEMPTS = 3;
-const MAX_CLIENT_PAGES = 25; // Max pages to fetch/accumulate on client (e.g., 25 pages * 20 items/page = 500 items)
+const MAX_CLIENT_PAGES = 25; // Max pages to fetch/accumulate on client
 const DEBOUNCE_DELAY = 500;
 const SCROLL_OFFSET_TRIGGER = 300; // Pixels from bottom to trigger next page
-const HEADER_STICKY_OFFSET = "69px"; // Adjust if your header height changes
+const HEADER_STICKY_OFFSET = "69px";
 
 // Reusable ToggleButton sub-component
 const ToggleButton = ({
@@ -250,17 +250,23 @@ export default function MoviesListClient() {
   const { moviesState, setMoviesState } = useMoviesListContext();
 
   // --- State Initialization ---
-  // Helper to get initial state: URL param -> Context -> Default
   const getInitialState = useCallback(
     (key, defaultValue, contextValue, isNumeric = false) => {
       const urlValue = searchParams.get(key);
-      if (urlValue !== null) return isNumeric ? Number(urlValue) : urlValue;
-      if (contextValue !== undefined && contextValue !== null)
+      if (urlValue !== null) {
+        if (isNumeric) {
+          const numVal = Number(urlValue);
+          return isNaN(numVal) ? defaultValue : numVal; // Fallback to defaultValue if NaN
+        }
+        return urlValue;
+      }
+      if (contextValue !== undefined && contextValue !== null) {
         return contextValue;
+      }
       return defaultValue;
     },
     [searchParams]
-  ); // searchParams is the only dependency that changes this function's behavior
+  );
 
   const [selectedUserItemType, setSelectedUserItemType] = useState(() => {
     const urlItemType = searchParams.get("itemType")?.toUpperCase();
@@ -268,7 +274,7 @@ export default function MoviesListClient() {
       return urlItemType;
     const contextVal = moviesState.selectedUserItemType;
     if (contextVal && USER_SELECTABLE_ITEM_TYPES[contextVal]) return contextVal;
-    const urlListCategory = searchParams.get("listCategory"); // Check category from URL for default item type
+    const urlListCategory = searchParams.get("listCategory");
     const categoryDef = urlListCategory
       ? CATEGORY_OPTIONS_CONFIG[urlListCategory]
       : null;
@@ -286,7 +292,7 @@ export default function MoviesListClient() {
   const [searchTerm, setSearchTerm] = useState(() =>
     getInitialState("search", "", moviesState.searchTerm)
   );
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm); // Initialize with searchTerm
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
   const [selectedGenre, setSelectedGenre] = useState(() =>
     getInitialState("genre", "All", moviesState.selectedGenre)
   );
@@ -307,7 +313,7 @@ export default function MoviesListClient() {
   const [displayItems, setDisplayItems] = useState([]);
   const [page, setPage] = useState(() =>
     getInitialState("page", 1, moviesState.page, true)
-  ); // Page can be from URL/context
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [hasMore, setHasMore] = useState(true);
@@ -315,11 +321,13 @@ export default function MoviesListClient() {
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
 
   const [autoFetchState, setAutoFetchState] = useState({
-    isActive: false,
+    shouldAttemptAutoFetch: false, // Renamed from isActive
     attemptsDone: 0,
   });
-  const isMounted = useRef(false); // Tracks if component has mounted at least once
-  const previousPrimaryFiltersKey = useRef(moviesState.filtersKey || null); // Stores the key of the last successful primary fetch
+
+  const isMounted = useRef(false);
+  const previousPrimaryFiltersKey = useRef(moviesState.filtersKey || null);
+  const pageIncrementInProgress = useRef(false); // Ref to prevent rapid page increments
 
   // --- Derived States (Memoized for performance) ---
   const isSearching = useMemo(
@@ -407,7 +415,7 @@ export default function MoviesListClient() {
   const currentDisplayTitle = useMemo(() => {
     let titleStr = "";
     let TitleIconComponent = ListFilter;
-    const currentCategoryDef = activeCategoryDef; // Use memoized version
+    const currentCategoryDef = activeCategoryDef;
     if (isSearching) {
       titleStr = `"${debouncedSearchTerm}"`;
       TitleIconComponent = SearchIcon;
@@ -430,7 +438,6 @@ export default function MoviesListClient() {
         !currentCategoryDef.itemTypeLock &&
         activeApiItemType !== API_ITEM_TYPES.ALL
       ) {
-        // Ensure not "ALL" for general categories
         titleStr += ` (${
           activeApiItemType === API_ITEM_TYPES.MOVIE ? "Movies" : "TV Shows"
         })`;
@@ -488,16 +495,30 @@ export default function MoviesListClient() {
         (keyword) => title.includes(keyword) || overview.includes(keyword)
       );
     });
-  }, []); // BLOCKLIST is stable
+  }, []);
 
   const fetchItems = useCallback(
     async (pageToFetch, isNewPrimaryFilterSet) => {
       if (isLoading && !isNewPrimaryFilterSet && pageToFetch > page) {
         return;
       }
+
+      // Strict MAX_CLIENT_PAGES enforcement
+      if (pageToFetch > MAX_CLIENT_PAGES) {
+        console.warn(
+          `Attempted to fetch page ${pageToFetch} which exceeds MAX_CLIENT_PAGES (${MAX_CLIENT_PAGES}). Aborting fetch.`
+        );
+        setHasMore(false);
+        setIsLoading(false);
+        if (isNewPrimaryFilterSet || pageToFetch === 1)
+          setInitialLoadComplete(true);
+        pageIncrementInProgress.current = false; // Reset flag here too
+        return;
+      }
+
       setIsLoading(true);
       if (isNewPrimaryFilterSet) {
-        setError(null);
+        setError(null); // Clear previous errors on new primary filter set
       }
 
       let endpoint = "";
@@ -592,6 +613,7 @@ export default function MoviesListClient() {
         setIsLoading(false);
         if (isNewPrimaryFilterSet || pageToFetch === 1)
           setInitialLoadComplete(true);
+        pageIncrementInProgress.current = false; // Reset flag
         return;
       }
 
@@ -646,11 +668,12 @@ export default function MoviesListClient() {
       } catch (err) {
         console.error("Error fetching items:", err);
         setError(err.message || "Failed to load data.");
-        setHasMore(false);
+        setHasMore(false); // Stop further pagination on error for this filter set
         if (isNewPrimaryFilterSet || pageToFetch === 1)
           setInitialLoadComplete(true);
       } finally {
         setIsLoading(false);
+        pageIncrementInProgress.current = false; // Reset increment flag after fetch attempt
       }
     },
     [
@@ -667,13 +690,13 @@ export default function MoviesListClient() {
       areSecondaryFiltersDisabled,
       activeCategoryDef,
       page, // page dependency for the isLoading guard
-      // Note: Removed initialLoadComplete & isLoading from here as they are setters or handled by callers
+      isLoading, // Added isLoading to dependencies as it's used in the initial guard
+      // Note: Removed initialLoadComplete from here as it's a setter or handled by callers
     ]
   );
 
   // --- Effects ---
 
-  // Debounce search term
   useEffect(() => {
     const timer = setTimeout(() => {
       if (searchTerm !== debouncedSearchTerm)
@@ -682,7 +705,6 @@ export default function MoviesListClient() {
     return () => clearTimeout(timer);
   }, [searchTerm, debouncedSearchTerm]);
 
-  // Update URL from state
   useEffect(() => {
     const newParams = new URLSearchParams();
     if (isSearching) {
@@ -705,9 +727,13 @@ export default function MoviesListClient() {
       const typeForURL = categoryDef?.itemTypeLock || selectedUserItemType;
       if (typeForURL !== DEFAULT_USER_ITEM_TYPE)
         newParams.set("itemType", typeForURL);
+
+      // For "discover" category OR if secondary filters are generally not disabled for other categories
       if (
         !areSecondaryFiltersDisabled ||
-        (categoryDef && categoryDef.allowsSecondaryFiltersInAPI)
+        (categoryDef &&
+          categoryDef.allowsSecondaryFiltersInAPI &&
+          categoryDef.value === CATEGORY_OPTIONS_CONFIG.discover.value)
       ) {
         if (selectedGenre !== "All") newParams.set("genre", selectedGenre);
         if (selectedRating !== RATING_OPTIONS.All.value)
@@ -732,12 +758,10 @@ export default function MoviesListClient() {
     activeCategoryDef,
   ]);
 
-  // Main data fetching trigger
   useEffect(() => {
     const isMounting = !isMounted.current;
     if (isMounting) {
       isMounted.current = true;
-      // Attempt context restoration on true initial mount
       if (
         moviesState.filtersKey === primaryFiltersKey &&
         moviesState.items?.length > 0
@@ -751,49 +775,55 @@ export default function MoviesListClient() {
           moviesState.selectedListCategory || DEFAULT_CATEGORY_VALUE
         );
         setSearchTerm(moviesState.searchTerm || "");
-        setDebouncedSearchTerm(moviesState.searchTerm || ""); // Sync debounced term
+        setDebouncedSearchTerm(moviesState.searchTerm || "");
         setSelectedGenre(moviesState.selectedGenre || "All");
         setSelectedRating(
           moviesState.selectedRating || RATING_OPTIONS.All.value
         );
         setSelectedYear(moviesState.selectedYear || "All");
 
-        const totalApiPages = moviesState.totalPagesFromApi || MAX_CLIENT_PAGES; // Assuming context might store this
+        const totalApiPages = moviesState.totalPagesFromApi || MAX_CLIENT_PAGES;
         const moreFromApi = (moviesState.page || 1) < totalApiPages;
         const withinClientLimit = (moviesState.page || 1) < MAX_CLIENT_PAGES;
         setHasMore(
           moreFromApi && withinClientLimit && moviesState.items.length > 0
         );
-
+        setError(moviesState.error || null); // Restore error state
         setIsLoading(false);
         setInitialLoadComplete(true);
         previousPrimaryFiltersKey.current = primaryFiltersKey;
+        pageIncrementInProgress.current = false; // Ensure reset on context restore
         return;
       }
     }
 
     if (
       previousPrimaryFiltersKey.current !== primaryFiltersKey ||
-      (isMounting && !initialLoadComplete)
+      (isMounting && !initialLoadComplete) // Fetch if mounting and no context restoration happened
     ) {
       if (!isMounting) {
-        // Filter changed after initial mount
+        // Filters changed after initial mount
         setPage(1);
         setApiFetchedItems([]);
-        setDisplayItems([]);
-        setHasMore(true);
+        setDisplayItems([]); // Clear display items immediately
+        setHasMore(true); // Assume more items for new filter set initially
         setInitialLoadComplete(false);
+        setError(null); // Clear previous errors
         window.scrollTo({ top: 0, behavior: "smooth" });
+        pageIncrementInProgress.current = false; // Reset flag
+        setAutoFetchState({ shouldAttemptAutoFetch: false, attemptsDone: 0 }); // Reset auto-fetch
       } else if (isMounting && !initialLoadComplete) {
-        // True initial mount, no context restore
-        if (page !== 1) setPage(1); // Ensure page is 1
+        // True initial mount, no context restore, ensure page is 1
+        if (page !== 1) setPage(1);
         setInitialLoadComplete(false);
+        setError(null);
+        pageIncrementInProgress.current = false;
+        setAutoFetchState({ shouldAttemptAutoFetch: false, attemptsDone: 0 });
       }
       fetchItems(1, true);
     }
-  }, [primaryFiltersKey, fetchItems, moviesState]);
+  }, [primaryFiltersKey, fetchItems, moviesState, page, initialLoadComplete]); // Added page & initialLoadComplete for mount logic
 
-  // Pagination effect: Fetch more items when page changes (and conditions are met)
   useEffect(() => {
     if (!isMounted.current || page === 1 || !initialLoadComplete || isLoading)
       return;
@@ -802,7 +832,6 @@ export default function MoviesListClient() {
     }
   }, [page, initialLoadComplete, isLoading, primaryFiltersKey, fetchItems]);
 
-  // Derive displayItems from apiFetchedItems and apply client-side filters
   useEffect(() => {
     let itemsToProcess = [...apiFetchedItems];
     if (
@@ -816,6 +845,7 @@ export default function MoviesListClient() {
     const needsClientSideFiltering =
       isSearching ||
       (activeCategoryDef && !activeCategoryDef.allowsSecondaryFiltersInAPI);
+
     if (needsClientSideFiltering && !areSecondaryFiltersDisabled) {
       itemsToProcess = itemsToProcess.filter((item) => {
         if (!item) return false;
@@ -837,23 +867,29 @@ export default function MoviesListClient() {
             item.vote_average < opt.max;
         }
         if (selectedYear !== "All" && item.displayDate) {
-          const itemYear = new Date(item.displayDate).getFullYear();
-          const group = YEAR_GROUPS.find((g) => g.value === selectedYear);
-          if (group?.from && group?.to) {
-            const from = new Date(group.from).getFullYear(),
-              to = new Date(group.to).getFullYear();
-            match = match && itemYear >= from && itemYear <= to;
-          } else if (
-            group?.value !== "All" &&
-            group.value === String(itemYear)
-          ) {
-            /* Single year match */
-          } else if (
-            group?.value !== "All" &&
-            group.value !== String(itemYear) &&
-            !(group?.from && group?.to)
-          ) {
-            match = false;
+          const itemDate = new Date(item.displayDate);
+          if (!isNaN(itemDate.getTime())) {
+            // Safe date parsing
+            const itemYear = itemDate.getFullYear();
+            const group = YEAR_GROUPS.find((g) => g.value === selectedYear);
+            if (group?.from && group?.to) {
+              const from = new Date(group.from).getFullYear(),
+                to = new Date(group.to).getFullYear();
+              match = match && itemYear >= from && itemYear <= to;
+            } else if (
+              group?.value !== "All" &&
+              group.value === String(itemYear)
+            ) {
+              /* Single year match */
+            } else if (
+              group?.value !== "All" &&
+              group.value !== String(itemYear) &&
+              !(group?.from && group?.to)
+            ) {
+              match = false;
+            }
+          } else {
+            match = false; // Invalid date, does not match year filter
           }
         }
         return match;
@@ -871,39 +907,70 @@ export default function MoviesListClient() {
     areSecondaryFiltersDisabled,
     filterBlockedContent,
     activeApiItemType,
-    currentGenresForFilterDropdown,
+    // currentGenresForFilterDropdown, // Not directly used in filter logic, but influences selectedGenre
   ]);
 
-  // Callback for loading more items (used by scroll handlers and auto-fetch)
   const loadMoreItems = useCallback(() => {
+    if (pageIncrementInProgress.current) {
+      return;
+    }
     if (
       initialLoadComplete &&
       !isLoading &&
       hasMore &&
       page < MAX_CLIENT_PAGES
     ) {
-      setPage((prevPage) => prevPage + 1);
+      pageIncrementInProgress.current = true;
+      setPage((prevPage) => {
+        if (prevPage >= MAX_CLIENT_PAGES) {
+          setHasMore(false); // Should be caught by hasMore already, but good fallback
+          // pageIncrementInProgress.current will be reset in fetchItems' finally
+          return prevPage;
+        }
+        return prevPage + 1;
+      });
     }
-  }, [initialLoadComplete, isLoading, hasMore, page]); // page is a dependency here
+  }, [initialLoadComplete, isLoading, hasMore, page]);
 
-  // Auto-fetch logic (decide if needed)
+  // Auto-fetch Decision Effect
   useEffect(() => {
-    if (isLoading || !initialLoadComplete) return;
-    if (autoFetchState.isActive) {
-      setAutoFetchState((prev) => ({ ...prev, isActive: false }));
+    if (isLoading || !initialLoadComplete || error) {
+      if (autoFetchState.shouldAttemptAutoFetch && (error || isLoading)) {
+        setAutoFetchState((prev) => ({
+          ...prev,
+          shouldAttemptAutoFetch: false,
+        }));
+      }
       return;
     }
-    const shouldStartAutoFetch =
+
+    if (
+      autoFetchState.shouldAttemptAutoFetch &&
+      (displayItems.length > 0 || !hasMore)
+    ) {
+      setAutoFetchState((prev) => ({ ...prev, shouldAttemptAutoFetch: false }));
+      return;
+    }
+
+    const canStartAutoFetch =
       displayItems.length === 0 &&
       apiFetchedItems.length > 0 &&
       hasMore &&
-      page < MAX_CLIENT_PAGES && // Respect client page limit for auto-fetch too
-      autoFetchState.attemptsDone < MAX_AUTO_FETCH_ATTEMPTS;
-    if (shouldStartAutoFetch) {
+      page < MAX_CLIENT_PAGES &&
+      autoFetchState.attemptsDone < MAX_AUTO_FETCH_ATTEMPTS &&
+      !autoFetchState.shouldAttemptAutoFetch;
+
+    if (canStartAutoFetch) {
       setAutoFetchState((prev) => ({
-        isActive: true,
+        shouldAttemptAutoFetch: true,
         attemptsDone: prev.attemptsDone + 1,
       }));
+    } else if (
+      autoFetchState.attemptsDone >= MAX_AUTO_FETCH_ATTEMPTS &&
+      displayItems.length === 0 &&
+      autoFetchState.shouldAttemptAutoFetch
+    ) {
+      setAutoFetchState((prev) => ({ ...prev, shouldAttemptAutoFetch: false }));
     }
   }, [
     displayItems.length,
@@ -911,54 +978,55 @@ export default function MoviesListClient() {
     hasMore,
     isLoading,
     initialLoadComplete,
-    autoFetchState.isActive,
     autoFetchState.attemptsDone,
+    autoFetchState.shouldAttemptAutoFetch,
     page,
+    error,
   ]);
 
-  // Auto-fetch logic (trigger fetch)
+  // Auto-fetch Trigger Effect
   useEffect(() => {
     if (
-      autoFetchState.isActive &&
+      autoFetchState.shouldAttemptAutoFetch &&
       !isLoading &&
       hasMore &&
       initialLoadComplete &&
-      page < MAX_CLIENT_PAGES
+      page < MAX_CLIENT_PAGES // Ensure page is within bounds for auto-fetch trigger
     ) {
       loadMoreItems();
     }
   }, [
-    autoFetchState.isActive,
+    autoFetchState.shouldAttemptAutoFetch,
     isLoading,
     hasMore,
     initialLoadComplete,
     loadMoreItems,
-    page,
+    page, // Added page
   ]);
 
-  // Update context state
   useEffect(() => {
     if (
       isMounted.current &&
-      previousPrimaryFiltersKey.current === primaryFiltersKey
+      previousPrimaryFiltersKey.current === primaryFiltersKey // Only update context if filters haven't changed since last successful fetch for this key
     ) {
       setMoviesState({
         items: apiFetchedItems,
         page,
-        filtersKey: primaryFiltersKey,
+        filtersKey: primaryFiltersKey, // Store the key for which these items/page are valid
         selectedUserItemType,
         selectedListCategory,
-        searchTerm,
+        searchTerm, // Store raw search term
         selectedGenre,
         selectedRating,
         selectedYear,
-        // Consider storing totalPages from API if useful for context restoration's hasMore logic
+        error, // Persist error state
+        // totalPagesFromApi: could be stored if available and useful for hasMore logic on restore
       });
     }
   }, [
     apiFetchedItems,
     page,
-    primaryFiltersKey,
+    primaryFiltersKey, // This is key
     selectedUserItemType,
     selectedListCategory,
     searchTerm,
@@ -966,14 +1034,15 @@ export default function MoviesListClient() {
     selectedRating,
     selectedYear,
     setMoviesState,
+    error, // Include error in context
   ]);
 
-  // Scroll event listener for manual pagination & scroll-to-top button
   useEffect(() => {
     const handleScroll = () => {
       if (
         initialLoadComplete &&
-        !isLoading &&
+        !isLoading && // Check global loading
+        !pageIncrementInProgress.current && // Check if a page increment is already in progress
         hasMore &&
         page < MAX_CLIENT_PAGES &&
         window.innerHeight + document.documentElement.scrollTop >=
@@ -985,13 +1054,13 @@ export default function MoviesListClient() {
     };
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [initialLoadComplete, isLoading, hasMore, loadMoreItems, page]);
+  }, [initialLoadComplete, isLoading, hasMore, loadMoreItems, page]); // page added
 
-  // Proactive check on load completion if user is already at bottom
   useEffect(() => {
     if (
       initialLoadComplete &&
       !isLoading &&
+      !pageIncrementInProgress.current &&
       hasMore &&
       page < MAX_CLIENT_PAGES
     ) {
@@ -1002,82 +1071,91 @@ export default function MoviesListClient() {
         loadMoreItems();
       }
     }
-  }, [initialLoadComplete, isLoading, hasMore, loadMoreItems, page]);
+  }, [initialLoadComplete, isLoading, hasMore, loadMoreItems, page]); // page added
 
   // --- Event Handlers ---
   const handleUserItemTypeChange = (newType) => {
-    if (selectedUserItemType === newType && !isSearching) return;
+    if (selectedUserItemType === newType && !isSearching) return; // No change if not searching and type is same
     setSelectedUserItemType(newType);
-    const currentCategoryDef = activeCategoryDef;
+    const currentCategoryDef = activeCategoryDef; // Use memoized
+    // If current category is locked to a specific type and that type is not the newType,
+    // reset category to default. This prevents being in "Upcoming Movies" but toggling to "TV".
     if (
       !isSearching &&
       currentCategoryDef?.itemTypeLock &&
       currentCategoryDef.itemTypeLock !== newType
     ) {
       setSelectedListCategory(DEFAULT_CATEGORY_VALUE);
-    } else {
-      setSelectedGenre("All"); // Reset genre as the list might change
     }
-    // Other resets (page, initialLoadComplete) are handled by primaryFiltersKey effect
+    // Reset genre, as available genres might change (e.g., movie genres vs TV genres)
+    // Other filters like rating/year can often remain relevant.
+    // Page, items, etc., will be reset by the primaryFiltersKey effect.
+    setSelectedGenre("All");
   };
 
   const handleCategoryChange = (e) => {
     const newCategoryValue = e.target.value;
     if (selectedListCategory === newCategoryValue && !isSearching) return;
+
     setSelectedListCategory(newCategoryValue);
-    setSearchTerm("");
+    setSearchTerm(""); // Changing category clears search
     setDebouncedSearchTerm("");
+
     const categoryDef = CATEGORY_OPTIONS_CONFIG[newCategoryValue];
     if (categoryDef?.itemTypeLock) {
-      setSelectedUserItemType(categoryDef.itemTypeLock);
+      setSelectedUserItemType(categoryDef.itemTypeLock); // Lock item type if category demands it
     }
-    // Reset secondary filters as they might become disabled/enabled or irrelevant
+    // Reset secondary filters as their applicability/API support might change
     setSelectedGenre("All");
     setSelectedRating(RATING_OPTIONS.All.value);
     setSelectedYear("All");
+    // Page, items, etc., reset by primaryFiltersKey effect
   };
 
   const handleSecondaryFilterChange = (setter) => (e) => {
     setter(e.target.value);
+    // Page, items, etc., reset by primaryFiltersKey effect if these filters are part of primary key
   };
+
   const handleSearchChange = (e) => {
     setSearchTerm(e.target.value);
   };
+
   const handleClearSearch = () => {
     setSearchTerm("");
-    setDebouncedSearchTerm("");
+    setDebouncedSearchTerm(""); // Important to clear debounced term as well for immediate effect via primaryFiltersKey
+    // Reset other filters to defaults when search is cleared
     setSelectedListCategory(DEFAULT_CATEGORY_VALUE);
     setSelectedUserItemType(DEFAULT_USER_ITEM_TYPE);
     setSelectedGenre("All");
     setSelectedRating(RATING_OPTIONS.All.value);
     setSelectedYear("All");
+    // Page, items, etc., reset by primaryFiltersKey effect
   };
+
   const scrollToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
 
   // --- Render Logic ---
   const showSkeletons =
-    isLoading &&
-    page === 1 &&
-    displayItems.length === 0 &&
-    !error &&
-    !initialLoadComplete;
+    isLoading && // Global loading
+    page === 1 && // Only for the first page of a set
+    displayItems.length === 0 && // No items yet to display
+    !error && // No error has occurred
+    !initialLoadComplete; // Initial load for this filter set is not yet complete
 
   return (
     <div className="space-y-4 md:space-y-6 pb-8">
       <div className="container mx-auto px-3 sm:px-4 md:px-0 pt-6 pb-2 text-center">
-        {/* Title is now an h1 for better page structure */}
         <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-primary flex items-center justify-center gap-x-2.5">
           {currentDisplayTitle}
         </h1>
       </div>
 
-      {/* Filters UI */}
       <div
-        className="py-4 bg-transparent border-y border-border/60 dark:border-border/30 sticky z-40 backdrop-blur-md bg-background/80 dark:bg-card/80"
-        style={{ top: HEADER_STICKY_OFFSET }} // Dynamic top offset for sticky header
+        className="py-4 bg-transparent border-y border-border/60 dark:border-border/30 sticky z-40 backdrop-blur-md dark:bg-card/80"
+        style={{ top: HEADER_STICKY_OFFSET }}
       >
         <div className="container mx-auto px-3 sm:px-4 md:px-0">
-          {/* Search Input */}
           <div className="relative mb-4">
             <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground z-10">
               <SearchIcon size={18} />
@@ -1104,7 +1182,6 @@ export default function MoviesListClient() {
             )}
           </div>
 
-          {/* Category and Item Type Toggles */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 mb-4 items-center">
             <div
               className={`relative w-full md:col-span-2 ${
@@ -1123,18 +1200,26 @@ export default function MoviesListClient() {
                 aria-label="Select category"
               >
                 {Object.values(CATEGORY_OPTIONS_CONFIG).map((cat) => {
-                  // Don't show categories locked to a type different from the currently selected (unless it's "ALL" for trending, or we are searching)
                   if (
                     cat.itemTypeLock &&
                     cat.itemTypeLock !== selectedUserItemType &&
-                    !isSearching &&
-                    activeApiItemType !== API_ITEM_TYPES.ALL
-                  )
-                    return null;
-                  let prefix = ""; /* ...icon logic based on cat.icon... */
+                    !isSearching && // Don't hide if searching, as item type toggle is active
+                    activeApiItemType !== API_ITEM_TYPES.ALL && // Allow if current API type is ALL (e.g. trending)
+                    // Exception: if the category IS trending_week, which is 'ALL', it should always show.
+                    // The activeApiItemType check should handle this implicitly if trending_week is selected.
+                    // More precise: if the category itself is what causes activeApiItemType to be ALL, it should be shown.
+                    !(cat.apiPathAll && selectedListCategory === cat.value)
+                  ) {
+                    // This logic might need refinement based on exact desired behavior for locked categories
+                    // when user toggles type vs. when category itself dictates type.
+                    // For now, if a category is locked to a type different from the user's selection (and not searching), hide it.
+                    if (
+                      cat.value !== CATEGORY_OPTIONS_CONFIG.trending_week.value
+                    )
+                      return null; // Allow trending week always
+                  }
                   return (
                     <option key={cat.value} value={cat.value}>
-                      {prefix}
                       {cat.label} {cat.subLabel || ""}
                     </option>
                   );
@@ -1146,9 +1231,9 @@ export default function MoviesListClient() {
             </div>
             <div
               className={`flex space-x-1 rounded-md bg-muted dark:bg-card/50 p-0.5 h-[42px] items-stretch ${
-                isSearching
+                isSearching // If searching, item type toggle is always enabled
                   ? ""
-                  : activeCategoryDef?.itemTypeLock
+                  : activeCategoryDef?.itemTypeLock // If category locks item type (and not searching), disable toggle
                   ? "opacity-50 pointer-events-none"
                   : ""
               }`}
@@ -1162,15 +1247,11 @@ export default function MoviesListClient() {
                 onClick={handleUserItemTypeChange}
                 value={USER_SELECTABLE_ITEM_TYPES.MOVIE}
                 disabled={
-                  isSearching ||
-                  activeCategoryDef?.value ===
-                    CATEGORY_OPTIONS_CONFIG.trending_week.value
-                    ? false
-                    : !!(
-                        activeCategoryDef?.itemTypeLock &&
-                        activeCategoryDef.itemTypeLock !==
-                          USER_SELECTABLE_ITEM_TYPES.MOVIE
-                      )
+                  // Disable if category locks to a different type (and not searching)
+                  !isSearching &&
+                  activeCategoryDef?.itemTypeLock &&
+                  activeCategoryDef.itemTypeLock !==
+                    USER_SELECTABLE_ITEM_TYPES.MOVIE
                 }
               />
               <ToggleButton
@@ -1182,21 +1263,16 @@ export default function MoviesListClient() {
                 onClick={handleUserItemTypeChange}
                 value={USER_SELECTABLE_ITEM_TYPES.TV}
                 disabled={
-                  isSearching ||
-                  activeCategoryDef?.value ===
-                    CATEGORY_OPTIONS_CONFIG.trending_week.value
-                    ? false
-                    : !!(
-                        activeCategoryDef?.itemTypeLock &&
-                        activeCategoryDef.itemTypeLock !==
-                          USER_SELECTABLE_ITEM_TYPES.TV
-                      )
+                  // Disable if category locks to a different type (and not searching)
+                  !isSearching &&
+                  activeCategoryDef?.itemTypeLock &&
+                  activeCategoryDef.itemTypeLock !==
+                    USER_SELECTABLE_ITEM_TYPES.TV
                 }
               />
             </div>
           </div>
 
-          {/* Secondary Filters */}
           <div
             className={`grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 ${
               areSecondaryFiltersDisabled
@@ -1274,9 +1350,7 @@ export default function MoviesListClient() {
         </div>
       </div>
 
-      {/* Content Area */}
       <div className="container mx-auto mt-6 min-h-[60vh]">
-        {/* Error Display */}
         {error && !isLoading && displayItems.length === 0 && (
           <div className="text-center py-10">
             <p className="text-destructive text-lg mb-2">Error: {error}</p>
@@ -1294,7 +1368,6 @@ export default function MoviesListClient() {
           </div>
         )}
 
-        {/* Skeleton Loaders: Show only on initial load of a filter set when no items and no error */}
         {showSkeletons && (
           <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
             {Array.from({ length: 18 }).map((_, index) => (
@@ -1303,17 +1376,15 @@ export default function MoviesListClient() {
           </div>
         )}
 
-        {/* Display Grid: Show if not skeleton loading AND there are items */}
         {!showSkeletons && displayItems.length > 0 && (
           <MoviesGrid movies={displayItems} />
         )}
 
-        {/* Loading More Indicator (for subsequent pages, not during auto-fetch's own loading state) */}
         {isLoading &&
           page > 1 &&
-          !autoFetchState.isActive &&
-          !error &&
-          displayItems.length > 0 && (
+          !autoFetchState.shouldAttemptAutoFetch && // Don't show "Loading more..." if auto-fetch is active and might be causing this load
+          !error && // No error
+          displayItems.length > 0 && ( // Only if there are already items
             <div className="text-center py-10">
               <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-primary dark:border-primary/70 border-t-transparent"></div>
               <p className="text-muted-foreground mt-2 text-sm">
@@ -1322,22 +1393,22 @@ export default function MoviesListClient() {
             </div>
           )}
 
-        {/* Auto-fetch trying message */}
-        {autoFetchState.isActive &&
-          displayItems.length === 0 &&
+        {autoFetchState.shouldAttemptAutoFetch && // If an auto-fetch attempt is signaled
+          isLoading && // And we are currently loading (likely due to that auto-fetch)
+          displayItems.length === 0 && // And still no displayable items
           !error &&
           initialLoadComplete && (
             <p className="text-center text-muted-foreground mt-4 text-sm">
-              Searching for more items matching your filters...
+              Searching for more items matching your filters (Attempt:{" "}
+              {autoFetchState.attemptsDone})...
             </p>
           )}
 
-        {/* No Results Message */}
         {!isLoading &&
-          !autoFetchState.isActive &&
+          !autoFetchState.shouldAttemptAutoFetch && // Not actively trying to auto-fetch
           displayItems.length === 0 &&
           !error &&
-          initialLoadComplete && (
+          initialLoadComplete && ( // Initial load is done, no items, no loading, no auto-fetch = no results
             <div className="text-center py-20">
               <SearchX className="mx-auto h-16 w-16 text-muted-foreground/50 mb-4" />
               <h2 className="text-xl sm:text-2xl text-foreground font-semibold">
@@ -1367,7 +1438,6 @@ export default function MoviesListClient() {
           )}
       </div>
 
-      {/* Scroll to Top Button */}
       {showScrollButton && (
         <button
           onClick={scrollToTop}
