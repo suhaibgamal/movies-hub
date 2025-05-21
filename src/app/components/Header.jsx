@@ -1,3 +1,4 @@
+// c:\Users\Suhaib Gamal\Desktop\Programming\Front-End\NextJS\JavaScript\movies-hub\src\app\components\Header.jsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -77,9 +78,8 @@ function Header() {
   }, []);
 
   const handleHomeClick = (e) => {
-    // e.preventDefault(); // Not strictly necessary for Next.js Link-like behavior
+    // This function is now only used by the main "Movies Hub" logo link
     router.push("/");
-    // router.refresh(); // Usually not needed for navigating home, can cause unnecessary re-renders/data fetches.
     if (isOpen) setIsOpen(false); // Close menu if open
   };
 
@@ -118,26 +118,20 @@ function Header() {
 
           {session ? (
             <div className="flex items-center space-x-3">
-              <Link
-                href="/"
-                onClick={handleHomeClick}
-                className="flex items-center gap-2 group focus:outline-none"
-              >
+              <div className="flex items-center gap-2">
                 <Image
                   unoptimized
-                  src={session.user.image || "/images/user_profile.png"} // Ensure this path is correct (e.g., in public/images)
+                  src={session.user.image || "/images/user_profile.png"}
                   alt={session.user.name || "User"}
-                  className="w-8 h-8 rounded-full group-focus-visible:ring-2 group-focus-visible:ring-primary group-focus-visible:ring-offset-1 group-focus-visible:ring-offset-background"
+                  className="w-8 h-8 rounded-full"
                   height={32}
                   width={32}
                   priority
                 />
-                <span
-                  className={`${navLinkClasses} py-0 group-hover:text-primary`}
-                >
+                <span className="text-card-foreground py-0">
                   {session.user.name || session.user.email}
                 </span>
-              </Link>
+              </div>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <button
@@ -242,26 +236,20 @@ function Header() {
 
             {session ? (
               <>
-                <Link
-                  href="/"
-                  onClick={handleHomeClick}
-                  className="flex items-center gap-2 group focus:outline-none py-2"
-                >
+                <div className="flex items-center gap-2 py-2">
                   <Image
                     unoptimized
                     src={session.user.image || "/images/user_profile.png"}
                     alt={session.user.name || "User"}
-                    className="w-8 h-8 rounded-full group-focus-visible:ring-2 group-focus-visible:ring-primary group-focus-visible:ring-offset-1 group-focus-visible:ring-offset-background"
+                    className="w-8 h-8 rounded-full" // Removed focus/group styling
                     height={32}
                     width={32}
                     priority
                   />
-                  <span
-                    className={`${navLinkClasses} py-0 group-hover:text-primary`}
-                  >
+                  <span className="text-card-foreground py-0">
                     {session.user.name || session.user.email}
                   </span>
-                </Link>
+                </div>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <button
