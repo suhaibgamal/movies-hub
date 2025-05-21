@@ -20,7 +20,7 @@ import {
   TV_GENRES as TV_GENRES_OBJ,
 } from "@/lib/constants";
 
-// --- Constants (RATING_OPTIONS_RANDOM, YEAR_OPTIONS_RANDOM) remain the same ---
+// --- Constants (RATING_OPTIONS_RANDOM, YEAR_OPTIONS_RANDOM) ---
 const RATING_OPTIONS_RANDOM = [
   { value: "", label: "Any Rating" },
   { value: "8", label: "8+" },
@@ -58,7 +58,7 @@ const YEAR_OPTIONS_RANDOM = (() => {
   return options;
 })();
 
-// API fetching logic with console logs
+// API fetching logic
 const fetchRandomDiscoverItems = async ({
   mediaType,
   genre,
@@ -137,7 +137,7 @@ const fetchRandomDiscoverItems = async ({
     console.log(
       "[fetchRandomDiscoverItems] Raw results from API:",
       JSON.parse(JSON.stringify(results))
-    ); // Deep copy for logging
+    );
     return results;
   } catch (error) {
     console.error(
@@ -197,27 +197,28 @@ export default function RandomClient() {
       else setIsPicking(true);
       setError(null);
 
+      // Section 1: Try to serve from cache if not forcing a refetch
       if (!forceRefetch && !isInitialCall) {
-        const currentMediaTypeCache = itemCache[mediaType]; // Read from closure
-        const currentMediaTypeSeen = seenItems[mediaType]; // Read from closure
-        let potentialItemsFromCache = currentMediaTypeCache.filter(
-          (item) => !currentMediaTypeSeen.has(item.id)
+        const currentCache = itemCache[mediaType]; // From closure (now latest due to itemCache in deps)
+        const currentSeen = seenItems[mediaType]; // From closure (now latest due to seenItems in deps)
+
+        let potentialItemsFromCache = currentCache.filter(
+          (item) => !currentSeen.has(item.id)
         );
 
         if (
           potentialItemsFromCache.length === 0 &&
-          currentMediaTypeCache.length > 0 &&
-          currentMediaTypeSeen.size >= currentMediaTypeCache.length
+          currentCache.length > 0 &&
+          currentSeen.size >= currentCache.length
         ) {
           console.log(
-            `[pickAndSetRandomItem] Cache for ${mediaType} exhausted, resetting seen items.`
+            `[pickAndSetRandomItem] Cache for ${mediaType} exhausted for unseen, resetting seen items.`
           );
-          const newSeenSet = new Set();
-          setSeenItems((prev) => ({ ...prev, [mediaType]: newSeenSet }));
-          potentialItemsFromCache = currentMediaTypeCache.filter(
-            // Re-filter with the now empty seen set
-            (item) => !newSeenSet.has(item.id)
-          );
+          // Reset seenItems for this type and re-evaluate potentialItems
+          setSeenItems((prevSeenGlobal) => {
+            potentialItemsFromCache = currentCache; // All items in current cache are now potential
+            return { ...prevSeenGlobal, [mediaType]: new Set() };
+          });
         }
 
         if (potentialItemsFromCache.length > 0) {
@@ -230,9 +231,9 @@ export default function RandomClient() {
             JSON.parse(JSON.stringify(chosenItem))
           );
           setRandomItem(chosenItem);
-          setSeenItems((prev) => ({
-            ...prev,
-            [mediaType]: new Set(prev[mediaType]).add(chosenItem.id),
+          setSeenItems((prevSeenGlobal) => ({
+            ...prevSeenGlobal,
+            [mediaType]: new Set(prevSeenGlobal[mediaType]).add(chosenItem.id),
           }));
           if (isInitialCall) setIsLoadingInitial(false);
           setIsPicking(false);
@@ -243,6 +244,7 @@ export default function RandomClient() {
         );
       }
 
+      // Section 2: Fetch new items
       if (!isInitialCall || forceRefetch) {
         setRandomItem(null);
       }
@@ -270,54 +272,60 @@ export default function RandomClient() {
             mediaType === "tv" ? "TV shows" : "movies"
           } found for the selected criteria. Please try different filters.`
         );
-        // If forceRefetch (filters changed) and no items, ensure cache is empty
+        // If forceRefetch (filters changed) and no items, ensure cache for this type is empty.
+        // The filter effect already clears it, but this is an extra safeguard.
         if (forceRefetch) {
-          setItemCache((prev) => ({ ...prev, [mediaType]: [] }));
+          setItemCache((prevCacheGlobal) => ({
+            ...prevCacheGlobal,
+            [mediaType]: [],
+          }));
         }
       } else {
-        // Successfully fetched newItems.
-        // The useEffect for filter changes already cleared seenItems[mediaType].
-        // Now, update the itemCache.
+        // Update cache
         if (forceRefetch) {
-          // This was a filter change (or initial load). The cache for this mediaType should be purely these newItems.
           console.log(
             `[pickAndSetRandomItem] forceRefetch is TRUE. Replacing cache for ${mediaType} with ${newItems.length} new items.`
           );
-          setItemCache((prevCache) => ({
-            ...prevCache,
+          setItemCache((prevCacheGlobal) => ({
+            ...prevCacheGlobal,
             [mediaType]: [...newItems], // Replace
           }));
+          // `seenItems` for this mediaType was already reset by the filter change `useEffect`.
         } else {
-          // This was a "Get Another" click that missed the cache and had to fetch.
-          // Append newItems to the existing (correctly filtered) cache for this mediaType.
+          // This was a "Get Another" click that missed cache and fetched. Append.
           console.log(
             `[pickAndSetRandomItem] forceRefetch is FALSE. Appending ${newItems.length} new items to cache for ${mediaType}.`
           );
-          setItemCache((prevCache) => {
-            const existingCache = prevCache[mediaType] || [];
-            const combined = Array.from(
+          setItemCache((prevCacheGlobal) => {
+            const existingItemsForType = prevCacheGlobal[mediaType] || [];
+            const combinedItems = Array.from(
               new Map([
-                ...existingCache.map((item) => [item.id, item]),
+                ...existingItemsForType.map((item) => [item.id, item]),
                 ...newItems.map((item) => [item.id, item]),
               ]).values()
             );
-            return { ...prevCache, [mediaType]: combined };
+            return { ...prevCacheGlobal, [mediaType]: combinedItems };
           });
         }
 
-        // Pick from newItems, considering seenItems[mediaType]
-        // (which was cleared by the useEffect if filters changed, or is the ongoing seen set)
-        let currentSeenForPick = seenItems[mediaType];
+        // Pick from newItems.
+        // `seenItems[mediaType]` should be fresh if filters changed (cleared by useEffect)
+        // or the ongoing set if "Get Another" just fetched more.
+        let currentSeenForPickingNew = seenItems[mediaType]; // Get latest from closure
         let potentialNewItems = newItems.filter(
-          (item) => !currentSeenForPick.has(item.id)
+          (item) => !currentSeenForPickingNew.has(item.id)
         );
 
         if (potentialNewItems.length === 0 && newItems.length > 0) {
           console.log(
-            "[pickAndSetRandomItem] All newItems were in currentSeenForPick. Resetting seenItems for this batch and using all newItems."
+            "[pickAndSetRandomItem] All newItems were in currentSeenForPickingNew. Resetting seenItems for this specific batch pick."
           );
-          setSeenItems((prevSeen) => ({ ...prevSeen, [mediaType]: new Set() })); // Clear seen for this type before adding the new pick
-          potentialNewItems = newItems; // All newly fetched items are now candidates
+          // All newly fetched items were already in the seen set for this media type.
+          // This means we should pick any of them and reset the seen set for this type *just for this pick*.
+          setSeenItems((prevSeenGlobal) => {
+            potentialNewItems = newItems; // All newItems are now candidates
+            return { ...prevSeenGlobal, [mediaType]: new Set() }; // Reset seen for this type
+          });
         }
 
         if (potentialNewItems.length > 0) {
@@ -330,9 +338,10 @@ export default function RandomClient() {
             JSON.parse(JSON.stringify(chosenItem))
           );
           setRandomItem(chosenItem);
-          setSeenItems((prevSeen) => ({
-            ...prevSeen,
-            [mediaType]: new Set(prevSeen[mediaType]).add(chosenItem.id),
+          setSeenItems((prevSeenGlobal) => ({
+            // Add to the (potentially just reset) seen set
+            ...prevSeenGlobal,
+            [mediaType]: new Set(prevSeenGlobal[mediaType]).add(chosenItem.id),
           }));
         } else {
           console.log(
@@ -350,37 +359,41 @@ export default function RandomClient() {
       setIsPicking(false);
     },
     [
+      // IMPORTANT: Added itemCache and seenItems as dependencies
       mediaType,
       selectedGenre,
       selectedRating,
       selectedYear,
-      // itemCache and seenItems are read from closure for the cache-serving logic.
-      // For updates, functional updaters are used.
-      // This callback is re-created when filters change, getting fresh closures for itemCache/seenItems.
+      itemCache, // Ensures closure has latest cache when serving from cache
+      seenItems, // Ensures closure has latest seenItems when serving from cache
     ]
   );
 
   useEffect(() => {
-    pickAndSetRandomItem(true, true); // isInitialCall=true, forceRefetch=true
+    pickAndSetRandomItem(true, true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, []); // Initial fetch still depends on the first instance of pickAndSetRandomItem
 
+  // Effect for filter changes - This remains crucial for resetting
   useEffect(() => {
     if (isMounted.current) {
       console.log(
         "[Filter Effect] Filters changed, clearing cache/seen and re-fetching for:",
         { mediaType, selectedGenre, selectedRating, selectedYear }
       );
-      // Clear cache and seen items for the current mediaType.
-      // This ensures that the subsequent fetch populates a fresh, correctly filtered cache.
       setItemCache((prevCache) => ({ ...prevCache, [mediaType]: [] }));
       setSeenItems((prevSeen) => ({ ...prevSeen, [mediaType]: new Set() }));
 
       setIsPicking(true);
-      pickAndSetRandomItem(false, true); // isInitialCall=false, forceRefetch=true
+      // Call pickAndSetRandomItem. Because its dependencies (filters, itemCache, seenItems)
+      // will have changed (filters directly, cache/seen due to clearing),
+      // this will effectively use the "latest" version of pickAndSetRandomItem.
+      pickAndSetRandomItem(false, true);
     } else {
       isMounted.current = true;
     }
+    // pickAndSetRandomItem is NOT added here to avoid re-triggering this effect when pickAndSetRandomItem itself changes due to itemCache/seenItems updates *within* its own execution.
+    // The filter values are the true trigger for this effect.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mediaType, selectedGenre, selectedRating, selectedYear]);
 
@@ -566,7 +579,7 @@ export default function RandomClient() {
         {/* Pick Button Area */}
         <div className="p-4 sm:p-6 pt-3 sm:pt-4 shrink-0 mt-auto lg:mt-6 lg:mb-4">
           <button
-            onClick={() => pickAndSetRandomItem(false, false)} // isInitialCall=false, forceRefetch=false
+            onClick={() => pickAndSetRandomItem(false, false)}
             disabled={isLoadingInitial || isPicking}
             className="w-full p-3 sm:p-3.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-bold hover:from-blue-500 hover:to-purple-500 transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center text-sm sm:text-base"
             aria-label="Get another random pick"
