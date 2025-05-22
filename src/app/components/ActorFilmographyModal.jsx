@@ -2,8 +2,8 @@
 import Link from "next/link";
 import Image from "next/image";
 import { FaTimes } from "react-icons/fa";
-import { Tv as TvIcon } from "lucide-react"; // Import TvIcon
-import { useEffect, useRef } from "react";
+import { Tv as TvIcon } from "lucide-react";
+import { useEffect, useRef, useMemo } from "react";
 
 export default function ActorFilmographyModal({
   isOpen,
@@ -63,6 +63,26 @@ export default function ActorFilmographyModal({
     }
   }, [isOpen, onClose]);
 
+  const displayCredits = useMemo(() => {
+    if (!credits || credits.length === 0) {
+      return [];
+    }
+    const seen = new Set();
+    return credits.filter((credit) => {
+      // Ensure it's a movie or TV show
+      if (credit.media_type !== "movie" && credit.media_type !== "tv") {
+        return false;
+      }
+      // Check for duplicates based on media_type and id
+      const key = `${credit.media_type}-${credit.id}`;
+      if (seen.has(key)) {
+        return false;
+      }
+      seen.add(key);
+      return true;
+    });
+  }, [credits]);
+
   if (!isOpen) return null;
 
   return (
@@ -108,31 +128,25 @@ export default function ActorFilmographyModal({
           </div>
         )}
 
-        {!isLoading && !error && credits.length === 0 && (
+        {!isLoading && !error && displayCredits.length === 0 && (
           <div className="flex-grow flex items-center justify-center py-10">
             <p className="text-muted-foreground text-lg">
               No filmography found for {actorName}.
             </p>
           </div>
         )}
-
-        {!isLoading && !error && credits.length > 0 && (
+        {!isLoading && !error && displayCredits.length > 0 && (
           <div className="flex-grow grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 max-h-[60vh] overflow-y-auto pr-2">
-            {credits.map((credit) => {
+            {displayCredits.map((credit) => {
               const displayTitle = credit.title || credit.name;
               const itemPath =
                 credit.media_type === "tv"
                   ? `/tv/${credit.id}`
                   : `/movie/${credit.id}`;
-
               const dateString = credit.release_date || credit.first_air_date;
               const year = dateString
                 ? new Date(dateString).getFullYear()
                 : null;
-
-              if (credit.media_type !== "movie" && credit.media_type !== "tv") {
-                return null;
-              }
 
               return (
                 <div

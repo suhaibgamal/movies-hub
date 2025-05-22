@@ -78,21 +78,38 @@ export default function InteractiveFeatures({
   // MODIFIED: useEffect for trailer modal to focus iframe
   useEffect(() => {
     let prevActiveElement;
-    if (isTrailerModalOpen && trailerModalRef.current) {
+    let animationFrameId; // To store the ID of the requestAnimationFrame
+
+    if (isTrailerModalOpen) {
       prevActiveElement = document.activeElement;
-      // Attempt to focus the iframe directly for immediate keyboard control
-      if (iframeRef.current) {
-        iframeRef.current.focus();
-      } else {
-        // Fallback to focusing the modal container if iframe isn't available yet
+
+      // Attempt to focus the iframe if it's rendered and a trailerKey exists
+      if (trailerKey && iframeRef.current) {
+        // Use requestAnimationFrame to defer focus until after the browser's
+        // current rendering pass. This can help ensure the iframe content (YouTube player)
+        // is more likely to be ready to accept keyboard focus immediately.
+        animationFrameId = requestAnimationFrame(() => {
+          if (iframeRef.current) {
+            // Double-check if iframe still exists
+            iframeRef.current.focus();
+          }
+        });
+      } else if (trailerModalRef.current) {
+        // Fallback: If no trailerKey, or iframeRef is not yet available (e.g., iframe not rendered),
+        // focus the modal container itself. This ensures the modal is at least focusable.
         trailerModalRef.current.focus();
       }
+
       const handleEsc = (event) => {
         if (event.key === "Escape") setTrailerModalOpen(false);
       };
       document.addEventListener("keydown", handleEsc);
+
       return () => {
         document.removeEventListener("keydown", handleEsc);
+        if (animationFrameId) {
+          cancelAnimationFrame(animationFrameId); // Clean up the animation frame
+        }
         if (prevActiveElement instanceof HTMLElement) prevActiveElement.focus();
       };
     }
