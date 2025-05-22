@@ -160,6 +160,14 @@ const AboutPage = () => {
             primarily for educational and portfolio purposes. It is not
             affiliated with any of the streaming services mentioned or linked.
           </p>
+          <p className="text-sm text-muted-foreground text-center sm:text-left">
+            When you click on "Watch Now" buttons or similar links to view
+            content, you may be redirected to external third-party websites
+            (e.g., `vidsrc.xyz`). Movies Hub does not control and is not
+            responsible for the content, legality, security, or practices of
+            these external sites. Please proceed with caution and be aware that
+            you access such external links at your own risk.
+          </p>
           <div className="flex flex-col items-center pt-4">
             <p className="text-sm text-muted-foreground mb-2">
               Data and imagery provided by:
