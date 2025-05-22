@@ -114,8 +114,6 @@ export default function WatchlistButton({
             responseData.error || `API Error: ${response.status}`
           );
         }
-
-        // console.log(`Item ${newStatus ? 'added to' : 'removed from'} watchlist via API.`); // Alert removed
         if (onWatchlistChange) onWatchlistChange(item, newStatus);
       } catch (error) {
         // Revert optimistic UI update and Zustand store on error

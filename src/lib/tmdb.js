@@ -140,7 +140,6 @@ export const checkLinkStability = unstable_cache(
     const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
 
     try {
-      console.log(`[checkLinkStability] Checking URL: ${watchLink}`); // Added for server-side debugging
       const response = await fetch(watchLink, {
         method: "GET",
         signal: controller.signal,
@@ -162,9 +161,6 @@ export const checkLinkStability = unstable_cache(
         },
       });
       clearTimeout(timeoutId);
-      console.log(
-        `[checkLinkStability] Response for ${watchLink}: Status ${response.status}, OK: ${response.ok}`
-      );
       return response.ok;
     } catch (error) {
       clearTimeout(timeoutId);

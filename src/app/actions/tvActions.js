@@ -11,14 +11,12 @@ export async function fetchSeasonDetailsAction(tvId, seasonNumber) {
   }
 
   try {
-    // console.log(`Server Action: Fetching season ${seasonNumber} for TV ID ${tvId}`);
     const seasonDetails = await getCachedTvSeasonDetails(tvId, seasonNumber);
 
     if (!seasonDetails) {
       // console.warn(`Server Action: No details found for TV ID ${tvId}, Season ${seasonNumber}`);
       return { error: `Could not load details for Season ${seasonNumber}.` };
     }
-    // console.log(`Server Action: Successfully fetched season ${seasonNumber} for TV ID ${tvId}`);
     return { data: seasonDetails }; // Return data wrapped in an object
   } catch (error) {
     console.error(
