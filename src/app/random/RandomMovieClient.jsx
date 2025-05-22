@@ -602,7 +602,11 @@ export default function RandomClient() {
       </div>
 
       {/* Display Area */}
-      <div className="w-full lg:flex-grow flex flex-col justify-center items-center p-4 sm:p-6 lg:h-screen">
+      <div className="w-full lg:flex-grow flex flex-col items-center p-4 sm:p-6 lg:h-screen">
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-primary text-center mb-6 sm:mb-8 lg:mb-10">
+          Random Movie and TV Show Picker
+        </h1>
+
         {displayLoadingState ? (
           <div
             className="w-full max-w-[220px] sm:max-w-[250px]"
