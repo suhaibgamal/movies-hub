@@ -1,3 +1,4 @@
+// src/app/components/ActorFilmographyModal.jsx
 import Link from "next/link";
 import Image from "next/image";
 import { FaTimes } from "react-icons/fa";
@@ -7,7 +8,7 @@ export default function ActorFilmographyModal({
   isOpen,
   onClose,
   actorName,
-  movies,
+  credits, // MODIFIED: Renamed from 'movies'
   isLoading,
   error,
 }) {
@@ -84,7 +85,7 @@ export default function ActorFilmographyModal({
           </h2>
           <button
             onClick={onClose}
-            className="text-white bg-black/50 rounded-full p-1 hover:text-gray-300 text-3xl focus:outline-none"
+            className="text-white bg-black/50 rounded-full p-1 hover:text-gray-300 text-3xl focus:outline-none" // Consider matching other close button styles if desired
             aria-label={`Close ${actorName}'s filmography`}
           >
             <FaTimes size={20} />
@@ -106,7 +107,8 @@ export default function ActorFilmographyModal({
           </div>
         )}
 
-        {!isLoading && !error && movies.length === 0 && (
+        {/* MODIFIED: Use 'credits' prop */}
+        {!isLoading && !error && credits.length === 0 && (
           <div className="flex-grow flex items-center justify-center py-10">
             <p className="text-muted-foreground text-lg">
               No filmography found for {actorName}.
@@ -114,45 +116,64 @@ export default function ActorFilmographyModal({
           </div>
         )}
 
-        {!isLoading && !error && movies.length > 0 && (
+        {/* MODIFIED: Use 'credits' prop and handle dynamic data */}
+        {!isLoading && !error && credits.length > 0 && (
           <div className="flex-grow grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 max-h-[60vh] overflow-y-auto pr-2">
-            {movies.map((movie) => (
-              <div
-                key={movie.id}
-                className="overflow-hidden rounded-lg bg-card shadow hover:shadow-lg transition-all duration-200 transform hover:scale-105 border border-transparent hover:border-primary"
-              >
-                <Link href={`/movie/${movie.id}`} legacyBehavior>
-                  <a className="block" onClick={onClose}>
-                    {" "}
-                    {/* Close modal on movie click */}
-                    <div className="relative aspect-[2/3] w-full bg-muted">
-                      <Image
-                        src={
-                          movie.poster_path
-                            ? `https://image.tmdb.org/t/p/w300${movie.poster_path}`
-                            : "/images/default.webp"
-                        }
-                        alt={`${movie.title} poster`}
-                        fill
-                        className="object-cover"
-                        unoptimized // Consistent with project's image handling for TMDB
-                        loading="lazy"
-                      />
-                    </div>
-                    <div className="p-2 sm:p-3 text-center">
-                      <h3 className="text-xs sm:text-sm font-medium text-card-foreground truncate">
-                        {movie.title}
-                      </h3>
-                      {movie.release_date && (
-                        <p className="text-[10px] sm:text-xs text-muted-foreground">
-                          {new Date(movie.release_date).getFullYear()}
-                        </p>
-                      )}
-                    </div>
-                  </a>
-                </Link>
-              </div>
-            ))}
+            {credits.map((credit) => {
+              // Determine display title, path, and year based on media_type
+              const displayTitle = credit.title || credit.name;
+              // Ensure media_type is valid before constructing path
+              const itemPath =
+                credit.media_type === "tv"
+                  ? `/tv/${credit.id}`
+                  : `/movie/${credit.id}`;
+
+              const dateString = credit.release_date || credit.first_air_date;
+              const year = dateString
+                ? new Date(dateString).getFullYear()
+                : null;
+
+              // Basic guard for unexpected media types, though filtered in tmdb.js
+              if (credit.media_type !== "movie" && credit.media_type !== "tv") {
+                return null;
+              }
+
+              return (
+                <div
+                  key={`${credit.media_type}-${credit.id}`} // More robust key for combined credits
+                  className="overflow-hidden rounded-lg bg-card shadow hover:shadow-lg transition-all duration-200 transform hover:scale-105 border border-transparent hover:border-primary"
+                >
+                  <Link href={itemPath} legacyBehavior>
+                    <a className="block" onClick={onClose}>
+                      <div className="relative aspect-[2/3] w-full bg-muted">
+                        <Image
+                          src={
+                            credit.poster_path
+                              ? `https://image.tmdb.org/t/p/w300${credit.poster_path}`
+                              : "/images/default.webp"
+                          }
+                          alt={`${displayTitle} poster`}
+                          fill
+                          className="object-cover"
+                          unoptimized
+                          loading="lazy"
+                        />
+                      </div>
+                      <div className="p-2 sm:p-3 text-center">
+                        <h3 className="text-xs sm:text-sm font-medium text-card-foreground truncate">
+                          {displayTitle}
+                        </h3>
+                        {year && (
+                          <p className="text-[10px] sm:text-xs text-muted-foreground">
+                            {year}
+                          </p>
+                        )}
+                      </div>
+                    </a>
+                  </Link>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

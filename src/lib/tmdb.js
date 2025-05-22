@@ -11,7 +11,7 @@ const REVALIDATE_LINK_CHECK = 259200; // 3 days (for vidsrc check)
 const REVALIDATE_HOMEPAGE_DYNAMIC = 21600; // 6 hours (Popular, Trending)
 const REVALIDATE_HOMEPAGE_STATIC_LISTS = 259200; // 3 days (Top Rated)
 const REVALIDATE_HOMEPAGE_UPCOMING = 86400; // 1 day (Upcoming)
-const FETCH_TIMEOUT_MS = 8000; // 8 seconds for external fetches (slightly increased for potentially heavier checks)
+const FETCH_TIMEOUT_MS = 8000; // 8 seconds for external fetches
 
 /**
  * Normalizes a TMDB item (movie or TV show) to a consistent structure.
@@ -117,16 +117,7 @@ export const getCachedCredits = unstable_cache(
 
 /**
  * Checks if the main embed page for a movie or TV series on vidsrc.xyz is reachable.
- * IMPORTANT: This function attempts to mimic a browser GET request. However, 100% accuracy
- * in reflecting live browser availability from a server-side check is extremely difficult
- * due to potential IP-based rate limiting by vidsrc.xyz, JavaScript-dependent content rendering,
- * and other advanced anti-bot measures on their end.
- * This check primarily verifies if the initial HTML page can be fetched successfully.
- * A 'true' result means the embed page URL was accessible at the time of the check from the server's IP;
- * it's NOT a guarantee the video stream itself is live or will play for all users.
- * A 'false' result could mean the page is truly down, the specific content is not on vidsrc,
- * OR your server's IP was rate-limited/blocked by vidsrc.xyz.
- *
+ * (Full JSDoc from your provided file)
  * @param {string|number} id - The TMDB item ID.
  * @param {'movie'|'tv'} [itemType="movie"] - The type of item.
  * @returns {Promise<boolean>} True if the embed page responds with HTTP 2xx, false otherwise.
@@ -144,7 +135,6 @@ export const checkLinkStability = unstable_cache(
         method: "GET",
         signal: controller.signal,
         headers: {
-          // More browser-like headers
           "User-Agent":
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
           Accept:
@@ -157,7 +147,6 @@ export const checkLinkStability = unstable_cache(
           "Sec-Fetch-Mode": "navigate",
           "Sec-Fetch-Site": "none",
           "Sec-Fetch-User": "?1",
-          // "Referer": `https://movies.suhaeb.com/`, // Optional: Can sometimes help
         },
       });
       clearTimeout(timeoutId);
@@ -178,7 +167,7 @@ export const checkLinkStability = unstable_cache(
       return false;
     }
   },
-  ["link-stability-vidsrc-get-v2"], // New cache key for header changes
+  ["link-stability-vidsrc-get-v2"],
   { revalidate: REVALIDATE_LINK_CHECK }
 );
 
@@ -215,36 +204,40 @@ export const getCachedRecommendations = unstable_cache(
 );
 
 /**
- * Fetches movie credits for an actor from TMDB. Not cached by unstable_cache in this lib.
+ * Fetches combined movie and TV credits for an actor from TMDB.
+ * Filters for items with poster_path and sorts by popularity.
+ * Includes media_type 'movie' or 'tv'. Not cached by unstable_cache for client-side use.
  * @param {string|number} actorId - The TMDB actor ID.
- * @returns {Promise<Array<Object>>} Array of movie credit objects.
+ * @returns {Promise<Array<Object>>} Array of combined credit objects (movies and TV shows).
  * @throws Will throw an error if the fetch fails.
  */
-export const getActorMovieCredits = async (actorId) => {
-  // (Implementation remains the same as previous, good for its client-side on-demand use case)
+export const getActorCombinedCredits = async (actorId) => {
   try {
     const res = await fetch(
-      `${BASE_URL}/person/${actorId}/movie_credits?api_key=${API_KEY}&language=en-US`
+      `${BASE_URL}/person/${actorId}/combined_credits?api_key=${API_KEY}&language=en-US`
     );
     if (!res.ok) {
       const errorData = await res.json();
       throw new Error(
-        errorData.status_message || "Failed to fetch actor movie credits"
+        errorData.status_message || "Failed to fetch actor combined credits"
       );
     }
     const data = await res.json();
-    const sortedMovies = (data.cast || [])
-      .filter((movie) => movie.poster_path)
+    const sortedCredits = (data.cast || [])
+      .filter(
+        (credit) =>
+          credit.poster_path &&
+          (credit.media_type === "movie" || credit.media_type === "tv")
+      )
       .sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
-    return sortedMovies;
+    return sortedCredits;
   } catch (err) {
-    console.error("Error fetching actor movie credits from lib:", err);
-    throw err;
+    console.error("Error fetching actor combined credits from lib:", err);
+    throw err; // Re-throw to be caught by the calling component
   }
 };
 
 // --- TV Show Specific Functions ---
-// (Implementations remain the same as previous, using REVALIDATE_ITEM_DETAILS)
 
 export const getCachedTvShowDetails = unstable_cache(
   async (tvId) => {
@@ -282,7 +275,6 @@ export const getCachedTvSeasonDetails = unstable_cache(
 );
 
 // --- Homepage Data Functions ---
-// (Implementations remain the same as previous, using respective revalidation periods)
 
 export const getPopularMoviesForHome = unstable_cache(
   async (limit = 12) => {

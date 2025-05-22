@@ -6,7 +6,7 @@ import Link from "next/link";
 import { FaFacebookF, FaTwitter, FaWhatsapp, FaTimes } from "react-icons/fa";
 import WatchNowButton from "@/app/components/WatchNowButton";
 import Image from "next/image";
-import { getActorMovieCredits } from "@/lib/tmdb";
+import { getActorCombinedCredits } from "@/lib/tmdb";
 import dynamic from "next/dynamic";
 
 const ActorFilmographyModal = dynamic(() => import("./ActorFilmographyModal"), {
@@ -18,7 +18,7 @@ const ActorFilmographyModal = dynamic(() => import("./ActorFilmographyModal"), {
 
 export default function InteractiveFeatures({
   item,
-  itemType, // "MOVIE" or "TV"
+  itemType,
   trailerKey,
   cast,
   itemFound,
@@ -28,9 +28,10 @@ export default function InteractiveFeatures({
   const [isRecModalOpen, setRecModalOpen] = useState(false);
   const [selectedActor, setSelectedActor] = useState(null);
   const [isActorModalOpen, setIsActorModalOpen] = useState(false);
-  const [actorMovies, setActorMovies] = useState([]);
-  const [actorMoviesLoading, setActorMoviesLoading] = useState(false);
-  const [actorMoviesError, setActorMoviesError] = useState(null);
+  // MODIFIED: State to hold combined credits
+  const [actorCredits, setActorCredits] = useState([]);
+  const [actorCreditsLoading, setActorCreditsLoading] = useState(false);
+  const [actorCreditsError, setActorCreditsError] = useState(null);
 
   const trailerModalRef = useRef(null);
   const recModalRef = useRef(null);
@@ -50,26 +51,32 @@ export default function InteractiveFeatures({
   const handleCastMemberClick = useCallback((actor) => {
     setSelectedActor(actor);
     setIsActorModalOpen(true);
-    setActorMovies([]);
-    setActorMoviesError(null);
+    // MODIFIED: Clear combined credits
+    setActorCredits([]);
+    setActorCreditsError(null);
   }, []);
 
   useEffect(() => {
     if (selectedActor && isActorModalOpen) {
-      const fetchActorFilmography = async () => {
-        setActorMoviesLoading(true);
+      const fetchActorCombinedFilmography = async () => {
+        setActorCreditsLoading(true);
         try {
-          const filmographyData = await getActorMovieCredits(selectedActor.id);
-          setActorMovies(filmographyData);
+          const filmographyData = await getActorCombinedCredits(
+            selectedActor.id
+          );
+          setActorCredits(filmographyData);
         } catch (err) {
-          setActorMoviesError(err.message || "Failed to load filmography.");
+          // MODIFIED: Error state for combined credits
+          setActorCreditsError(err.message || "Failed to load filmography.");
         } finally {
-          setActorMoviesLoading(false);
+          setActorCreditsLoading(false);
         }
       };
-      fetchActorFilmography();
+      fetchActorCombinedFilmography();
     }
   }, [selectedActor, isActorModalOpen]);
+
+  // ... (useEffect hooks for modals remain the same)
 
   useEffect(() => {
     let prevActiveElement;
@@ -118,7 +125,7 @@ export default function InteractiveFeatures({
 
   return (
     <div className="space-y-6 sm:space-y-8">
-      {/* ... (Share buttons, cast section remain the same) ... */}
+      {/* Button Section */}
       <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
         {trailerKey && (
           <button
@@ -147,6 +154,7 @@ export default function InteractiveFeatures({
           )}
       </div>
 
+      {/* Top Billed Cast Section */}
       {cast && cast.length > 0 && (
         <div className="mt-5 sm:mt-6">
           <h2 className="mb-3 sm:mb-4 pl-1 text-lg sm:text-xl font-semibold text-card-foreground">
@@ -188,6 +196,7 @@ export default function InteractiveFeatures({
         </div>
       )}
 
+      {/* Share Section */}
       <div className="text-center pt-2">
         <h2 className="mb-3 sm:mb-4 text-lg sm:text-xl font-semibold text-card-foreground">
           Share This {itemType === "TV" ? "Series" : "Movie"}
@@ -239,6 +248,7 @@ export default function InteractiveFeatures({
         </div>
       </div>
 
+      {/* Trailer Modal */}
       {isTrailerModalOpen && trailerKey && (
         <div
           ref={trailerModalRef}
@@ -248,13 +258,13 @@ export default function InteractiveFeatures({
           role="dialog"
           aria-labelledby="trailer-modal-title"
         >
-          {/* MODIFIED Trailer Modal width */}
           <div className="relative w-full max-w-2xl md:max-w-3xl lg:max-w-4xl xl:max-w-5xl mx-auto rounded-lg bg-background p-3 sm:p-4 shadow-2xl">
             <h2
               id="trailer-modal-title"
               className="sr-only"
             >{`${displayTitle} Trailer`}</h2>
             <button
+              type="button"
               onClick={() => setTrailerModalOpen(false)}
               className="absolute -top-2.5 -right-2.5 sm:top-2 sm:right-2 text-white bg-black/60 rounded-full p-1 hover:text-gray-300 text-xl focus:outline-none z-10 transition-colors"
               aria-label="Close Trailer"
@@ -263,7 +273,7 @@ export default function InteractiveFeatures({
             </button>
             <div className="aspect-video rounded-md overflow-hidden">
               <iframe
-                src={`https://www.youtube.com/embed/$${trailerKey}`}
+                src={`https://www.youtube.com/embed/${trailerKey}`}
                 title={`${displayTitle} Trailer`}
                 className="w-full h-full"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
@@ -274,6 +284,7 @@ export default function InteractiveFeatures({
         </div>
       )}
 
+      {/* Recommendations Modal */}
       {isRecModalOpen &&
         recommendations &&
         recommendations.results &&
@@ -286,7 +297,6 @@ export default function InteractiveFeatures({
             role="dialog"
             aria-labelledby="recommendations-modal-title"
           >
-            {/* MODIFIED Recommendations Modal padding */}
             <div className="relative w-full max-w-4xl lg:max-w-5xl mx-auto rounded-lg bg-background p-6 shadow-2xl flex flex-col max-h-[90vh]">
               <div className="flex items-center justify-between border-b border-border/30 pb-3 mb-4 flex-shrink-0">
                 <h2
@@ -303,7 +313,6 @@ export default function InteractiveFeatures({
                   <FaTimes size={18} />
                 </button>
               </div>
-              {/* MODIFIED Recommendations Grid container classes */}
               <div className="flex-grow grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 max-h-[60vh] overflow-y-auto pr-2">
                 {recommendations.results.map((recItem) => {
                   const recItemTypeResolved =
@@ -314,7 +323,6 @@ export default function InteractiveFeatures({
                     recItemTypeResolved === "tv"
                       ? `/tv/${recItem.id}`
                       : `/movie/${recItem.id}`;
-
                   const dateString =
                     recItemTypeResolved === "tv"
                       ? recItem.first_air_date
@@ -367,13 +375,14 @@ export default function InteractiveFeatures({
           </div>
         )}
 
+      {/* MODIFIED: Pass combined credits and related states to ActorFilmographyModal */}
       <ActorFilmographyModal
         isOpen={isActorModalOpen}
         onClose={() => setIsActorModalOpen(false)}
         actorName={selectedActor?.name}
-        movies={actorMovies}
-        isLoading={actorMoviesLoading}
-        error={actorMoviesError}
+        credits={actorCredits} // Renamed from movies
+        isLoading={actorCreditsLoading} // Renamed from actorMoviesLoading
+        error={actorCreditsError} // Renamed from actorMoviesError
       />
     </div>
   );
