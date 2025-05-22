@@ -1061,9 +1061,14 @@ export default function MoviesListClient() {
   return (
     <div className="space-y-4 md:space-y-6 pb-8">
       <div className="container mx-auto px-3 sm:px-4 md:px-0 pt-6 pb-2 text-center">
-        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-primary flex items-center justify-center gap-x-2.5">
-          {currentDisplayTitle}
+        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-foreground mb-2 sm:mb-3">
+          Browse Movies & TV Shows
         </h1>
+        {currentDisplayTitle && (
+          <h2 className="text-xl sm:text-2xl lg:text-3xl font-semibold text-primary flex items-center justify-center gap-x-2">
+            {currentDisplayTitle}{" "}
+          </h2>
+        )}
       </div>
 
       <div className="py-4 bg-transparent border-y border-border/60 dark:border-border/30">
