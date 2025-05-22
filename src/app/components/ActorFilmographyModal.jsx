@@ -2,13 +2,14 @@
 import Link from "next/link";
 import Image from "next/image";
 import { FaTimes } from "react-icons/fa";
+import { Tv as TvIcon } from "lucide-react"; // Import TvIcon
 import { useEffect, useRef } from "react";
 
 export default function ActorFilmographyModal({
   isOpen,
   onClose,
   actorName,
-  credits, // MODIFIED: Renamed from 'movies'
+  credits,
   isLoading,
   error,
 }) {
@@ -85,7 +86,7 @@ export default function ActorFilmographyModal({
           </h2>
           <button
             onClick={onClose}
-            className="text-white bg-black/50 rounded-full p-1 hover:text-gray-300 text-3xl focus:outline-none" // Consider matching other close button styles if desired
+            className="text-white bg-black/50 rounded-full p-1 hover:text-gray-300 text-3xl focus:outline-none"
             aria-label={`Close ${actorName}'s filmography`}
           >
             <FaTimes size={20} />
@@ -107,7 +108,6 @@ export default function ActorFilmographyModal({
           </div>
         )}
 
-        {/* MODIFIED: Use 'credits' prop */}
         {!isLoading && !error && credits.length === 0 && (
           <div className="flex-grow flex items-center justify-center py-10">
             <p className="text-muted-foreground text-lg">
@@ -116,13 +116,10 @@ export default function ActorFilmographyModal({
           </div>
         )}
 
-        {/* MODIFIED: Use 'credits' prop and handle dynamic data */}
         {!isLoading && !error && credits.length > 0 && (
           <div className="flex-grow grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 max-h-[60vh] overflow-y-auto pr-2">
             {credits.map((credit) => {
-              // Determine display title, path, and year based on media_type
               const displayTitle = credit.title || credit.name;
-              // Ensure media_type is valid before constructing path
               const itemPath =
                 credit.media_type === "tv"
                   ? `/tv/${credit.id}`
@@ -133,14 +130,13 @@ export default function ActorFilmographyModal({
                 ? new Date(dateString).getFullYear()
                 : null;
 
-              // Basic guard for unexpected media types, though filtered in tmdb.js
               if (credit.media_type !== "movie" && credit.media_type !== "tv") {
                 return null;
               }
 
               return (
                 <div
-                  key={`${credit.media_type}-${credit.id}`} // More robust key for combined credits
+                  key={`${credit.media_type}-${credit.id}`}
                   className="overflow-hidden rounded-lg bg-card shadow hover:shadow-lg transition-all duration-200 transform hover:scale-105 border border-transparent hover:border-primary"
                 >
                   <Link href={itemPath} legacyBehavior>
@@ -158,6 +154,16 @@ export default function ActorFilmographyModal({
                           unoptimized
                           loading="lazy"
                         />
+                        {/* TV Show Icon added here */}
+                        {credit.media_type === "tv" && (
+                          <div
+                            className="absolute top-1.5 left-1.5 bg-primary/90 backdrop-blur-sm text-primary-foreground text-[9px] font-bold px-1.5 py-0.5 rounded-sm shadow-md flex items-center gap-0.5 z-10"
+                            title="TV Series" // Added title attribute for accessibility
+                          >
+                            <TvIcon size={9} className="mr-0.5" />
+                            <span>TV</span>
+                          </div>
+                        )}
                       </div>
                       <div className="p-2 sm:p-3 text-center">
                         <h3 className="text-xs sm:text-sm font-medium text-card-foreground truncate">

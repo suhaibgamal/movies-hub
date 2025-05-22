@@ -273,7 +273,7 @@ export default function InteractiveFeatures({
             </button>
             <div className="aspect-video rounded-md overflow-hidden">
               <iframe
-                src={`https://www.youtube.com/embed/${trailerKey}`}
+                src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1&rel=0&modestbranding=1`}
                 title={`${displayTitle} Trailer`}
                 className="w-full h-full"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
