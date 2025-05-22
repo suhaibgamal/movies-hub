@@ -75,45 +75,44 @@ export default function InteractiveFeatures({
     }
   }, [selectedActor, isActorModalOpen]);
 
-  // MODIFIED: useEffect for trailer modal to focus iframe
+  // useEffect for trailer modal: handles ESC key and restoring focus on close.
+  // Actual iframe focus is now primarily handled by the iframe's onLoad event.
   useEffect(() => {
-    let prevActiveElement;
-    let animationFrameId; // To store the ID of the requestAnimationFrame
+    let prevActiveElement = null;
+    let escKeyHandler = null;
 
     if (isTrailerModalOpen) {
       prevActiveElement = document.activeElement;
 
-      // Attempt to focus the iframe if it's rendered and a trailerKey exists
-      if (trailerKey && iframeRef.current) {
-        // Use requestAnimationFrame to defer focus until after the browser's
-        // current rendering pass. This can help ensure the iframe content (YouTube player)
-        // is more likely to be ready to accept keyboard focus immediately.
-        animationFrameId = requestAnimationFrame(() => {
-          if (iframeRef.current) {
-            // Double-check if iframe still exists
-            iframeRef.current.focus();
-          }
-        });
-      } else if (trailerModalRef.current) {
-        // Fallback: If no trailerKey, or iframeRef is not yet available (e.g., iframe not rendered),
-        // focus the modal container itself. This ensures the modal is at least focusable.
+      // Focus the modal container itself. This ensures the modal is focusable
+      // for screen readers and the ESC key listener can work reliably.
+      // The iframe will attempt to grab focus once it loads via its onLoad handler.
+      if (trailerModalRef.current) {
         trailerModalRef.current.focus();
       }
 
-      const handleEsc = (event) => {
-        if (event.key === "Escape") setTrailerModalOpen(false);
-      };
-      document.addEventListener("keydown", handleEsc);
-
-      return () => {
-        document.removeEventListener("keydown", handleEsc);
-        if (animationFrameId) {
-          cancelAnimationFrame(animationFrameId); // Clean up the animation frame
+      escKeyHandler = (event) => {
+        if (event.key === "Escape") {
+          setTrailerModalOpen(false);
         }
-        if (prevActiveElement instanceof HTMLElement) prevActiveElement.focus();
       };
+      document.addEventListener("keydown", escKeyHandler);
     }
-  }, [isTrailerModalOpen, trailerKey]); // Added trailerKey dependency
+
+    return () => {
+      if (escKeyHandler) {
+        document.removeEventListener("keydown", escKeyHandler);
+      }
+      // Restore focus to the previously active element only if the modal was open
+      // and the element still exists in the DOM.
+      if (
+        prevActiveElement instanceof HTMLElement &&
+        document.body.contains(prevActiveElement)
+      ) {
+        prevActiveElement.focus();
+      }
+    };
+  }, [isTrailerModalOpen]); // Dependency: only when modal open/close state changes
 
   useEffect(() => {
     let prevActiveElement;
@@ -294,6 +293,7 @@ export default function InteractiveFeatures({
             </button>
             <div className="aspect-video rounded-md overflow-hidden">
               {/* MODIFIED: Added ref to iframe and updated src URL */}
+              {/* MODIFIED: Added onLoad to iframe for focusing */}
               <iframe
                 ref={iframeRef}
                 src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1&rel=0&modestbranding=1`}
@@ -301,6 +301,17 @@ export default function InteractiveFeatures({
                 className="w-full h-full"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowFullScreen
+                onLoad={() => {
+                  // This fires when the iframe's content (YouTube player) has loaded
+                  if (iframeRef.current && isTrailerModalOpen) {
+                    // Ensure modal is still open
+                    requestAnimationFrame(() => {
+                      // Defer focus to next paint cycle for stability
+                      if (iframeRef.current && isTrailerModalOpen)
+                        iframeRef.current.focus();
+                    });
+                  }
+                }}
               />
             </div>
           </div>
