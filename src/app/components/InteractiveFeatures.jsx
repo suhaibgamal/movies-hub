@@ -118,6 +118,7 @@ export default function InteractiveFeatures({
 
   return (
     <div className="space-y-6 sm:space-y-8">
+      {/* ... (Share buttons, cast section remain the same) ... */}
       <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
         {trailerKey && (
           <button
@@ -216,7 +217,6 @@ export default function InteractiveFeatures({
               color: "bg-green-500",
               label: "WhatsApp",
               url: `https://api.whatsapp.com/send?text=${encodeURIComponent(
-                // Corrected WhatsApp URL
                 `Check out ${displayTitle} on Movies Hub! ${fullItemUrl}`
               )}`,
             },
@@ -248,7 +248,8 @@ export default function InteractiveFeatures({
           role="dialog"
           aria-labelledby="trailer-modal-title"
         >
-          <div className="relative w-full max-w-2xl lg:max-w-3xl mx-auto rounded-lg bg-background p-3 sm:p-4 shadow-2xl">
+          {/* MODIFIED Trailer Modal width */}
+          <div className="relative w-full max-w-2xl md:max-w-3xl lg:max-w-4xl xl:max-w-5xl mx-auto rounded-lg bg-background p-3 sm:p-4 shadow-2xl">
             <h2
               id="trailer-modal-title"
               className="sr-only"
@@ -262,7 +263,7 @@ export default function InteractiveFeatures({
             </button>
             <div className="aspect-video rounded-md overflow-hidden">
               <iframe
-                src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1&rel=0&modestbranding=1`} // Standard YouTube embed URL
+                src={`https://www.youtube.com/embed/$${trailerKey}?autoplay=1&rel=0&modestbranding=1`}
                 title={`${displayTitle} Trailer`}
                 className="w-full h-full"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
@@ -285,7 +286,8 @@ export default function InteractiveFeatures({
             role="dialog"
             aria-labelledby="recommendations-modal-title"
           >
-            <div className="relative w-full max-w-4xl lg:max-w-5xl mx-auto rounded-lg bg-background p-4 sm:p-6 shadow-2xl flex flex-col max-h-[90vh]">
+            {/* MODIFIED Recommendations Modal padding */}
+            <div className="relative w-full max-w-4xl lg:max-w-5xl mx-auto rounded-lg bg-background p-6 shadow-2xl flex flex-col max-h-[90vh]">
               <div className="flex items-center justify-between border-b border-border/30 pb-3 mb-4 flex-shrink-0">
                 <h2
                   id="recommendations-modal-title"
@@ -301,7 +303,8 @@ export default function InteractiveFeatures({
                   <FaTimes size={18} />
                 </button>
               </div>
-              <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 overflow-y-auto pr-1.5 hide-scrollbar flex-grow">
+              {/* MODIFIED Recommendations Grid container classes */}
+              <div className="flex-grow grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 max-h-[60vh] overflow-y-auto pr-2">
                 {recommendations.results.map((recItem) => {
                   const recItemTypeResolved =
                     recItem.media_type ||
@@ -323,18 +326,14 @@ export default function InteractiveFeatures({
                   return (
                     <div
                       key={recItem.id}
-                      // Copied classes from ActorFilmographyModal item for exact match
-                      className="overflow-hidden rounded-lg bg-card shadow hover:shadow-lg transition-all duration-200 transform hover:scale-105 border border-transparent hover:border-primary" //
+                      className="overflow-hidden rounded-lg bg-card shadow hover:shadow-lg transition-all duration-200 transform hover:scale-105 border border-transparent hover:border-primary"
                     >
                       <Link href={recHref} legacyBehavior>
                         <a
-                          className="block" //
+                          className="block"
                           onClick={() => setRecModalOpen(false)}
                         >
-                          {/* Copied classes from ActorFilmographyModal image container */}
                           <div className="relative aspect-[2/3] w-full bg-muted">
-                            {" "}
-                            {/* */}
                             <Image
                               src={
                                 recItem.poster_path
@@ -343,26 +342,17 @@ export default function InteractiveFeatures({
                               }
                               alt={`${recDisplayTitle} poster`}
                               fill
-                              className="object-cover" //
-                              unoptimized //
-                              loading="lazy" //
+                              className="object-cover"
+                              unoptimized
+                              loading="lazy"
                             />
                           </div>
-                          {/* Copied classes from ActorFilmographyModal text container */}
                           <div className="p-2 sm:p-3 text-center">
-                            {" "}
-                            {/* */}
-                            {/* Copied classes from ActorFilmographyModal title */}
                             <h3 className="text-xs sm:text-sm font-medium text-card-foreground truncate">
-                              {" "}
-                              {/* */}
                               {recDisplayTitle}
                             </h3>
                             {year && (
-                              // Copied classes from ActorFilmographyModal year
                               <p className="text-[10px] sm:text-xs text-muted-foreground">
-                                {" "}
-                                {/* */}
                                 {year}
                               </p>
                             )}
