@@ -44,16 +44,20 @@ const AboutPage = () => {
         <section className="space-y-4 text-base sm:text-lg leading-relaxed">
           <p>
             Welcome to Movies Hub! This platform is your comprehensive guide to
-            the world of cinema and television. We're dedicated to providing you
-            with the latest information on a vast array of movies and TV series,
-            including detailed insights, trailers, cast information, and where
-            you might be able to watch them.
+            the world of cinema and television, born from a passion for
+            storytelling and the magic of the screen. We're dedicated to
+            providing you with the latest information on a vast array of movies
+            and TV series, including detailed insights, trailers, cast
+            information, and where you might be able to watch them. Our aim is
+            to simplify your discovery process, making it easier than ever to
+            find content that resonates with you.
           </p>
           <p>
             Whether you're searching for the newest blockbuster, a critically
             acclaimed TV show, an indie gem, or just looking for a random
             suggestion for your next watch, Movies Hub aims to be your go-to
-            resource.
+            resource, helping you navigate the ever-expanding universe of
+            entertainment.
           </p>
         </section>
 
@@ -69,8 +73,8 @@ const AboutPage = () => {
             <li>
               Discover content through{" "}
               <strong className="text-foreground">advanced filters</strong>{" "}
-              (genre, rating, year) and categories (Popular, Top Rated,
-              Trending).
+              (genre, rating, year) and curated categories (Popular, Top Rated,
+              Trending), allowing for precise and enjoyable browsing.
             </li>
             <li>
               Get{" "}
@@ -82,7 +86,8 @@ const AboutPage = () => {
             <li>
               Create and manage your personal{" "}
               <strong className="text-foreground">Watchlist</strong> (requires
-              login).
+              login), ensuring you never lose track of titles you want to see or
+              have already enjoyed.
             </li>
             <li>View trailers, cast details, and recommendations.</li>
             <li>
@@ -105,10 +110,12 @@ const AboutPage = () => {
           </h2>
           <p>
             Our mission is to create an intuitive and enjoyable platform for all
-            film and television enthusiasts. We strive to keep the information
-            up-to-date and cover a wide range of content to cater to diverse
-            tastes and preferences. Movies Hub is continuously evolving, with
-            new features and improvements planned.
+            film and television enthusiasts, fostering a community around shared
+            cinematic experiences. We strive to keep the information up-to-date
+            and cover a wide range of content to cater to diverse tastes and
+            preferences, from mainstream hits to hidden treasures. Movies Hub is
+            continuously evolving, with new features and improvements planned to
+            enhance your journey through the world of entertainment.
           </p>
         </section>
 
@@ -117,9 +124,12 @@ const AboutPage = () => {
             Connect & Feedback
           </h2>
           <p>
-            This project was developed by Suhaib Gamal. Your support and
-            feedback are greatly appreciated! If you have any suggestions,
-            comments, or encounter any issues, please feel free to reach out.
+            Movies Hub is a passion project by me, Suhaib Gamal, Your support
+            and feedback mean a lot and are incredibly helpful as Movies Hub
+            continues to grow! If you have any cool ideas for new features,
+            thoughts on what's already here, or happen to spot any issues,
+            please don't hesitate to get in touch. I'm always excited to hear
+            from fellow movie and TV show enthusiasts.
           </p>
           <div className="flex flex-col sm:flex-row justify-center items-center gap-4 sm:gap-6 pt-2">
             <a
