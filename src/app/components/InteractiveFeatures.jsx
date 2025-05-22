@@ -66,7 +66,7 @@ export default function InteractiveFeatures({
           // If itemType is TV and you want to show TV credits for the actor,
           // you might need a different TMDB endpoint or an adjusted function.
           // For now, it will show movie roles regardless of current page type.
-          const filmographyData = await getActorMovieCredits(selectedActor.id);
+          const filmographyData = await getActorMovieCredits(selectedActor.id); //
           setActorMovies(filmographyData);
         } catch (err) {
           setActorMoviesError(err.message || "Failed to load filmography.");
@@ -120,10 +120,10 @@ export default function InteractiveFeatures({
     );
   }
 
-  const displayTitle = item.title || item.name;
+  const displayTitle = item.title || item.name; //
   const itemPagePath =
-    itemType === "TV" ? `/tv/${item.id}` : `/movie/${item.id}`;
-  const fullItemUrl = `https://movies.suhaeb.com${itemPagePath}`;
+    itemType === "TV" ? `/tv/${item.id}` : `/movie/${item.id}`; //
+  const fullItemUrl = `https://movies.suhaeb.com${itemPagePath}`; //
 
   return (
     <div className="space-y-6 sm:space-y-8">
@@ -270,7 +270,7 @@ export default function InteractiveFeatures({
             </button>
             <div className="aspect-video rounded-md overflow-hidden">
               <iframe
-                src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1&rel=0&modestbranding=1`}
+                src={`https://www.youtube.com/embed/$${trailerKey}?autoplay=1&rel=0&modestbranding=1`}
                 title={`${displayTitle} Trailer`}
                 className="w-full h-full"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
@@ -286,9 +286,9 @@ export default function InteractiveFeatures({
         recommendations.results &&
         recommendations.results.length > 0 && (
           <div
-            ref={recModalRef}
+            ref={recModalRef} //
             tabIndex={-1}
-            className="fixed inset-0 z-[80] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto outline-none"
+            className="fixed inset-0 z-[80] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto outline-none" //
             aria-modal="true"
             role="dialog"
             aria-labelledby="recommendations-modal-title"
@@ -313,40 +313,65 @@ export default function InteractiveFeatures({
                 {recommendations.results.map((recItem) => {
                   const recItemTypeResolved =
                     recItem.media_type ||
-                    (itemType === "MOVIE" ? "movie" : "tv");
-                  const recDisplayTitle = recItem.title || recItem.name;
+                    (itemType === "MOVIE" ? "movie" : "tv"); //
+                  const recDisplayTitle = recItem.title || recItem.name; //
                   const recHref =
-                    recItemTypeResolved === "tv"
+                    recItemTypeResolved === "tv" //
                       ? `/tv/${recItem.id}`
-                      : `/movie/${recItem.id}`;
+                      : `/movie/${recItem.id}`; //
+
+                  // Determine the release date property based on item type
+                  const dateString =
+                    recItemTypeResolved === "tv"
+                      ? recItem.first_air_date
+                      : recItem.release_date;
+                  const year = dateString
+                    ? new Date(dateString).getFullYear()
+                    : null;
+
                   return (
                     <div
                       key={recItem.id}
-                      className="overflow-hidden rounded-lg bg-card shadow hover:shadow-md transition-all duration-200 transform hover:scale-[1.03] border border-border/30 hover:border-primary/70 group"
+                      // OPTIONAL: For exact visual match with ActorFilmographyModal item container, use these classes:
+                      // className="overflow-hidden rounded-lg bg-card shadow hover:shadow-lg transition-all duration-200 transform hover:scale-105 border border-transparent hover:border-primary"
+                      className="overflow-hidden rounded-lg bg-card shadow hover:shadow-md transition-all duration-200 transform hover:scale-[1.03] border border-border/30 hover:border-primary/70 group" // Current classes for recommendation item
                     >
                       <Link href={recHref} legacyBehavior>
                         <a
                           className="block"
-                          onClick={() => setRecModalOpen(false)}
+                          onClick={() => setRecModalOpen(false)} //
                         >
                           <div className="relative aspect-[2/3] w-full bg-muted group-hover:opacity-90 transition-opacity">
                             <Image
                               src={
-                                recItem.poster_path
-                                  ? `https://image.tmdb.org/t/p/w300${recItem.poster_path}`
-                                  : "/images/default.webp"
+                                recItem.poster_path //
+                                  ? `https://image.tmdb.org/t/p/w300${recItem.poster_path}` //
+                                  : "/images/default.webp" //
                               }
                               alt={`${recDisplayTitle} poster`}
                               fill
-                              className="object-cover"
-                              unoptimized
-                              loading="lazy"
+                              className="object-cover" //
+                              unoptimized //
+                              loading="lazy" //
                             />
                           </div>
-                          <div className="p-1.5 sm:p-2 text-center">
+                          {/* Updated padding and added year display to match ActorFilmographyModal */}
+                          <div className="p-2 sm:p-3 text-center">
+                            {" "}
+                            {/* Padding like ActorFilmographyModal */}
                             <h3 className="text-xs sm:text-sm font-medium text-card-foreground truncate group-hover:text-primary transition-colors">
+                              {" "}
+                              {/* Title style */}
                               {recDisplayTitle}
                             </h3>
+                            {/* Added year display */}
+                            {year && (
+                              <p className="text-[10px] sm:text-xs text-muted-foreground">
+                                {" "}
+                                {/* Year style like ActorFilmographyModal */}
+                                {year}
+                              </p>
+                            )}
                           </div>
                         </a>
                       </Link>
