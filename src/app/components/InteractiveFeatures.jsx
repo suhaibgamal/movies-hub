@@ -6,8 +6,7 @@ import Link from "next/link";
 import { FaFacebookF, FaTwitter, FaWhatsapp, FaTimes } from "react-icons/fa";
 import WatchNowButton from "@/app/components/WatchNowButton";
 import Image from "next/image";
-import { getActorMovieCredits } from "@/lib/tmdb"; // This fetches movie credits
-// If you need TV credits for an actor, a similar function getActorTvCredits would be needed
+import { getActorMovieCredits } from "@/lib/tmdb";
 import dynamic from "next/dynamic";
 
 const ActorFilmographyModal = dynamic(() => import("./ActorFilmographyModal"), {
@@ -22,7 +21,7 @@ export default function InteractiveFeatures({
   itemType, // "MOVIE" or "TV"
   trailerKey,
   cast,
-  itemFound, // Replaces movieFound, indicates if the item is generally "found" or playable via WatchNowButton
+  itemFound,
   recommendations,
 }) {
   const [isTrailerModalOpen, setTrailerModalOpen] = useState(false);
@@ -34,9 +33,7 @@ export default function InteractiveFeatures({
   const [actorMoviesError, setActorMoviesError] = useState(null);
 
   const trailerModalRef = useRef(null);
-  const trailerPrevActiveElementRef = useRef(null);
-  const recModalRef = useRef(null); // For recommendations modal focus
-  const recPrevActiveElementRef = useRef(null);
+  const recModalRef = useRef(null);
 
   const openSharePopup = (url) => {
     const width = 600;
@@ -62,11 +59,7 @@ export default function InteractiveFeatures({
       const fetchActorFilmography = async () => {
         setActorMoviesLoading(true);
         try {
-          // Currently, getActorMovieCredits fetches movie credits.
-          // If itemType is TV and you want to show TV credits for the actor,
-          // you might need a different TMDB endpoint or an adjusted function.
-          // For now, it will show movie roles regardless of current page type.
-          const filmographyData = await getActorMovieCredits(selectedActor.id); //
+          const filmographyData = await getActorMovieCredits(selectedActor.id);
           setActorMovies(filmographyData);
         } catch (err) {
           setActorMoviesError(err.message || "Failed to load filmography.");
@@ -78,7 +71,6 @@ export default function InteractiveFeatures({
     }
   }, [selectedActor, isActorModalOpen]);
 
-  // Modal Focus Management & Escape Key for Trailer
   useEffect(() => {
     let prevActiveElement;
     if (isTrailerModalOpen && trailerModalRef.current) {
@@ -95,7 +87,6 @@ export default function InteractiveFeatures({
     }
   }, [isTrailerModalOpen]);
 
-  // Modal Focus Management & Escape Key for Recommendations
   useEffect(() => {
     let prevActiveElement;
     if (isRecModalOpen && recModalRef.current) {
@@ -120,15 +111,15 @@ export default function InteractiveFeatures({
     );
   }
 
-  const displayTitle = item.title || item.name; //
+  const displayTitle = item.title || item.name;
   const itemPagePath =
-    itemType === "TV" ? `/tv/${item.id}` : `/movie/${item.id}`; //
-  const fullItemUrl = `https://movies.suhaeb.com${itemPagePath}`; //
+    itemType === "TV" ? `/tv/${item.id}` : `/movie/${item.id}`;
+  const fullItemUrl = `https://movies.suhaeb.com${itemPagePath}`;
 
   return (
     <div className="space-y-6 sm:space-y-8">
       <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
-        {trailerKey && ( // Only show button if trailerKey exists
+        {trailerKey && (
           <button
             onClick={() => setTrailerModalOpen(true)}
             className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-full bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background focus:ring-blue-500 transition-all active:bg-blue-800 active:scale-95"
@@ -224,7 +215,8 @@ export default function InteractiveFeatures({
               Icon: FaWhatsapp,
               color: "bg-green-500",
               label: "WhatsApp",
-              url: `https://wa.me/?text=${encodeURIComponent(
+              url: `https://api.whatsapp.com/send?text=${encodeURIComponent(
+                // Corrected WhatsApp URL
                 `Check out ${displayTitle} on Movies Hub! ${fullItemUrl}`
               )}`,
             },
@@ -270,7 +262,7 @@ export default function InteractiveFeatures({
             </button>
             <div className="aspect-video rounded-md overflow-hidden">
               <iframe
-                src={`https://www.youtube.com/embed/$${trailerKey}?autoplay=1&rel=0&modestbranding=1`}
+                src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1&rel=0&modestbranding=1`} // Standard YouTube embed URL
                 title={`${displayTitle} Trailer`}
                 className="w-full h-full"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
@@ -286,9 +278,9 @@ export default function InteractiveFeatures({
         recommendations.results &&
         recommendations.results.length > 0 && (
           <div
-            ref={recModalRef} //
+            ref={recModalRef}
             tabIndex={-1}
-            className="fixed inset-0 z-[80] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto outline-none" //
+            className="fixed inset-0 z-[80] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto outline-none"
             aria-modal="true"
             role="dialog"
             aria-labelledby="recommendations-modal-title"
@@ -313,14 +305,13 @@ export default function InteractiveFeatures({
                 {recommendations.results.map((recItem) => {
                   const recItemTypeResolved =
                     recItem.media_type ||
-                    (itemType === "MOVIE" ? "movie" : "tv"); //
-                  const recDisplayTitle = recItem.title || recItem.name; //
+                    (itemType === "MOVIE" ? "movie" : "tv");
+                  const recDisplayTitle = recItem.title || recItem.name;
                   const recHref =
-                    recItemTypeResolved === "tv" //
+                    recItemTypeResolved === "tv"
                       ? `/tv/${recItem.id}`
-                      : `/movie/${recItem.id}`; //
+                      : `/movie/${recItem.id}`;
 
-                  // Determine the release date property based on item type
                   const dateString =
                     recItemTypeResolved === "tv"
                       ? recItem.first_air_date
@@ -332,21 +323,23 @@ export default function InteractiveFeatures({
                   return (
                     <div
                       key={recItem.id}
-                      // OPTIONAL: For exact visual match with ActorFilmographyModal item container, use these classes:
-                      // className="overflow-hidden rounded-lg bg-card shadow hover:shadow-lg transition-all duration-200 transform hover:scale-105 border border-transparent hover:border-primary"
-                      className="overflow-hidden rounded-lg bg-card shadow hover:shadow-md transition-all duration-200 transform hover:scale-[1.03] border border-border/30 hover:border-primary/70 group" // Current classes for recommendation item
+                      // Copied classes from ActorFilmographyModal item for exact match
+                      className="overflow-hidden rounded-lg bg-card shadow hover:shadow-lg transition-all duration-200 transform hover:scale-105 border border-transparent hover:border-primary" //
                     >
                       <Link href={recHref} legacyBehavior>
                         <a
-                          className="block"
-                          onClick={() => setRecModalOpen(false)} //
+                          className="block" //
+                          onClick={() => setRecModalOpen(false)}
                         >
-                          <div className="relative aspect-[2/3] w-full bg-muted group-hover:opacity-90 transition-opacity">
+                          {/* Copied classes from ActorFilmographyModal image container */}
+                          <div className="relative aspect-[2/3] w-full bg-muted">
+                            {" "}
+                            {/* */}
                             <Image
                               src={
-                                recItem.poster_path //
-                                  ? `https://image.tmdb.org/t/p/w300${recItem.poster_path}` //
-                                  : "/images/default.webp" //
+                                recItem.poster_path
+                                  ? `https://image.tmdb.org/t/p/w300${recItem.poster_path}`
+                                  : "/images/default.webp"
                               }
                               alt={`${recDisplayTitle} poster`}
                               fill
@@ -355,20 +348,21 @@ export default function InteractiveFeatures({
                               loading="lazy" //
                             />
                           </div>
-                          {/* Updated padding and added year display to match ActorFilmographyModal */}
+                          {/* Copied classes from ActorFilmographyModal text container */}
                           <div className="p-2 sm:p-3 text-center">
                             {" "}
-                            {/* Padding like ActorFilmographyModal */}
-                            <h3 className="text-xs sm:text-sm font-medium text-card-foreground truncate group-hover:text-primary transition-colors">
+                            {/* */}
+                            {/* Copied classes from ActorFilmographyModal title */}
+                            <h3 className="text-xs sm:text-sm font-medium text-card-foreground truncate">
                               {" "}
-                              {/* Title style */}
+                              {/* */}
                               {recDisplayTitle}
                             </h3>
-                            {/* Added year display */}
                             {year && (
+                              // Copied classes from ActorFilmographyModal year
                               <p className="text-[10px] sm:text-xs text-muted-foreground">
                                 {" "}
-                                {/* Year style like ActorFilmographyModal */}
+                                {/* */}
                                 {year}
                               </p>
                             )}
@@ -387,7 +381,7 @@ export default function InteractiveFeatures({
         isOpen={isActorModalOpen}
         onClose={() => setIsActorModalOpen(false)}
         actorName={selectedActor?.name}
-        movies={actorMovies} // This currently shows only movie credits
+        movies={actorMovies}
         isLoading={actorMoviesLoading}
         error={actorMoviesError}
       />
