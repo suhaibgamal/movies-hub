@@ -28,13 +28,14 @@ export default function InteractiveFeatures({
   const [isRecModalOpen, setRecModalOpen] = useState(false);
   const [selectedActor, setSelectedActor] = useState(null);
   const [isActorModalOpen, setIsActorModalOpen] = useState(false);
-  // MODIFIED: State to hold combined credits
   const [actorCredits, setActorCredits] = useState([]);
   const [actorCreditsLoading, setActorCreditsLoading] = useState(false);
   const [actorCreditsError, setActorCreditsError] = useState(null);
 
   const trailerModalRef = useRef(null);
   const recModalRef = useRef(null);
+  // MODIFIED: Added ref for the iframe
+  const iframeRef = useRef(null);
 
   const openSharePopup = (url) => {
     const width = 600;
@@ -51,7 +52,6 @@ export default function InteractiveFeatures({
   const handleCastMemberClick = useCallback((actor) => {
     setSelectedActor(actor);
     setIsActorModalOpen(true);
-    // MODIFIED: Clear combined credits
     setActorCredits([]);
     setActorCreditsError(null);
   }, []);
@@ -66,7 +66,6 @@ export default function InteractiveFeatures({
           );
           setActorCredits(filmographyData);
         } catch (err) {
-          // MODIFIED: Error state for combined credits
           setActorCreditsError(err.message || "Failed to load filmography.");
         } finally {
           setActorCreditsLoading(false);
@@ -76,13 +75,18 @@ export default function InteractiveFeatures({
     }
   }, [selectedActor, isActorModalOpen]);
 
-  // ... (useEffect hooks for modals remain the same)
-
+  // MODIFIED: useEffect for trailer modal to focus iframe
   useEffect(() => {
     let prevActiveElement;
     if (isTrailerModalOpen && trailerModalRef.current) {
       prevActiveElement = document.activeElement;
-      trailerModalRef.current.focus();
+      // Attempt to focus the iframe directly for immediate keyboard control
+      if (iframeRef.current) {
+        iframeRef.current.focus();
+      } else {
+        // Fallback to focusing the modal container if iframe isn't available yet
+        trailerModalRef.current.focus();
+      }
       const handleEsc = (event) => {
         if (event.key === "Escape") setTrailerModalOpen(false);
       };
@@ -92,7 +96,7 @@ export default function InteractiveFeatures({
         if (prevActiveElement instanceof HTMLElement) prevActiveElement.focus();
       };
     }
-  }, [isTrailerModalOpen]);
+  }, [isTrailerModalOpen, trailerKey]); // Added trailerKey dependency
 
   useEffect(() => {
     let prevActiveElement;
@@ -251,7 +255,7 @@ export default function InteractiveFeatures({
       {/* Trailer Modal */}
       {isTrailerModalOpen && trailerKey && (
         <div
-          ref={trailerModalRef}
+          ref={trailerModalRef} // Keep ref on modal for context, e.g., if iframe fails to render/focus
           tabIndex={-1}
           className="fixed inset-0 z-[80] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 outline-none"
           aria-modal="true"
@@ -272,7 +276,9 @@ export default function InteractiveFeatures({
               <FaTimes size={16} />
             </button>
             <div className="aspect-video rounded-md overflow-hidden">
+              {/* MODIFIED: Added ref to iframe and updated src URL */}
               <iframe
+                ref={iframeRef}
                 src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1&rel=0&modestbranding=1`}
                 title={`${displayTitle} Trailer`}
                 className="w-full h-full"
@@ -375,14 +381,13 @@ export default function InteractiveFeatures({
           </div>
         )}
 
-      {/* MODIFIED: Pass combined credits and related states to ActorFilmographyModal */}
       <ActorFilmographyModal
         isOpen={isActorModalOpen}
         onClose={() => setIsActorModalOpen(false)}
         actorName={selectedActor?.name}
-        credits={actorCredits} // Renamed from movies
-        isLoading={actorCreditsLoading} // Renamed from actorMoviesLoading
-        error={actorCreditsError} // Renamed from actorMoviesError
+        credits={actorCredits}
+        isLoading={actorCreditsLoading}
+        error={actorCreditsError}
       />
     </div>
   );
