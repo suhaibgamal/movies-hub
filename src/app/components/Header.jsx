@@ -1,11 +1,10 @@
-// c:\Users\Suhaib Gamal\Desktop\Programming\Front-End\NextJS\JavaScript\movies-hub\src\app\components\Header.jsx
 "use client";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import {
   AlertDialog,
   AlertDialogTrigger,
@@ -30,6 +29,8 @@ function Header() {
   const [isDark, setIsDark] = useState(true);
   const { data: session } = useSession();
   const router = useRouter();
+  const pathname = usePathname();
+  const isHomePage = pathname === "/";
 
   const toggleMenu = () => setIsOpen(!isOpen);
 
@@ -46,10 +47,9 @@ function Header() {
 
   const handleSignOut = async () => {
     await signOut({ callbackUrl: "/" });
-    if (isOpen) setIsOpen(false); // Close menu if open
+    if (isOpen) setIsOpen(false);
   };
 
-  // Initialize theme from localStorage or system preference on mount
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme");
     if (savedTheme) {
@@ -60,28 +60,27 @@ function Header() {
       }
       setIsDark(savedTheme === "dark");
     } else {
-      // No theme saved, use system preference and save it
       if (
         window.matchMedia &&
         window.matchMedia("(prefers-color-scheme: dark)").matches
       ) {
         document.documentElement.classList.add("dark");
         setIsDark(true);
-        localStorage.setItem("theme", "dark"); // Persist initial system preference
+        localStorage.setItem("theme", "dark");
       } else {
-        // System is light or no preference
         document.documentElement.classList.remove("dark");
         setIsDark(false);
-        localStorage.setItem("theme", "light"); // Persist initial system preference
+        localStorage.setItem("theme", "light");
       }
     }
   }, []);
 
   const handleHomeClick = (e) => {
-    // This function is now only used by the main "Movies Hub" logo link
     router.push("/");
-    if (isOpen) setIsOpen(false); // Close menu if open
+    if (isOpen) setIsOpen(false);
   };
+
+  const LogoTag = isHomePage ? "h1" : "div";
 
   const navLinkClasses =
     "text-card-foreground hover:text-primary focus:outline-none focus-visible:text-primary focus-visible:underline focus-visible:underline-offset-4 transition-colors py-2 lg:py-0";
@@ -95,10 +94,11 @@ function Header() {
           href="/"
           onClick={handleHomeClick}
           className="focus:outline-none group"
+          aria-label="Movies Hub Home"
         >
-          <h1 className="text-2xl font-extrabold bg-gradient-to-r from-primary via-purple-500 to-pink-500 bg-clip-text text-transparent group-focus-visible:ring-2 group-focus-visible:ring-primary group-focus-visible:ring-offset-2 group-focus-visible:ring-offset-background rounded-sm">
+          <LogoTag className="text-2xl font-extrabold bg-gradient-to-r from-primary via-purple-500 to-pink-500 bg-clip-text text-transparent group-focus-visible:ring-2 group-focus-visible:ring-primary group-focus-visible:ring-offset-2 group-focus-visible:ring-offset-background rounded-sm">
             Movies Hub
-          </h1>
+          </LogoTag>
         </Link>
 
         {/* Desktop Navigation */}
@@ -115,7 +115,6 @@ function Header() {
           <Link href="/about" className={navLinkClasses}>
             About
           </Link>
-
           {session ? (
             <div className="flex items-center space-x-3">
               <div className="flex items-center gap-2">
@@ -231,9 +230,7 @@ function Header() {
             >
               About
             </Link>
-
             <hr className="border-border/60 dark:border-border/30 my-2" />
-
             {session ? (
               <>
                 <div className="flex items-center gap-2 py-2">
@@ -241,7 +238,7 @@ function Header() {
                     unoptimized
                     src={session.user.image || "/images/user_profile.png"}
                     alt={session.user.name || "User"}
-                    className="w-8 h-8 rounded-full" // Removed focus/group styling
+                    className="w-8 h-8 rounded-full"
                     height={32}
                     width={32}
                     priority
@@ -271,7 +268,7 @@ function Header() {
                     <AlertDialogFooter>
                       <AlertDialogCancel>Cancel</AlertDialogCancel>
                       <AlertDialogAction
-                        onClick={handleSignOut} // handleSignOut already closes menu if open
+                        onClick={handleSignOut}
                         className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                       >
                         Sign Out
