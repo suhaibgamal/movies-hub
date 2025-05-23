@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
+import { FcGoogle } from "react-icons/fc";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -85,13 +86,14 @@ export default function LoginClient() {
             Login with Credentials
           </button>
         </form>
-        <div className="flex flex-col items-center gap-4">
+        <div className="w-full flex flex-col items-center gap-4">
           <button
             onClick={handleGoogleLogin}
-            className="px-6 py-2 md:px-8 md:py-3 lg:px-12 lg:py-4 text-white bg-gradient-to-r from-red-500 to-pink-500 rounded-lg focus:ring-4 focus:ring-red-500 focus:outline-none transition-all hover:from-red-400 hover:to-pink-400"
-            aria-label="Login wiht Google"
+            className="w-3/4 md:w-1/2 px-6 py-3 rounded-xl border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all flex items-center justify-center gap-3 shadow-sm"
+            aria-label="Sign in with Google"
           >
-            Login with Google
+            <FcGoogle className="h-5 w-5" />
+            <span>Sign in with Google</span>
           </button>
           <div className="flex items-center">
             <span className="text-foreground text-sm md:text-lg lg:text-xl p-4">
