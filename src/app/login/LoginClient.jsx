@@ -22,7 +22,7 @@ export default function LoginClient() {
     if (res.error) {
       setError("Invalid username or password.");
     } else {
-      router.push("/");
+      router.push(res.url || "/");
     }
   };
 
@@ -38,7 +38,7 @@ export default function LoginClient() {
         </h1>
         <form
           onSubmit={handleCredentialsLogin}
-          className="w-full flex flex-col items-center gap-4 mb-8"
+          className="w-full flex flex-col items-center gap-6 mb-8"
         >
           <div className="w-full flex flex-col items-center">
             <label
@@ -53,7 +53,7 @@ export default function LoginClient() {
               placeholder="Enter your username"
               value={form.username}
               onChange={(e) => setForm({ ...form, username: e.target.value })}
-              className="w-3/4 md:w-1/2 px-6 py-3 rounded-xl border bg-card text-card-foreground focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+              className="w-3/4 md:w-1/2 px-6 py-3 rounded-xl border bg-card text-card-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all shadow-sm"
             />
           </div>
           <div className="w-full flex flex-col items-center">
@@ -69,14 +69,14 @@ export default function LoginClient() {
               placeholder="Enter your password"
               value={form.password}
               onChange={(e) => setForm({ ...form, password: e.target.value })}
-              className="w-3/4 md:w-1/2 px-6 py-3 rounded-xl border bg-card text-card-foreground focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+              className="w-3/4 md:w-1/2 px-6 py-3 rounded-xl border bg-card text-card-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all shadow-sm"
             />
           </div>
-          {error && <div className="text-destructive">{error}</div>}
+          {error && <div className="text-destructive text-center">{error}</div>}
           <button
             type="submit"
             disabled={!form.username || !form.password}
-            className={`px-6 py-2 md:px-8 md:py-3 lg:px-12 lg:py-4 text-white bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg focus:ring-4 focus:ring-blue-500 focus:outline-none transition-all hover:from-blue-400 hover:to-purple-400 ${
+            className={`w-3/4 md:w-1/2 px-6 py-3 rounded-xl font-medium text-white bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background focus:ring-blue-500 shadow-md transition-all ${
               !form.username || !form.password
                 ? "cursor-not-allowed opacity-50"
                 : "cursor-pointer"
@@ -89,19 +89,20 @@ export default function LoginClient() {
         <div className="w-full flex flex-col items-center gap-4">
           <button
             onClick={handleGoogleLogin}
-            className="px-6 py-2 md:px-8 md:py-3 lg:px-12 lg:py-4 rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all flex items-center justify-center gap-3 shadow-sm"
+            className="w-3/4 md:w-1/2 px-6 py-3 rounded-xl font-medium border border-slate-300 bg-white text-slate-700 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white focus:ring-primary shadow-md transition-all flex items-center justify-center gap-3"
             aria-label="Sign in with Google"
           >
             <FcGoogle className="h-5 w-5" />
             <span>Sign in with Google</span>
           </button>
-          <div className="flex items-center">
+          <div className="flex items-center mt-4">
+            {" "}
             <span className="text-foreground text-sm md:text-lg lg:text-xl p-4">
               New?
             </span>
             <Link
               href="/register"
-              className="text-sm md:text-lg lg:text-xl font-semibold bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent py-4"
+              className="text-sm md:text-lg lg:text-xl font-semibold bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent py-4 hover:opacity-80 transition-opacity"
             >
               Register
             </Link>
