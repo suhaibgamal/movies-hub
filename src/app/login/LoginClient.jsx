@@ -89,7 +89,7 @@ export default function LoginClient() {
         <div className="w-full flex flex-col items-center gap-4">
           <button
             onClick={handleGoogleLogin}
-            className="w-3/4 md:w-1/2 px-6 py-3 rounded-xl border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all flex items-center justify-center gap-3 shadow-sm"
+            className="px-6 py-2 md:px-8 md:py-3 lg:px-12 lg:py-4 rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all flex items-center justify-center gap-3 shadow-sm"
             aria-label="Sign in with Google"
           >
             <FcGoogle className="h-5 w-5" />
