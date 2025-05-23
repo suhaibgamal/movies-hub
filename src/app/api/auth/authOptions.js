@@ -110,8 +110,5 @@ export const authOptions = {
         return false;
       }
     },
-    async redirect({ url, baseUrl }) {
-      return baseUrl;
-    },
   },
 };
