@@ -3,13 +3,14 @@
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { FcGoogle } from "react-icons/fc";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
 export default function LoginClient() {
   const [form, setForm] = useState({ username: "", password: "" });
   const [error, setError] = useState("");
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const handleCredentialsLogin = async (e) => {
     e.preventDefault();
@@ -22,7 +23,8 @@ export default function LoginClient() {
     if (res.error) {
       setError("Invalid username or password.");
     } else {
-      router.push(res.url || "/");
+      const callbackUrl = searchParams.get("callbackUrl");
+      router.push(`movies.suhaeb.com/${callbackUrl}` || res.url || "/");
     }
   };
 
