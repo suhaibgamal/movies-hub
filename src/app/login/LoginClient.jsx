@@ -1,33 +1,46 @@
+// src/app/login/LoginClient.jsx
 "use client";
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { FcGoogle } from "react-icons/fc";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation"; // Import useSearchParams
 import Link from "next/link";
 
 export default function LoginClient() {
   const [form, setForm] = useState({ username: "", password: "" });
   const [error, setError] = useState("");
   const router = useRouter();
+  const searchParams = useSearchParams(); // Get searchParams instance
 
   const handleCredentialsLogin = async (e) => {
     e.preventDefault();
     setError("");
+
+    // Get callbackUrl from URL query, default to "/" if not present
+    const callbackUrlFromQuery = searchParams.get("callbackUrl") || "/";
+
     const res = await signIn("credentials", {
-      redirect: false,
+      redirect: false, // Prevent NextAuth from automatically redirecting
       username: form.username,
       password: form.password,
+      callbackUrl: callbackUrlFromQuery, // Explicitly pass the resolved callbackUrl
     });
-    if (res.error) {
+
+    if (res && res.error) {
+      // Check if res exists before accessing res.error
       setError("Invalid username or password.");
+    } else if (res && res.url) {
+      router.push(res.url);
     } else {
-      router.push(res.url || "/");
+      // Fallback if res is somehow null/undefined or res.url is not set, though unlikely on success
+      router.push(callbackUrlFromQuery); // Or just router.push("/") as a last resort
     }
   };
 
   const handleGoogleLogin = async () => {
-    await signIn("google");
+    const callbackUrlFromQuery = searchParams.get("callbackUrl") || "/";
+    await signIn("google", { callbackUrl: callbackUrlFromQuery });
   };
 
   return (
