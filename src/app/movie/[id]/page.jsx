@@ -235,13 +235,6 @@ export default async function MoviePage({ params }) {
         />
         <div className="min-h-screen bg-background py-6 px-2 sm:px-4 lg:px-6">
           <div className="max-w-7xl mx-auto">
-            {/* --- Iframe Player Inserted Here --- */}
-            {isFound && (
-              <div className="mb-4 sm:mb-5 lg:mb-6">
-                <WatchPlayer movieId={id} />
-              </div>
-            )}
-            {/* ------------------------------------ */}
             <Suspense fallback={<SkeletonLoader />}>
               <article className="flex flex-col rounded-xl bg-card shadow-xl lg:flex-row min-w-0 overflow-hidden">
                 <div className="min-w-0 lg:w-[300px] xl:w-[380px] flex-shrink-0 bg-muted">
@@ -407,6 +400,7 @@ export default async function MoviePage({ params }) {
                   </div>
                 </div>
               </article>
+              <WatchPlayer movieId={id} />
             </Suspense>
           </div>
         </div>
