@@ -1,11 +1,8 @@
-// src/app/movie/[id]/page.jsx
-// No longer importing redirect for the entire page based on session
 import Image from "next/image";
 import { Suspense } from "react";
-import { notFound } from "next/navigation"; // Import notFound
+import { notFound } from "next/navigation";
 import {
   getCachedMovieData,
-  // getCachedTrailerData, // This data is part of getCachedMovieData now
   getCachedCredits,
   getCachedRecommendations,
   checkLinkStability,
@@ -14,6 +11,7 @@ import SkeletonLoader from "@/app/components/SkeletonLoader";
 import InteractiveFeatures from "@/app/components/InteractiveFeatures";
 import WatchlistButton from "@/app/components/WatchlistButton";
 import DetailItem from "@/app/components/DetailItem";
+import WatchPlayer from "@/app/components/WatchPlayer"; // NEW
 import {
   Star as StarIcon,
   Film,
@@ -24,7 +22,6 @@ import {
 
 const BASE_URL_FOR_STATIC_PARAMS = "https://api.themoviedb.org/3";
 
-// Function to generate ISO 8601 duration from minutes
 function formatDuration(minutes) {
   if (!minutes || typeof minutes !== "number" || minutes <= 0) {
     return null;
@@ -120,40 +117,35 @@ export async function generateStaticParams() {
 export const revalidate = 3600;
 
 export async function generateMetadata({ params }) {
-  const { id } = await params; // Await params before destructuring
+  const { id } = await params;
   const canonicalUrl = `https://movies.suhaeb.com/movie/${id}`;
   try {
     const movie = await getCachedMovieData(id);
     if (!movie || Object.keys(movie).length === 0) {
-      console.warn(`No movie data found for metadata, ID: ${id}`);
       throw new Error("Movie not found for metadata");
     }
     const title = `${movie.title || "Movie"} - Movies Hub`;
     const description =
       movie.overview ||
-      `Details about the movie ${
-        movie.title || ""
-      }, including cast, ratings, and trailers.`;
+      `Details about the movie ${movie.title}, including cast, ratings, and trailers.`;
     const imageUrl = movie.poster_path
       ? `https://image.tmdb.org/t/p/w780${movie.poster_path}`
       : "https://movies.suhaeb.com/images/default-og.png";
 
     return {
-      title: title,
-      description: description,
-      alternates: {
-        canonical: canonicalUrl,
-      },
+      title,
+      description,
+      alternates: { canonical: canonicalUrl },
       openGraph: {
-        title: title,
-        description: description,
+        title,
+        description,
         url: canonicalUrl,
         images: [
           {
             url: imageUrl,
             width: 780,
             height: 1170,
-            alt: `${movie.title || "Movie"} Poster`,
+            alt: `${movie.title} Poster`,
           },
         ],
         type: "video.movie",
@@ -161,8 +153,8 @@ export async function generateMetadata({ params }) {
       },
       twitter: {
         card: "summary_large_image",
-        title: title,
-        description: description,
+        title,
+        description,
         images: [imageUrl],
       },
     };
@@ -180,29 +172,14 @@ export async function generateMetadata({ params }) {
 }
 
 export default async function MoviePage({ params }) {
-  const { id } = await params; // Await params before destructuring
+  const { id } = await params;
   const canonicalUrl = `https://movies.suhaeb.com/movie/${id}`;
 
-  // Session is fetched but NOT used to gate the entire page content.
-  // It can be passed to components if they need to render differently for logged-in users.
-  // const session = await getServerSession(authOptions); // You can uncomment if needed by sub-components
-
-  if (!id || !/^\d+$/.test(id)) {
-    // For invalid ID format, trigger notFound.
-    // For a non-existent but validly formatted ID, getCachedMovieData will throw, caught below.
-    notFound();
-  }
+  if (!id || !/^\d+$/.test(id)) notFound();
 
   try {
     const movie = await getCachedMovieData(id);
-    if (!movie || Object.keys(movie).length === 0) {
-      // This case should ideally be caught by getCachedMovieData throwing an error if res.ok is false.
-      // If it returns an empty object for a 404, this check is also valid.
-      console.warn(
-        `No data returned for movie ID ${id}. It might not exist or TMDB fetch failed.`
-      );
-      notFound();
-    }
+    if (!movie || Object.keys(movie).length === 0) notFound();
 
     const [creditsData, isFound, recommendationsData] = await Promise.all([
       getCachedCredits(id, "movie"),
@@ -232,8 +209,7 @@ export default async function MoviePage({ params }) {
         : rating >= 5
         ? "bg-purple-600"
         : "bg-red-600";
-    const genres =
-      movie.genres?.map((genre) => genre.name).filter(Boolean) || [];
+    const genres = movie.genres?.map((g) => g.name).filter(Boolean) || [];
     const runtime = movie.runtime
       ? `${Math.floor(movie.runtime / 60)}h ${movie.runtime % 60}m`
       : null;
@@ -259,6 +235,13 @@ export default async function MoviePage({ params }) {
         />
         <div className="min-h-screen bg-background py-6 px-2 sm:px-4 lg:px-6">
           <div className="max-w-7xl mx-auto">
+            {/* --- Iframe Player Inserted Here --- */}
+            {isFound && (
+              <div className="mb-4 sm:mb-5 lg:mb-6">
+                <WatchPlayer id={id} />
+              </div>
+            )}
+            {/* ------------------------------------ */}
             <Suspense fallback={<SkeletonLoader />}>
               <article className="flex flex-col rounded-xl bg-card shadow-xl lg:flex-row min-w-0 overflow-hidden">
                 <div className="min-w-0 lg:w-[300px] xl:w-[380px] flex-shrink-0 bg-muted">
@@ -269,7 +252,7 @@ export default async function MoviePage({ params }) {
                         ? `https://image.tmdb.org/t/p/w780${movie.poster_path}`
                         : "/images/default.webp"
                     }
-                    alt={`${movie.title || "Movie"} poster`}
+                    alt={`${movie.title} poster`}
                     width={780}
                     height={1170}
                     className="aspect-[2/3] w-full object-cover lg:rounded-l-xl lg:rounded-r-none"
@@ -431,8 +414,6 @@ export default async function MoviePage({ params }) {
     );
   } catch (error) {
     console.error(`MoviePage Error (id: ${id}): ${error.message}`);
-    // If data fetching fails (e.g., movie not found in TMDB), trigger a 404.
-    // This is better than redirecting to a generic error page if the resource truly doesn't exist.
     notFound();
   }
 }
