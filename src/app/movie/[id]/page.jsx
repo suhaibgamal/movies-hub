@@ -238,7 +238,7 @@ export default async function MoviePage({ params }) {
             {/* --- Iframe Player Inserted Here --- */}
             {isFound && (
               <div className="mb-4 sm:mb-5 lg:mb-6">
-                <WatchPlayer id={id} />
+                <WatchPlayer movieId={id} />
               </div>
             )}
             {/* ------------------------------------ */}
