@@ -19,13 +19,4 @@ export default function WatchPlayer({ movieId }) {
       />
     );
   }
-
-  return (
-    <button
-      onClick={() => router.push(`https://vidsrc.xyz/embed/movie/${movieId}`)}
-      className="bg-primary hover:bg-primary/90 text-white py-2 px-4 rounded-xl shadow"
-    >
-      Watch Now
-    </button>
-  );
 }
