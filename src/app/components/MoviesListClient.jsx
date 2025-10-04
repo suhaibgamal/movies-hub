@@ -83,10 +83,24 @@ const YEAR_GROUPS = [
     icon: CalendarDays,
   },
   {
-    value: "1970-1999",
-    label: "1970-1999",
-    from: "1970-01-01",
+    value: "1990-1999",
+    label: "1990-1999",
+    from: "1990-01-01",
     to: "1999-12-31",
+    icon: CalendarDays,
+  },
+  {
+    value: "1980-1989",
+    label: "1980-1989",
+    from: "1980-01-01",
+    to: "1989-12-31",
+    icon: CalendarDays,
+  },
+  {
+    value: "1970-1979",
+    label: "1970-1979",
+    from: "1970-01-01",
+    to: "1979-12-31",
     icon: CalendarDays,
   },
 ];

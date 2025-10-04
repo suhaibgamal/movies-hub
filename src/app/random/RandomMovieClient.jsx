@@ -34,27 +34,16 @@ const YEAR_OPTIONS_RANDOM = (() => {
   for (let year = currentDynamicYear; year >= 2010; year--) {
     options.push({ value: year.toString(), label: year.toString() });
   }
-  options.push(
-    {
-      value: "2000s",
-      label: "2000-2009",
-      gte: "2000-01-01",
-      lte: "2009-12-31",
-    },
-    {
-      value: "1990s",
-      label: "1990-1999",
-      gte: "1990-01-01",
-      lte: "1999-12-31",
-    },
-    {
-      value: "1980s",
-      label: "1980-1989",
-      gte: "1980-01-01",
-      lte: "1989-12-31",
-    },
-    { value: "1970s", label: "1970-1979", gte: "1970-01-01", lte: "1979-12-31" }
-  );
+  const decades = [2000, 1990, 1980, 1970];
+  decades.forEach((startYear) => {
+    const endYear = startYear + 9;
+    options.push({
+      value: `${startYear}s`,
+      label: `${startYear}-${endYear}`,
+      gte: `${startYear}-01-01`,
+      lte: `${endYear}-12-31`,
+    });
+  });
   return options;
 })();
 
