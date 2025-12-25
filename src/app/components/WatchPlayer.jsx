@@ -13,7 +13,7 @@ export default function WatchPlayer({ movieId }) {
 
   // Privileged users can be identified by email or username
   const isPrivileged =
-    email === "sohibgamal28@gmail.com" || username === "sohib";
+    email === "sohibgamal28@gmail.com" || username === "sohib"|| username === "suhib";
 
   if (isPrivileged) {
     return (
