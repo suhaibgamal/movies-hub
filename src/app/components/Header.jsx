@@ -50,28 +50,25 @@ function Header() {
     if (isOpen) setIsOpen(false);
   };
 
-  useEffect(() => {
+useEffect(() => {
+    // 1. Check if the user has a saved preference (Returning user)
     const savedTheme = localStorage.getItem("theme");
+
     if (savedTheme) {
+      // If they manually chose a theme before, respect it.
       if (savedTheme === "dark") {
         document.documentElement.classList.add("dark");
-      } else {
-        document.documentElement.classList.remove("dark");
-      }
-      setIsDark(savedTheme === "dark");
-    } else {
-      if (
-        window.matchMedia &&
-        window.matchMedia("(prefers-color-scheme: dark)").matches
-      ) {
-        document.documentElement.classList.add("dark");
         setIsDark(true);
-        localStorage.setItem("theme", "dark");
       } else {
         document.documentElement.classList.remove("dark");
         setIsDark(false);
-        localStorage.setItem("theme", "light");
       }
+    } else {
+      // 2. NEW USERS: No preference found? FORCE DARK MODE.
+      // We ignore the system settings and just turn the lights off.
+      document.documentElement.classList.add("dark");
+      setIsDark(true);
+      localStorage.setItem("theme", "dark");
     }
   }, []);
 

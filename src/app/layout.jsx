@@ -74,7 +74,7 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
+    <html lang="en" className="dark">
       <head>
         {/* These hints are excellent, keep them */}
         <link rel="preconnect" href="https://api.themoviedb.org" />
