@@ -1,7 +1,7 @@
 // src/app/page.jsx
 import { Suspense } from "react";
 import Link from "next/link";
-import MediaRow from "@/app/components/MediaRow"; // Ensure this path is correct
+import MediaRow from "@/app/components/MediaRow";
 import {
   TrendingUp,
   ThumbsUp,
@@ -16,10 +16,8 @@ import {
   getTopRatedMoviesForHome,
   getTopRatedTvShowsForHome,
   getUpcomingMoviesForHome,
-} from "@/lib/tmdb"; // Ensure this path is correct
+} from "@/lib/tmdb";
 
-// These should align with the keys in CATEGORY_OPTIONS in MoviesListClient.jsx
-// and the 'value' property of those options.
 const HOME_PAGE_CATEGORY_SLUGS = {
   POPULAR: "popular",
   TOP_RATED: "top_rated",
@@ -27,30 +25,33 @@ const HOME_PAGE_CATEGORY_SLUGS = {
   TRENDING_WEEK: "trending_week",
 };
 
-// Defined user-selectable item types, must match ITEM_TYPES in MoviesListClient
 const ITEM_TYPES_ENUM = {
   MOVIE: "MOVIE",
   TV: "TV",
 };
 
 export const metadata = {
-  title: "Movies Hub - Discover Movies & TV Shows",
+  // 1. SEO FIX: Use "absolute" to fully control the homepage title.
+  // This puts "Suhaeb" front and center in search results.
+  title: {
+    absolute: "Suhaeb's Movies Hub | Discover Trending Movies & TV",
+  },
   description:
-    "Explore a vast collection of movies and TV shows. Get details, watch trailers, manage your watchlist, read reviews, rate favorites, and easily discover your next favorite on Movies Hub today.",
+    "Explore Suhaeb Gamal's personal collection of movies and TV shows. Get details, watch trailers, and discover your next favorite film on Movies Hub.",
   alternates: {
     canonical: "https://movies.suhaeb.com/",
   },
   openGraph: {
-    title: "Movies Hub - Discover Movies & TV Shows",
+    title: "Suhaeb's Movies Hub",
     description:
-      "Your ultimate destination for movie and TV show discovery, watchlists, and recommendations.",
+      "Your ultimate destination for movie and TV show discovery, built by Suhaeb Gamal.",
     url: "https://movies.suhaeb.com/",
     images: [
       {
         url: "https://movies.suhaeb.com/images/default-og.png",
         width: 1200,
         height: 630,
-        alt: "Movies Hub - Discover Movies & TV Shows",
+        alt: "Suhaeb's Movies Hub Interface",
       },
     ],
     siteName: "Movies Hub",
@@ -58,8 +59,8 @@ export const metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Movies Hub - Discover Movies & TV Shows",
-    description: "Your ultimate destination for movie and TV show discovery.",
+    title: "Suhaeb's Movies Hub",
+    description: "Discover movies and TV shows on Suhaeb's personal project.",
     images: ["https://movies.suhaeb.com/images/default-og.png"],
   },
 };
@@ -75,7 +76,7 @@ export default async function HomePage() {
 
   try {
     [
-      trendingItemsData, // Fetch trending first as it might be a good hero candidate
+      trendingItemsData,
       popularMoviesData,
       upcomingMoviesData,
       topRatedMoviesData,
@@ -108,7 +109,6 @@ export default async function HomePage() {
       }),
     ]);
   } catch (error) {
-    // This catch is less likely to be hit due to individual catches, but good as a fallback.
     console.error(
       "HomePage: Error fetching one or more page sections:",
       error.message
@@ -117,20 +117,27 @@ export default async function HomePage() {
       "Could not load all content sections. Some data may be missing.";
   }
 
-  // Example: const heroItem = trendingItemsData[0] || popularMoviesData[0];
-  // You would then pass heroItem to a <HeroSection item={heroItem} /> component.
-
   return (
     <div className="container mx-auto py-6 sm:py-8 px-2 sm:px-4 md:px-0 space-y-8 md:space-y-10">
-      {" "}
-      {/* Added md:px-0 to remove padding on md+ for full-width feel of rows within container */}
-      {/* Placeholder for a Hero Banner component */}
-      {/* {heroItem && <HeroSection item={heroItem} />} */}
+      
+      {/* 2. SEO FIX: Visible Header Section */}
+      {/* This puts the keywords "Suhaeb" and "Movies Hub" directly in the DOM for Google to read. */}
+      <section className="text-center space-y-4 py-6 md:py-10">
+        <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-foreground">
+          Suhaeb&apos;s Movies Hub
+        </h1>
+        <p className="text-muted-foreground text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">
+          The ultimate personal database for trending movies and TV shows. 
+          Designed and built by <span className="text-foreground font-semibold">Suhaeb Gamal</span> using Next.js.
+        </p>
+      </section>
+
       {fetchError && (
         <div className="text-center py-4 text-destructive bg-destructive/10 rounded-md">
           <p>{fetchError}</p>
         </div>
       )}
+      
       <Suspense
         fallback={
           <div className="flex flex-col items-center justify-center py-20 space-y-3 min-h-[300px]">
@@ -151,7 +158,7 @@ export default async function HomePage() {
             }
             items={trendingItemsData}
             viewAllLink={`/browse?listCategory=${HOME_PAGE_CATEGORY_SLUGS.TRENDING_WEEK}`}
-            isPriorityRow={true} // Mark as high priority for image loading
+            isPriorityRow={true}
           />
         )}
 
@@ -222,7 +229,7 @@ export default async function HomePage() {
       </Suspense>
       <div className="mt-10 mb-4 text-center">
         <Link
-          href="/browse" // Generic link to browse, will use default category (Popular Movies)
+          href="/browse"
           className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-primary text-primary-foreground font-semibold rounded-lg shadow-md hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background active:bg-primary/80 active:scale-95 transition-all text-sm sm:text-base"
         >
           <LayoutGrid size={18} />
