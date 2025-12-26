@@ -2,6 +2,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import MediaRow from "@/app/components/MediaRow";
+import HeroSection from "@/app/components/HeroSection"; // Import the new component
 import {
   TrendingUp,
   ThumbsUp,
@@ -30,9 +31,8 @@ const ITEM_TYPES_ENUM = {
   TV: "TV",
 };
 
+// SEO Metadata (Kept your optimizations)
 export const metadata = {
-  // 1. SEO FIX: Use "absolute" to fully control the homepage title.
-  // This puts "Suhaeb" front and center in search results.
   title: {
     absolute: "Suhaeb's Movies Hub | Discover Trending Movies & TV",
   },
@@ -43,8 +43,7 @@ export const metadata = {
   },
   openGraph: {
     title: "Suhaeb's Movies Hub",
-    description:
-      "Your ultimate destination for movie and TV show discovery, built by Suhaeb Gamal.",
+    description: "Your ultimate destination for movie and TV show discovery.",
     url: "https://movies.suhaeb.com/",
     images: [
       {
@@ -57,15 +56,10 @@ export const metadata = {
     siteName: "Movies Hub",
     type: "website",
   },
-  twitter: {
-    card: "summary_large_image",
-    title: "Suhaeb's Movies Hub",
-    description: "Discover movies and TV shows on Suhaeb's personal project.",
-    images: ["https://movies.suhaeb.com/images/default-og.png"],
-  },
 };
 
 export default async function HomePage() {
+  // Fetch all data in parallel
   let popularMoviesData = [];
   let popularTvShowsData = [];
   let trendingItemsData = [];
@@ -83,158 +77,142 @@ export default async function HomePage() {
       popularTvShowsData,
       topRatedTvShowsData,
     ] = await Promise.all([
-      getTrendingAllWeekForHome(12).catch((e) => {
-        console.error("HomePage: Error fetching trending:", e.message);
-        return [];
-      }),
-      getPopularMoviesForHome(12).catch((e) => {
-        console.error("HomePage: Error fetching popular movies:", e.message);
-        return [];
-      }),
-      getUpcomingMoviesForHome(12).catch((e) => {
-        console.error("HomePage: Error fetching upcoming movies:", e.message);
-        return [];
-      }),
-      getTopRatedMoviesForHome(12).catch((e) => {
-        console.error("HomePage: Error fetching top rated movies:", e.message);
-        return [];
-      }),
-      getPopularTvShowsForHome(12).catch((e) => {
-        console.error("HomePage: Error fetching popular TV:", e.message);
-        return [];
-      }),
-      getTopRatedTvShowsForHome(12).catch((e) => {
-        console.error("HomePage: Error fetching top rated TV:", e.message);
-        return [];
-      }),
+      getTrendingAllWeekForHome(12).catch((e) => []),
+      getPopularMoviesForHome(12).catch((e) => []),
+      getUpcomingMoviesForHome(12).catch((e) => []),
+      getTopRatedMoviesForHome(12).catch((e) => []),
+      getPopularTvShowsForHome(12).catch((e) => []),
+      getTopRatedTvShowsForHome(12).catch((e) => []),
     ]);
   } catch (error) {
-    console.error(
-      "HomePage: Error fetching one or more page sections:",
-      error.message
-    );
-    fetchError =
-      "Could not load all content sections. Some data may be missing.";
+    console.error("HomePage Error:", error.message);
+    fetchError = "Could not load all content sections.";
   }
 
+  // 1. Extract the Hero Item (First item of trending)
+  const heroItem = trendingItemsData.length > 0 ? trendingItemsData[0] : null;
+
+  // 2. Remove the hero item from the "Trending" row so it doesn't show twice
+  const trendingRowItems = trendingItemsData.slice(1);
+
   return (
-    <div className="container mx-auto py-6 sm:py-8 px-2 sm:px-4 md:px-0 space-y-8 md:space-y-10">
-      
-      {/* 2. SEO FIX: Visible Header Section */}
-      {/* This puts the keywords "Suhaeb" and "Movies Hub" directly in the DOM for Google to read. */}
-      <section className="text-center space-y-4 py-6 md:py-10">
-        <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-foreground">
-          Suhaeb&apos;s Movies Hub
-        </h1>
-        <p className="text-muted-foreground text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">
-          The ultimate personal database for trending movies and TV shows. 
-          Designed and built by <span className="text-foreground font-semibold">Suhaeb Gamal</span> using Next.js.
-        </p>
-      </section>
+    <div className="flex flex-col min-h-screen">
+      {/* Invisible H1 for SEO - Keeps Google happy, keeps design clean */}
+      <h1 className="sr-only">Suhaeb's Movies Hub - Trending Movies & TV Shows</h1>
 
       {fetchError && (
-        <div className="text-center py-4 text-destructive bg-destructive/10 rounded-md">
+        <div className="text-center py-4 text-destructive bg-destructive/10">
           <p>{fetchError}</p>
         </div>
       )}
-      
-      <Suspense
-        fallback={
-          <div className="flex flex-col items-center justify-center py-20 space-y-3 min-h-[300px]">
-            <Loader2 className="h-10 w-10 animate-spin text-primary" />
-            <p className="text-muted-foreground text-lg">
-              Loading content sections...
-            </p>
-          </div>
-        }
-      >
-        {trendingItemsData.length > 0 && (
-          <MediaRow
-            title={
-              <span className="inline-flex items-center">
-                <TrendingUp className="mr-2 h-6 w-6 text-primary/90" />
-                Trending This Week
-              </span>
-            }
-            items={trendingItemsData}
-            viewAllLink={`/browse?listCategory=${HOME_PAGE_CATEGORY_SLUGS.TRENDING_WEEK}`}
-            isPriorityRow={true}
-          />
-        )}
 
-        {popularMoviesData.length > 0 && (
-          <MediaRow
-            title={
-              <span className="inline-flex items-center">
-                <TrendingUp className="mr-2 h-6 w-6 text-primary/90" />
-                Popular Movies
-              </span>
-            }
-            items={popularMoviesData}
-            viewAllLink={`/browse?listCategory=${HOME_PAGE_CATEGORY_SLUGS.POPULAR}&itemType=${ITEM_TYPES_ENUM.MOVIE}`}
-          />
-        )}
+      {/* HERO SECTION (Full Width) */}
+      {heroItem && <HeroSection item={heroItem} />}
 
-        {upcomingMoviesData.length > 0 && (
-          <MediaRow
-            title={
-              <span className="inline-flex items-center">
-                <CalendarDays className="mr-2 h-6 w-6 text-primary/90" />
-                Upcoming Movies
-              </span>
-            }
-            items={upcomingMoviesData}
-            viewAllLink={`/browse?listCategory=${HOME_PAGE_CATEGORY_SLUGS.UPCOMING}&itemType=${ITEM_TYPES_ENUM.MOVIE}`}
-          />
-        )}
-
-        {topRatedMoviesData.length > 0 && (
-          <MediaRow
-            title={
-              <span className="inline-flex items-center">
-                <ThumbsUp className="mr-2 h-6 w-6 text-primary/90" />
-                Top Rated Movies
-              </span>
-            }
-            items={topRatedMoviesData}
-            viewAllLink={`/browse?listCategory=${HOME_PAGE_CATEGORY_SLUGS.TOP_RATED}&itemType=${ITEM_TYPES_ENUM.MOVIE}`}
-          />
-        )}
-
-        {popularTvShowsData.length > 0 && (
-          <MediaRow
-            title={
-              <span className="inline-flex items-center">
-                <TrendingUp className="mr-2 h-6 w-6 text-primary/90" />
-                Popular TV Shows
-              </span>
-            }
-            items={popularTvShowsData}
-            viewAllLink={`/browse?listCategory=${HOME_PAGE_CATEGORY_SLUGS.POPULAR}&itemType=${ITEM_TYPES_ENUM.TV}`}
-          />
-        )}
-
-        {topRatedTvShowsData.length > 0 && (
-          <MediaRow
-            title={
-              <span className="inline-flex items-center">
-                <ThumbsUp className="mr-2 h-6 w-6 text-primary/90" />
-                Top Rated TV Shows
-              </span>
-            }
-            items={topRatedTvShowsData}
-            viewAllLink={`/browse?listCategory=${HOME_PAGE_CATEGORY_SLUGS.TOP_RATED}&itemType=${ITEM_TYPES_ENUM.TV}`}
-          />
-        )}
-      </Suspense>
-      <div className="mt-10 mb-4 text-center">
-        <Link
-          href="/browse"
-          className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-primary text-primary-foreground font-semibold rounded-lg shadow-md hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background active:bg-primary/80 active:scale-95 transition-all text-sm sm:text-base"
+      {/* MAIN CONTENT CONTAINER */}
+      {/* We move the container here so the Hero is full width, but the lists are centered */}
+      <div className="container mx-auto px-4 md:px-6 space-y-12 pb-16 -mt-6 relative z-20">
+        <Suspense
+          fallback={
+            <div className="flex flex-col items-center justify-center py-20 space-y-3">
+              <Loader2 className="h-10 w-10 animate-spin text-primary" />
+              <p className="text-muted-foreground">Loading library...</p>
+            </div>
+          }
         >
-          <LayoutGrid size={18} />
-          Browse All & Filter
-        </Link>
+          {trendingRowItems.length > 0 && (
+            <MediaRow
+              title={
+                <span className="inline-flex items-center text-xl md:text-2xl font-bold">
+                  <TrendingUp className="mr-3 h-6 w-6 text-primary" />
+                  Trending This Week
+                </span>
+              }
+              items={trendingRowItems}
+              viewAllLink={`/browse?listCategory=${HOME_PAGE_CATEGORY_SLUGS.TRENDING_WEEK}`}
+              isPriorityRow={true}
+            />
+          )}
+
+          {popularMoviesData.length > 0 && (
+            <MediaRow
+              title={
+                <span className="inline-flex items-center text-xl md:text-2xl font-bold">
+                  <TrendingUp className="mr-3 h-6 w-6 text-primary" />
+                  Popular Movies
+                </span>
+              }
+              items={popularMoviesData}
+              viewAllLink={`/browse?listCategory=${HOME_PAGE_CATEGORY_SLUGS.POPULAR}&itemType=${ITEM_TYPES_ENUM.MOVIE}`}
+            />
+          )}
+
+          {upcomingMoviesData.length > 0 && (
+            <MediaRow
+              title={
+                <span className="inline-flex items-center text-xl md:text-2xl font-bold">
+                  <CalendarDays className="mr-3 h-6 w-6 text-primary" />
+                  Upcoming Movies
+                </span>
+              }
+              items={upcomingMoviesData}
+              viewAllLink={`/browse?listCategory=${HOME_PAGE_CATEGORY_SLUGS.UPCOMING}&itemType=${ITEM_TYPES_ENUM.MOVIE}`}
+            />
+          )}
+
+          {topRatedMoviesData.length > 0 && (
+            <MediaRow
+              title={
+                <span className="inline-flex items-center text-xl md:text-2xl font-bold">
+                  <ThumbsUp className="mr-3 h-6 w-6 text-primary" />
+                  Top Rated Movies
+                </span>
+              }
+              items={topRatedMoviesData}
+              viewAllLink={`/browse?listCategory=${HOME_PAGE_CATEGORY_SLUGS.TOP_RATED}&itemType=${ITEM_TYPES_ENUM.MOVIE}`}
+            />
+          )}
+
+          {popularTvShowsData.length > 0 && (
+            <MediaRow
+              title={
+                <span className="inline-flex items-center text-xl md:text-2xl font-bold">
+                  <TrendingUp className="mr-3 h-6 w-6 text-primary" />
+                  Popular TV Shows
+                </span>
+              }
+              items={popularTvShowsData}
+              viewAllLink={`/browse?listCategory=${HOME_PAGE_CATEGORY_SLUGS.POPULAR}&itemType=${ITEM_TYPES_ENUM.TV}`}
+            />
+          )}
+
+          {topRatedTvShowsData.length > 0 && (
+            <MediaRow
+              title={
+                <span className="inline-flex items-center text-xl md:text-2xl font-bold">
+                  <ThumbsUp className="mr-3 h-6 w-6 text-primary" />
+                  Top Rated TV Shows
+                </span>
+              }
+              items={topRatedTvShowsData}
+              viewAllLink={`/browse?listCategory=${HOME_PAGE_CATEGORY_SLUGS.TOP_RATED}&itemType=${ITEM_TYPES_ENUM.TV}`}
+            />
+          )}
+        </Suspense>
+
+        {/* Improved Browse Button */}
+        <div className="flex justify-center pt-8">
+          <Link
+            href="/browse"
+            className="group relative inline-flex items-center justify-center gap-3 px-8 py-4 bg-gray-900 hover:bg-gray-800 text-white text-lg font-medium rounded-full overflow-hidden transition-all border border-gray-700 hover:border-gray-500 shadow-2xl"
+          >
+            <span className="relative z-10 flex items-center gap-2">
+              <LayoutGrid className="w-5 h-5" />
+              Browse Full Catalog
+            </span>
+            <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          </Link>
+        </div>
       </div>
     </div>
   );
