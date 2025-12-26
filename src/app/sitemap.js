@@ -1,68 +1,39 @@
 // src/app/sitemap.js
-import // We'll use specific functions for broader ID fetching for the sitemap
-// If these don't exist, we'll define simplified versions below
-// or adapt your existing homepage functions.
-"@/lib/tmdb";
 
 const BASE_URL = "https://movies.suhaeb.com";
-const API_KEY = process.env.NEXT_PUBLIC_TMDB_KEY; // Ensure this is the correct key for these calls
+// Use the server-side variable if available, otherwise fallback to public.
+// Ideally, use a secret key for server-side operations, but this works for now.
+const API_KEY = process.env.NEXT_PUBLIC_TMDB_KEY;
 
-// --- Helper Functions to Fetch IDs for Sitemap ---
-// These functions aim to get a broader set of IDs than just for the homepage.
-// Adjust `pageLimit` based on TMDB API courtesy and build time tolerance.
-// Consider caching these results if build times become too long.
-
-async function getAllDiscoverMovieIds(pageLimit = 10) {
-  // Increased page limit for sitemap
-  let movieIds = new Set(); // Use a Set to automatically handle duplicates
-  try {
-    for (let page = 1; page <= pageLimit; page++) {
-      // Fetching popular movies is a good proxy for general discoverable movies
-      const res = await fetch(
-        `https://api.themoviedb.org/3/movie/popular?api_key=${API_KEY}&language=en-US&page=${page}`
-      );
-      if (res.ok) {
-        const data = await res.json();
-        if (data.results) {
-          data.results.forEach((movie) => movieIds.add(movie.id.toString()));
-        }
-      } else {
-        console.warn(
-          `Sitemap: Failed to fetch popular movies page ${page} for sitemap: ${res.status}`
-        );
-        break; // Stop if one page fails
-      }
-    }
-  } catch (error) {
-    console.error("Sitemap: Error fetching movie IDs:", error.message);
+async function getPopularMedia(type, pageLimit = 20) {
+  // 'type' should be 'movie' or 'tv'
+  const ids = new Set();
+  
+  // Create an array of promises to fetch all pages at the same time
+  const promises = [];
+  for (let page = 1; page <= pageLimit; page++) {
+    promises.push(
+      fetch(
+        `https://api.themoviedb.org/3/${type}/popular?api_key=${API_KEY}&language=en-US&page=${page}`,
+        { next: { revalidate: 3600 } } // Cache this for 1 hour so we don't spam TMDB on every request
+      ).then((res) => {
+        if (!res.ok) return null;
+        return res.json();
+      })
+    );
   }
-  return Array.from(movieIds).map((id) => ({ id })); // Return array of objects
-}
 
-async function getAllDiscoverTvShowIds(pageLimit = 10) {
-  // Increased page limit
-  let tvShowIds = new Set();
-  try {
-    for (let page = 1; page <= pageLimit; page++) {
-      const res = await fetch(
-        `https://api.themoviedb.org/3/tv/popular?api_key=${API_KEY}&language=en-US&page=${page}`
-      );
-      if (res.ok) {
-        const data = await res.json();
-        if (data.results) {
-          data.results.forEach((tv) => tvShowIds.add(tv.id.toString()));
-        }
-      } else {
-        console.warn(
-          `Sitemap: Failed to fetch popular TV shows page ${page} for sitemap: ${res.status}`
-        );
-        break;
-      }
+  // Wait for all requests to finish
+  const results = await Promise.all(promises);
+
+  // Process results
+  results.forEach((data) => {
+    if (data && data.results) {
+      data.results.forEach((item) => ids.add(item.id.toString()));
     }
-  } catch (error) {
-    console.error("Sitemap: Error fetching TV show IDs:", error.message);
-  }
-  return Array.from(tvShowIds).map((id) => ({ id }));
+  });
+
+  return Array.from(ids).map((id) => ({ id }));
 }
 
 export default async function sitemap() {
@@ -71,7 +42,7 @@ export default async function sitemap() {
   // 1. Static Pages
   const staticPaths = [
     {
-      url: `${BASE_URL}/`,
+      url: `${BASE_URL}`,
       lastModified: currentDate,
       changeFrequency: "daily",
       priority: 1.0,
@@ -83,40 +54,36 @@ export default async function sitemap() {
       priority: 0.8,
     },
     {
-      url: `${BASE_URL}/random`,
-      lastModified: currentDate,
-      changeFrequency: "weekly",
-      priority: 0.7,
-    },
-    {
       url: `${BASE_URL}/about`,
-      lastModified: currentDate, // Assuming about page content doesn't change often
+      lastModified: currentDate,
       changeFrequency: "monthly",
       priority: 0.5,
     },
-    // login, register, and watchlist (noindexed) are typically excluded
   ];
 
-  // 2. Movie Detail Pages
-  // We use the helper function to get a broader list of movie IDs
-  const movieEntries = await getAllDiscoverMovieIds().then((movies) =>
-    movies.map((movie) => ({
-      url: `${BASE_URL}/movie/${movie.id}`,
-      lastModified: currentDate, // Ideally, use actual last modification date if available
-      changeFrequency: "weekly",
-      priority: 0.9,
-    }))
-  );
+  // 2. Fetch Dynamic Data (Parallel)
+  // We bump pageLimit to 20 (approx 400 movies + 400 TV shows)
+  // You can increase this, but be careful of TMDB API rate limits.
+  const [movieIds, tvIds] = await Promise.all([
+    getPopularMedia("movie", 20),
+    getPopularMedia("tv", 20),
+  ]);
 
-  // 3. TV Show Detail Pages
-  const tvShowEntries = await getAllDiscoverTvShowIds().then((tvShows) =>
-    tvShows.map((tv) => ({
-      url: `${BASE_URL}/tv/${tv.id}`,
-      lastModified: currentDate,
-      changeFrequency: "weekly",
-      priority: 0.9,
-    }))
-  );
+  const movieEntries = movieIds.map((movie) => ({
+    url: `${BASE_URL}/movie/${movie.id}`,
+    lastModified: currentDate,
+    changeFrequency: "weekly",
+    priority: 0.9,
+  }));
+
+  const tvShowEntries = tvIds.map((tv) => ({
+    url: `${BASE_URL}/tv/${tv.id}`,
+    lastModified: currentDate,
+    changeFrequency: "weekly",
+    priority: 0.9,
+  }));
+
+  console.log(`Sitemap generated with ${movieEntries.length} movies and ${tvShowEntries.length} TV shows.`);
 
   return [...staticPaths, ...movieEntries, ...tvShowEntries];
 }
