@@ -2,7 +2,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import MediaRow from "@/app/components/MediaRow";
-import HeroSection from "@/app/components/HeroSection"; // Import the new component
+import HeroSection from "@/app/components/HeroSection";
 import {
   TrendingUp,
   ThumbsUp,
@@ -31,7 +31,6 @@ const ITEM_TYPES_ENUM = {
   TV: "TV",
 };
 
-// SEO Metadata (Kept your optimizations)
 export const metadata = {
   title: {
     absolute: "Suhaeb's Movies Hub | Discover Trending Movies & TV",
@@ -59,7 +58,6 @@ export const metadata = {
 };
 
 export default async function HomePage() {
-  // Fetch all data in parallel
   let popularMoviesData = [];
   let popularTvShowsData = [];
   let trendingItemsData = [];
@@ -89,15 +87,21 @@ export default async function HomePage() {
     fetchError = "Could not load all content sections.";
   }
 
-  // 1. Extract the Hero Item (First item of trending)
-  const heroItem = trendingItemsData.length > 0 ? trendingItemsData[0] : null;
+  // --- RANDOMIZER LOGIC ---
+  // Pick a random index from the top 8 trending items to be the Hero.
+  // This ensures the hero changes on refresh/next visit.
+  const heroCandidates = trendingItemsData.slice(0, 8);
+  const randomIndex = heroCandidates.length > 0 
+    ? Math.floor(Math.random() * heroCandidates.length) 
+    : 0;
+  
+  const heroItem = heroCandidates[randomIndex] || null;
 
-  // 2. Remove the hero item from the "Trending" row so it doesn't show twice
-  const trendingRowItems = trendingItemsData.slice(1);
+  // Filter the hero item out of the list so it doesn't appear twice immediately
+  const trendingRowItems = trendingItemsData.filter(item => item.id !== heroItem?.id);
 
   return (
     <div className="flex flex-col min-h-screen">
-      {/* Invisible H1 for SEO - Keeps Google happy, keeps design clean */}
       <h1 className="sr-only">Suhaeb's Movies Hub - Trending Movies & TV Shows</h1>
 
       {fetchError && (
@@ -106,11 +110,10 @@ export default async function HomePage() {
         </div>
       )}
 
-      {/* HERO SECTION (Full Width) */}
+      {/* HERO SECTION */}
       {heroItem && <HeroSection item={heroItem} />}
 
       {/* MAIN CONTENT CONTAINER */}
-      {/* We move the container here so the Hero is full width, but the lists are centered */}
       <div className="container mx-auto px-4 md:px-6 space-y-12 pb-16 -mt-6 relative z-20">
         <Suspense
           fallback={
@@ -200,17 +203,17 @@ export default async function HomePage() {
           )}
         </Suspense>
 
-        {/* Improved Browse Button */}
+        {/* REVERTED: Browse Button now uses Primary Theme Colors */}
         <div className="flex justify-center pt-8">
           <Link
             href="/browse"
-            className="group relative inline-flex items-center justify-center gap-3 px-8 py-4 bg-gray-900 hover:bg-gray-800 text-white text-lg font-medium rounded-full overflow-hidden transition-all border border-gray-700 hover:border-gray-500 shadow-2xl"
+            className="group relative inline-flex items-center justify-center gap-3 px-8 py-4 bg-primary text-primary-foreground text-lg font-medium rounded-full overflow-hidden transition-all shadow-md hover:shadow-xl active:scale-95"
           >
             <span className="relative z-10 flex items-center gap-2">
               <LayoutGrid className="w-5 h-5" />
               Browse Full Catalog
             </span>
-            <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
           </Link>
         </div>
       </div>
