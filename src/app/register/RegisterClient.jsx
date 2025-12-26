@@ -1,11 +1,13 @@
 // app/register/RegisterClient.jsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react"; // Added
 import Link from "next/link";
 
 export default function RegisterClient() {
+  const { status } = useSession(); // Added
   const [form, setForm] = useState({
     username: "",
     password: "",
@@ -14,6 +16,13 @@ export default function RegisterClient() {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+
+  // 1. REDIRECT LOGIC
+  useEffect(() => {
+    if (status === "authenticated") {
+      router.replace("/");
+    }
+  }, [status, router]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -64,6 +73,15 @@ export default function RegisterClient() {
       setLoading(false);
     }
   };
+
+  // Prevent flashing
+  if (status === "loading" || status === "authenticated") {
+    return (
+      <main className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent"></div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-background py-12 px-4 sm:px-6 lg:px-8">

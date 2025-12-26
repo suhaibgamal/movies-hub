@@ -1,40 +1,45 @@
 // src/app/login/LoginClient.jsx
 "use client";
 
-import { useState } from "react";
-import { signIn } from "next-auth/react";
+import { useState, useEffect } from "react";
+import { signIn, useSession } from "next-auth/react"; // Added useSession
 import { FcGoogle } from "react-icons/fc";
-import { useRouter, useSearchParams } from "next/navigation"; // Import useSearchParams
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
 export default function LoginClient() {
+  const { status } = useSession(); // Get session status
   const [form, setForm] = useState({ username: "", password: "" });
   const [error, setError] = useState("");
   const router = useRouter();
-  const searchParams = useSearchParams(); // Get searchParams instance
+  const searchParams = useSearchParams();
+
+  // 1. REDIRECT LOGIC: If already logged in, go Home immediately
+  useEffect(() => {
+    if (status === "authenticated") {
+      router.replace("/"); // 'replace' prevents hitting 'Back' to return to login
+    }
+  }, [status, router]);
 
   const handleCredentialsLogin = async (e) => {
     e.preventDefault();
     setError("");
 
-    // Get callbackUrl from URL query, default to "/" if not present
     const callbackUrlFromQuery = searchParams.get("callbackUrl") || "/";
 
     const res = await signIn("credentials", {
-      redirect: false, // Prevent NextAuth from automatically redirecting
+      redirect: false,
       username: form.username,
       password: form.password,
-      callbackUrl: callbackUrlFromQuery, // Explicitly pass the resolved callbackUrl
+      callbackUrl: callbackUrlFromQuery,
     });
 
-    if (res && res.error) {
-      // Check if res exists before accessing res.error
+    if (res?.error) {
       setError("Invalid username or password.");
-    } else if (res && res.url) {
+    } else if (res?.url) {
       router.push(res.url);
     } else {
-      // Fallback if res is somehow null/undefined or res.url is not set, though unlikely on success
-      router.push(callbackUrlFromQuery); // Or just router.push("/") as a last resort
+      router.push(callbackUrlFromQuery);
     }
   };
 
@@ -42,6 +47,15 @@ export default function LoginClient() {
     const callbackUrlFromQuery = searchParams.get("callbackUrl") || "/";
     await signIn("google", { callbackUrl: callbackUrlFromQuery });
   };
+
+  // Prevent flashing the login form while checking session
+  if (status === "loading" || status === "authenticated") {
+    return (
+      <main className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent"></div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-background py-12 px-4 sm:px-6 lg:px-8">
