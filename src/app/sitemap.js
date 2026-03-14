@@ -15,7 +15,7 @@ async function getPopularMedia(type, pageLimit = 20) {
     promises.push(
       fetch(
         `https://api.themoviedb.org/3/${type}/popular?api_key=${API_KEY}&language=en-US&page=${page}`,
-        { next: { revalidate: 3600 } } // Cache this for 1 hour so we don't spam TMDB on every request
+        { next: { revalidate: 86400 } } // Cache this for 1 day (increased from 1 hour for cost optimization)
       ).then((res) => {
         if (!res.ok) return null;
         return res.json();

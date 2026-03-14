@@ -114,7 +114,7 @@ export async function generateStaticParams() {
   }
 }
 
-export const revalidate = 3600;
+export const revalidate = 604800; // 7 days (reduced from 1 hour for cost optimization)
 
 export async function generateMetadata({ params }) {
   const { id } = await params;
