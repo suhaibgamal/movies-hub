@@ -95,7 +95,7 @@ function generateMovieStructuredData(movie, canonicalUrl, cast, directors) {
 export async function generateStaticParams() {
   try {
     const res = await fetch(
-      `${BASE_URL_FOR_STATIC_PARAMS}/movie/popular?api_key=${process.env.NEXT_PUBLIC_TMDB_KEY}&language=en-US&page=1`
+      `${BASE_URL_FOR_STATIC_PARAMS}/movie/popular?api_key=${process.env.TMDB_API_KEY}&language=en-US&page=1`
     );
     if (!res.ok) {
       console.error(

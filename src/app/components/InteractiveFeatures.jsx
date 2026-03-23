@@ -6,8 +6,42 @@ import Link from "next/link";
 import { FaFacebookF, FaTwitter, FaWhatsapp, FaTimes } from "react-icons/fa";
 import WatchNowButton from "@/app/components/WatchNowButton";
 import Image from "next/image";
-import { getActorCombinedCredits } from "@/lib/tmdb";
 import dynamic from "next/dynamic";
+
+// Fetch actor credits through our Edge proxy (no API key on client)
+async function getActorCombinedCredits(actorId) {
+  const res = await fetch(
+    `/api/tmdb/person/${actorId}/combined_credits?language=en-US`
+  );
+  if (!res.ok) {
+    throw new Error(`Failed to fetch actor credits: ${res.status}`);
+  }
+  const data = await res.json();
+  const validMediaTypes = ["movie", "tv"];
+  const uniqueCast = [];
+  const seenIds = new Set();
+  for (const credit of data.cast || []) {
+    if (
+      credit.id &&
+      !seenIds.has(credit.id) &&
+      validMediaTypes.includes(credit.media_type)
+    ) {
+      seenIds.add(credit.id);
+      uniqueCast.push({
+        id: credit.id,
+        media_type: credit.media_type,
+        title: credit.title || credit.name,
+        poster_path: credit.poster_path,
+        vote_average: credit.vote_average,
+        release_date: credit.release_date || credit.first_air_date,
+        character: credit.character,
+      });
+    }
+  }
+  return uniqueCast.sort(
+    (a, b) => (b.vote_average || 0) - (a.vote_average || 0)
+  );
+}
 
 const ActorFilmographyModal = dynamic(() => import("./ActorFilmographyModal"), {
   ssr: false,

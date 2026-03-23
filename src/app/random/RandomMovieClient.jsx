@@ -59,16 +59,8 @@ const fetchRandomDiscoverItems = async ({
     const typePath = mediaType === "tv" ? "tv" : "movie";
     const dateFilterKey =
       mediaType === "tv" ? "first_air_date" : "primary_release_date";
-    const apiKey = process.env.NEXT_PUBLIC_TMDB_KEY;
 
-    if (!apiKey) {
-      console.error(
-        "TMDB API key is missing. Please set NEXT_PUBLIC_TMDB_KEY."
-      );
-      throw new Error("TMDB API key is not configured.");
-    }
-
-    let discoverUrl = `https://api.themoviedb.org/3/discover/${typePath}?api_key=${apiKey}&language=en-US&sort_by=popularity.desc&vote_count.gte=100&include_adult=false`;
+    let discoverUrl = `/api/tmdb/discover/${typePath}?language=en-US&sort_by=popularity.desc&vote_count.gte=100&include_adult=false`;
     if (genre) discoverUrl += `&with_genres=${genre}`;
     if (rating) discoverUrl += `&vote_average.gte=${rating}`;
 

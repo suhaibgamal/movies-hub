@@ -76,9 +76,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" className="dark">
       <head>
-        {/* These hints are excellent, keep them */}
-        <link rel="preconnect" href="https://api.themoviedb.org" />
-        <link rel="dns-prefetch" href="https://api.themoviedb.org" />
+        {/* Preconnect to image CDN (still used for poster images) */}
         <link rel="preconnect" href="https://image.tmdb.org" />
         <link rel="dns-prefetch" href="https://image.tmdb.org" />
         {/* Favicons */}

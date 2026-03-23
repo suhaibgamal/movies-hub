@@ -219,8 +219,7 @@ const CATEGORY_OPTIONS_CONFIG = {
 const DEFAULT_CATEGORY_VALUE = CATEGORY_OPTIONS_CONFIG.discover.value;
 
 const MAX_AUTO_FETCH_ATTEMPTS = 3;
-const API_KEY = process.env.NEXT_PUBLIC_TMDB_KEY;
-const BASE_API_URL = "https://api.themoviedb.org/3/";
+const BASE_API_URL = "/api/tmdb/";
 
 const ToggleButton = ({
   label,
@@ -450,10 +449,9 @@ export default function MoviesListClient() {
 
       let endpoint = "";
       let apiParams = new URLSearchParams({
-        api_key: API_KEY,
         page: pageToFetch.toString(),
         language: "en-US",
-        include_adult: "false", // Explicitly false
+        include_adult: "false",
       });
       let effectiveItemTypeForNormalization = activeApiItemType; // Used to help normalizeItemData
       let titleForDisplay = "";

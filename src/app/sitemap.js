@@ -3,7 +3,7 @@
 const BASE_URL = "https://movies.suhaeb.com";
 // Use the server-side variable if available, otherwise fallback to public.
 // Ideally, use a secret key for server-side operations, but this works for now.
-const API_KEY = process.env.NEXT_PUBLIC_TMDB_KEY;
+const API_KEY = process.env.TMDB_API_KEY;
 
 async function getPopularMedia(type, pageLimit = 20) {
   // 'type' should be 'movie' or 'tv'

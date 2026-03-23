@@ -1,7 +1,7 @@
 // src/lib/tmdb.js
 import { unstable_cache } from "next/cache";
 
-const API_KEY = process.env.NEXT_PUBLIC_TMDB_KEY;
+const API_KEY = process.env.TMDB_API_KEY;
 const BASE_URL = "https://api.themoviedb.org/3";
 
 // --- Performance-Optimized Revalidation Periods ---
