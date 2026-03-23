@@ -1,6 +1,10 @@
 // src/app/watchlist/page.jsx
 import WatchlistClient from "@/app/watchlist/WatchlistClient";
 import { Suspense } from "react";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/app/api/auth/authOptions";
+import { PrismaClient } from "@prisma/client";
+import { hydrateWatchlistItems } from "@/lib/tmdb";
 
 export const metadata = {
   title: "My Watchlist - Movies Hub",
@@ -35,8 +39,41 @@ export const metadata = {
   },
 };
 
+// Singleton Prisma client
+let prisma;
+if (process.env.NODE_ENV === "production") {
+  prisma = new PrismaClient();
+} else {
+  if (!global.prisma) global.prisma = new PrismaClient();
+  prisma = global.prisma;
+}
+
+/**
+ * Server component: fetches watchlist IDs from DB, hydrates with TMDB data,
+ * then passes pre-rendered items to the client component.
+ */
+async function WatchlistContent() {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user?.id) {
+    // Client component handles redirect — pass empty items
+    return <WatchlistClient initialItems={[]} />;
+  }
+
+  // Fetch only IDs from DB (no metadata stored)
+  const watchlistIds = await prisma.watchlistItem.findMany({
+    where: { userId: session.user.id },
+    select: { itemId: true, itemType: true },
+    orderBy: { createdAt: "desc" },
+  });
+
+  // Hydrate with fresh TMDB data (concurrency-limited, cached 7 days)
+  const hydratedItems = await hydrateWatchlistItems(watchlistIds);
+
+  return <WatchlistClient initialItems={hydratedItems} />;
+}
+
 export default function WatchlistPage() {
-  // This Server Component simply renders the Client Component for the watchlist
   return (
     <Suspense
       fallback={
@@ -50,7 +87,7 @@ export default function WatchlistPage() {
         </div>
       }
     >
-      <WatchlistClient />
+      <WatchlistContent />
     </Suspense>
   );
 }

@@ -400,3 +400,82 @@ export const getUpcomingMoviesForHome = unstable_cache(
   ["upcoming-movies-home"],
   { revalidate: REVALIDATE_HOMEPAGE_UPCOMING }
 );
+
+// --- Watchlist Hydration Functions ---
+
+/**
+ * Fetches a lightweight summary of a movie or TV show for card rendering.
+ * Only returns the fields needed: id, title/name, poster_path, date, vote_average, genre_ids, media_type.
+ * @param {number} id - The TMDB item ID.
+ * @param {'MOVIE'|'TV'} itemType - Uppercase item type from DB.
+ * @returns {Promise<Object|null>} Normalized item summary or null if fetch failed.
+ */
+export const getCachedItemSummary = unstable_cache(
+  async (id, itemType) => {
+    const mediaType = itemType === "TV" ? "tv" : "movie";
+    const endpoint = `${BASE_URL}/${mediaType}/${id}?api_key=${API_KEY}&language=en-US`;
+
+    try {
+      const res = await fetch(endpoint, {
+        next: { revalidate: REVALIDATE_ITEM_DETAILS },
+      });
+
+      if (!res.ok) {
+        console.warn(
+          `[getCachedItemSummary] Failed to fetch ${mediaType} ID ${id}: ${res.status}`
+        );
+        return null;
+      }
+
+      const data = await res.json();
+
+      // Return only the fields needed for card rendering
+      return {
+        id: data.id,
+        media_type: mediaType,
+        title: mediaType === "tv" ? data.name : data.title,
+        name: mediaType === "tv" ? data.name : undefined,
+        poster_path: data.poster_path || null,
+        vote_average: typeof data.vote_average === "number" ? data.vote_average : 0,
+        genre_ids: (data.genres || []).map((g) => g.id),
+        release_date: mediaType === "movie" ? data.release_date : undefined,
+        first_air_date: mediaType === "tv" ? data.first_air_date : undefined,
+        overview: data.overview || "",
+        displayTitle: mediaType === "tv" ? data.name : data.title,
+        displayDate: mediaType === "tv" ? data.first_air_date : data.release_date,
+      };
+    } catch (error) {
+      console.error(
+        `[getCachedItemSummary] Error fetching ${mediaType} ID ${id}:`,
+        error.message
+      );
+      return null;
+    }
+  },
+  ["item-summary"],
+  { revalidate: REVALIDATE_ITEM_DETAILS }
+);
+
+/**
+ * Hydrates a list of watchlist items (IDs only) with TMDB data.
+ * Uses concurrency-limited batch fetching to respect TMDB rate limits.
+ * @param {Array<{itemId: number, itemType: string}>} items - Watchlist items from DB.
+ * @param {number} [concurrency=5] - Max parallel TMDB requests.
+ * @returns {Promise<Array<Object>>} Hydrated items with TMDB data (nulls filtered out).
+ */
+export async function hydrateWatchlistItems(items, concurrency = 5) {
+  const results = [];
+
+  // Process in batches to avoid TMDB rate limits
+  for (let i = 0; i < items.length; i += concurrency) {
+    const batch = items.slice(i, i + concurrency);
+    const batchResults = await Promise.all(
+      batch.map((item) => getCachedItemSummary(item.itemId, item.itemType))
+    );
+    results.push(...batchResults);
+  }
+
+  // Filter out failed fetches (nulls) and preserve original order
+  return results.filter(Boolean);
+}
+

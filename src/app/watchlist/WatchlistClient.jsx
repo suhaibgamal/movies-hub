@@ -12,7 +12,6 @@ import MoviesGrid from "@/app/components/MoviesGrid";
 import GridCardSkeleton from "@/app/components/GridCardSkeleton";
 import { BookmarkX, Film, Tv as TvIcon, ListFilter } from "lucide-react";
 
-// ToggleButton component (can be shared or defined locally if only used here)
 const ToggleButton = ({
   label,
   icon: Icon,
@@ -43,61 +42,41 @@ const ToggleButton = ({
   </button>
 );
 
-export default function WatchlistClient() {
+export default function WatchlistClient({ initialItems = [] }) {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [apiWatchlistItems, setApiWatchlistItems] = useState([]); // Raw items from API
-  const [loading, setLoading] = useState(true);
+  const [hydratedItems, setHydratedItems] = useState(initialItems);
   const { syncWatchlist: syncZustandWatchlist } = useWatchlistActions();
 
   const [filterType, setFilterType] = useState("ALL"); // "ALL", "MOVIE", "TV"
 
+  // Redirect if unauthenticated
   useEffect(() => {
-    if (status === "loading") return; // Wait until session status is determined
+    if (status === "loading") return;
     if (!session && status === "unauthenticated") {
-      // If definitely unauthenticated
       router.push("/login?callbackUrl=/watchlist");
-      return;
     }
-    if (session) {
-      // Only fetch if session exists
-      const fetchWatchlist = async () => {
-        setLoading(true);
-        try {
-          const res = await fetch("/api/watchList");
-          if (!res.ok) {
-            console.error("Failed to fetch watchlist:", res.statusText);
-            throw new Error(`Failed to fetch watchlist: ${res.statusText}`);
-          }
-          const data = await res.json();
-          const fetchedItems = data.watchlist || [];
-          setApiWatchlistItems(fetchedItems);
+  }, [session, status, router]);
 
-          // Sync with Zustand store
-          const storeItems = fetchedItems.map((item) => ({
-            id: item.itemId,
-            type: item.itemType, // API returns "MOVIE" or "TV"
-          }));
-          syncZustandWatchlist(storeItems);
-        } catch (error) {
-          console.error("Fetch Watchlist Error:", error);
-          setApiWatchlistItems([]); // Set to empty on error to avoid processing undefined
-        } finally {
-          setLoading(false);
-        }
-      };
-      fetchWatchlist();
+  // Sync Zustand store with the server-provided items
+  useEffect(() => {
+    if (hydratedItems.length > 0) {
+      const storeItems = hydratedItems.map((item) => ({
+        id: item.id,
+        type: item.media_type?.toUpperCase() || "MOVIE",
+      }));
+      syncZustandWatchlist(storeItems);
     }
-  }, [session, status, router, syncZustandWatchlist]);
+  }, [hydratedItems, syncZustandWatchlist]);
 
   const handleWatchlistItemRemovedLocally = useCallback(
     (removedItemId, removedItemType) => {
-      // removedItemType is expected to be UPPERCASE ("MOVIE" or "TV")
-      setApiWatchlistItems((prevItems) =>
+      setHydratedItems((prevItems) =>
         prevItems.filter(
           (item) =>
             !(
-              item.itemId === removedItemId && item.itemType === removedItemType
+              item.id === removedItemId &&
+              item.media_type === removedItemType.toLowerCase()
             )
         )
       );
@@ -105,52 +84,12 @@ export default function WatchlistClient() {
     []
   );
 
-  const filteredAndTransformedItems = useMemo(() => {
-    return apiWatchlistItems
-      .filter((item) => {
-        if (filterType === "ALL") return true;
-        // Ensure item.itemType is a string before comparing
-        return (
-          typeof item.itemType === "string" && item.itemType === filterType
-        );
-      })
-      .map((item) => {
-        const itemData =
-          typeof item.itemData === "object" && item.itemData !== null
-            ? item.itemData
-            : {};
-        const mediaTypeString =
-          typeof item.itemType === "string"
-            ? item.itemType.toLowerCase()
-            : "unknown";
-
-        // Explicitly pull all necessary fields for cards from itemData, with fallbacks
-        return {
-          // Core fields expected by cards
-          id: item.itemId,
-          media_type: mediaTypeString,
-          title: itemData.title || itemData.name || "Untitled", // For MovieCard and general display
-          name: itemData.name || itemData.title || "Untitled", // For SeriesCard
-          poster_path: itemData.poster_path || null,
-          vote_average:
-            typeof itemData.vote_average === "number"
-              ? itemData.vote_average
-              : 0,
-          genre_ids: Array.isArray(itemData.genre_ids)
-            ? itemData.genre_ids
-            : [],
-          overview: itemData.overview || "", // Good for WatchlistButton's preparedItemData
-
-          // Type-specific date fields
-          release_date: itemData.release_date, // For MovieCard year
-          first_air_date: itemData.first_air_date, // For SeriesCard year (ensure this is in itemData for TV!)
-
-          // Include other fields from itemData if cards use them directly
-          // This spread includes everything else from itemData, but above ensures critical ones are present
-          ...itemData,
-        };
-      });
-  }, [apiWatchlistItems, filterType]);
+  const filteredItems = useMemo(() => {
+    return hydratedItems.filter((item) => {
+      if (filterType === "ALL") return true;
+      return item.media_type === filterType.toLowerCase();
+    });
+  }, [hydratedItems, filterType]);
 
   const aboveTheFoldCount = useMemo(() => {
     if (typeof window !== "undefined") {
@@ -175,7 +114,6 @@ export default function WatchlistClient() {
   }
 
   if (!session && status === "unauthenticated") {
-    // Should have been redirected by useEffect, but this is a fallback UI.
     return (
       <main className="min-h-screen bg-background flex items-center justify-center p-4">
         <p className="text-lg text-muted-foreground">
@@ -217,19 +155,7 @@ export default function WatchlistClient() {
           </div>
         </div>
 
-        {loading ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
-            {/* Show a few skeletons based on typical items or a fixed number */}
-            {Array.from({
-              length: Math.min(
-                filteredAndTransformedItems.length || aboveTheFoldCount,
-                12
-              ),
-            }).map((_, index) => (
-              <GridCardSkeleton key={`skeleton-${index}`} />
-            ))}
-          </div>
-        ) : filteredAndTransformedItems.length === 0 ? (
+        {filteredItems.length === 0 ? (
           <div className="text-center space-y-4 py-16 sm:py-20">
             <BookmarkX className="mx-auto h-16 w-16 sm:h-20 sm:w-20 text-muted-foreground/70 mb-4" />
             <h2 className="text-xl sm:text-2xl font-semibold text-foreground">
@@ -247,7 +173,7 @@ export default function WatchlistClient() {
           </div>
         ) : (
           <MoviesGrid
-            movies={filteredAndTransformedItems}
+            movies={filteredItems}
             onWatchlistChange={(itemJustToggled, newStatus) => {
               if (!newStatus) {
                 if (
@@ -261,11 +187,9 @@ export default function WatchlistClient() {
                   );
                 } else {
                   console.error(
-                    "WatchlistClient onWatchlistChange: itemJustToggled or its properties (id, media_type) are undefined/invalid. Cannot update local list.",
+                    "WatchlistClient onWatchlistChange: invalid item data.",
                     itemJustToggled
                   );
-                  // Fallback: To ensure UI consistency if local removal fails, you might trigger a full refetch.
-                  // For now, relying on the next full fetch/sync or store update from other interactions.
                 }
               }
             }}
