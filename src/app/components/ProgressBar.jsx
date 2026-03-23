@@ -19,6 +19,14 @@ export default function ProgressBar() {
 
   useEffect(() => {
     const handleClick = (event) => {
+      // If click originated from a button (e.g. WatchlistButton inside a Link card),
+      // it's an action, not a navigation — skip the progress bar
+      let clickedElement = event.target;
+      while (clickedElement && clickedElement.tagName !== "A") {
+        if (clickedElement.tagName === "BUTTON") return;
+        clickedElement = clickedElement.parentElement;
+      }
+
       let target = event.target;
       while (target && target.tagName !== "A") {
         target = target.parentElement;
