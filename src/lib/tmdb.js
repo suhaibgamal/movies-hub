@@ -4,13 +4,13 @@ import { unstable_cache } from "next/cache";
 const API_KEY = process.env.TMDB_API_KEY;
 const BASE_URL = "https://api.themoviedb.org/3";
 
-// --- Performance-Optimized Revalidation Periods ---
-const REVALIDATE_ITEM_DETAILS = 604800; // 7 days
-const REVALIDATE_RECOMMENDATIONS = 259200; // 3 days
-const REVALIDATE_LINK_CHECK = 259200; // 3 days (for vidsrc check)
-const REVALIDATE_HOMEPAGE_DYNAMIC = 86400; // 1 day (increased from 6 hours for cost optimization)
-const REVALIDATE_HOMEPAGE_STATIC_LISTS = 259200; // 3 days (Top Rated)
-const REVALIDATE_HOMEPAGE_UPCOMING = 86400; // 1 day (Upcoming)
+// --- Aggressive Cache Periods (personal project, minimize ISR writes) ---
+const REVALIDATE_ITEM_DETAILS = 1209600; // 14 days
+const REVALIDATE_RECOMMENDATIONS = 1209600; // 14 days
+const REVALIDATE_LINK_CHECK = 1209600; // 14 days (vidsrc check)
+const REVALIDATE_HOMEPAGE_DYNAMIC = 259200; // 3 days (popular/trending)
+const REVALIDATE_HOMEPAGE_STATIC_LISTS = 604800; // 7 days (top rated)
+const REVALIDATE_HOMEPAGE_UPCOMING = 259200; // 3 days (upcoming)
 const FETCH_TIMEOUT_MS = 8000; // 8 seconds for external fetches
 
 /**
